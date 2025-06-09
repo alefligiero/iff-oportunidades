@@ -19,7 +19,6 @@ model User {
   updatedAt DateTime @updatedAt
 
   studentProfile Student?
-
   companyProfile Company?
 }
 
@@ -28,8 +27,10 @@ model Student {
   name      String
   matricula String @unique
 
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id])
+  userId String      @unique
+  user   User        @relation(fields: [userId], references: [id])
+  
+  internships Internship[]
 }
 
 model Company {
@@ -39,10 +40,102 @@ model Company {
 
   userId String @unique
   user   User   @relation(fields: [userId], references: [id])
+  
+  internships   Internship[]
+  jobVacancies  JobVacancy[]
+}
+
+model Internship {
+  id          String   @id @default(cuid())
+  startDate   DateTime
+  endDate     DateTime
+  status      InternshipStatus @default(IN_ANALYSIS)
+  type        InternshipType
+  
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id])
+  
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+  
+  documents Document[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Document {
+  id                String   @id @default(cuid())
+  type              DocumentType
+  status            DocumentStatus @default(PENDING_ANALYSIS)
+  fileUrl           String? // URL para o arquivo no storage (opcional no início)
+  rejectionComments String? // Comentários do admin em caso de recusa
+
+  internshipId String
+  internship   Internship @relation(fields: [internshipId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model JobVacancy {
+  id           String    @id @default(cuid())
+  title        String
+  description  String
+  type         VacancyType
+  status       VacancyStatus @default(PENDING_APPROVAL)
+  
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum Role {
   ADMIN
   STUDENT
   COMPANY
+}
+
+enum InternshipStatus {
+  IN_ANALYSIS
+  APPROVED
+  IN_PROGRESS
+  FINISHED
+  CANCELED
+}
+
+enum InternshipType {
+  DIRECT
+  INTEGRATOR
+}
+
+enum DocumentType {
+  TCE
+  PAE
+  PERIODIC_REPORT
+  TRE
+  RFE
+  SIGNED_CONTRACT
+  LIFE_INSURANCE
+}
+
+enum DocumentStatus {
+  PENDING_ANALYSIS
+  APPROVED
+  REJECTED
+  SIGNED_VALIDATED
+}
+
+enum VacancyType {
+  INTERNSHIP
+  JOB
+}
+
+enum VacancyStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  CLOSED_BY_COMPANY
 }
