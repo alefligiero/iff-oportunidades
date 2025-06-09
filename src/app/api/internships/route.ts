@@ -68,3 +68,45 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Ocorreu um erro interno no servidor.' }, { status: 500 });
   }
 }
+
+export async function GET(request: NextRequest) {
+  try {
+    const userPayload = await getUserFromToken(request);
+    
+    if (userPayload.role !== 'STUDENT') {
+      return NextResponse.json({ error: 'Acesso negado. Apenas alunos podem visualizar seus estágios.' }, { status: 403 });
+    }
+    
+    const studentProfile = await prisma.student.findUnique({
+        where: { userId: userPayload.userId },
+    });
+
+    if (!studentProfile) {
+        return NextResponse.json({ error: 'Perfil de aluno não encontrado.' }, { status: 404 });
+    }
+
+    const internships = await prisma.internship.findMany({
+        where: { studentId: studentProfile.id },
+        include: {
+            company: {
+                select: { name: true }
+            },
+            documents: {
+                select: { type: true, status: true }
+            }
+        },
+        orderBy: {
+            createdAt: 'desc'
+        }
+    });
+
+    return NextResponse.json(internships);
+
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message.includes('Token')) {
+        return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    console.error('Erro ao listar estágios:', error);
+    return NextResponse.json({ error: 'Ocorreu um erro interno no servidor.' }, { status: 500 });
+  }
+}
