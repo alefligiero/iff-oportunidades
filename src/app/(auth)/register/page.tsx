@@ -75,7 +75,7 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
           <fieldset className="space-y-2">
             <legend className="block text-sm font-medium text-gray-700">Eu sou</legend>
             <div className="flex items-center gap-4">

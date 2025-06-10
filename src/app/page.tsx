@@ -67,7 +67,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        <form className="space-y-6" onSubmit={handleSubmit}>
+        <form className="space-y-6" onSubmit={handleSubmit} noValidate>
           <div>
             <label
               htmlFor="email"
