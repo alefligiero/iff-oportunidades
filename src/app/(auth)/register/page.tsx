@@ -41,15 +41,15 @@ export default function RegisterPage() {
       tempErrors.email = 'Por favor, insira um formato de email válido.';
     }
     
-    if (!document) {
+    const unmaskedDocument = document.replace(/[^\d]/g, '');
+    if (!unmaskedDocument) {
       tempErrors.document = `O campo de ${role === 'STUDENT' ? 'matrícula' : 'CNPJ'} é obrigatório.`;
     } else if (role === 'STUDENT') {
-      if (!/^\d{12}$/.test(document)) {
+      if (unmaskedDocument.length !== 12) {
         tempErrors.document = 'A matrícula deve conter exatamente 12 números.';
       }
     } else if (role === 'COMPANY') {
-      const cnpj = document.replace(/[^\d]/g, '');
-      if (cnpj.length !== 14) {
+      if (unmaskedDocument.length !== 14) {
         tempErrors.document = 'O CNPJ deve conter 14 números.';
       }
     }
@@ -60,12 +60,11 @@ export default function RegisterPage() {
       return;
     }
 
-
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role, document }),
+        body: JSON.stringify({ name, email, password, role, document: unmaskedDocument }),
       });
 
       const data = await response.json();
@@ -99,8 +98,29 @@ export default function RegisterPage() {
     }
   };
 
+  const formatCNPJ = (value: string) => {
+    if (!value) return value;
+    const cnpj = value.replace(/[^\d]/g, '');
+  
+    if (cnpj.length <= 2) return cnpj;
+    if (cnpj.length <= 5) return `${cnpj.slice(0, 2)}.${cnpj.slice(2)}`;
+    if (cnpj.length <= 8) return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5)}`;
+    if (cnpj.length <= 12) return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8)}`;
+    return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8, 12)}-${cnpj.slice(12, 14)}`;
+  };
+  
+  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    if (role === 'COMPANY') {
+      setDocument(formatCNPJ(value));
+    } else {
+      setDocument(value);
+    }
+  };
+
   const documentLabel = role === 'STUDENT' ? 'Matrícula' : 'CNPJ';
-  const documentPlaceholder = role === 'STUDENT' ? 'Ex: 202519700247' : '00.000.000/0000-00';
+  const documentPlaceholder = role === 'STUDENT' ? 'Ex: 202019700392' : '00.000.000/0000-00';
+  const maxLength = role === 'STUDENT' ? 12 : 18;
   
   const getInputClassName = (fieldName: keyof FieldErrors) => {
     return `input-form ${errors[fieldName] ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`;
@@ -144,7 +164,7 @@ export default function RegisterPage() {
           </div>
           <div>
             <label htmlFor="document" className="block text-sm font-medium text-gray-700">{documentLabel}</label>
-            <input id="document" type="text" required value={document} onChange={(e) => setDocument(e.target.value)} placeholder={documentPlaceholder} className={getInputClassName('document')} />
+            <input id="document" type="text" required value={document} onChange={handleDocumentChange} placeholder={documentPlaceholder} className={getInputClassName('document')} maxLength={maxLength} />
             {errors.document && <p className="mt-1 text-xs text-red-600">{errors.document}</p>}
           </div>
           <div>
