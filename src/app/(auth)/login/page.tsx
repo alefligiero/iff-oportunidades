@@ -55,7 +55,7 @@ export default function LoginPage() {
             {/* Logo do IFF */}
             <div className="flex justify-center mb-4">
               <Image
-                src="/logo.png"
+                src="/logo-iff.png"
                 alt="Logo do Instituto Federal Fluminense"
                 width={80}
                 height={80}
