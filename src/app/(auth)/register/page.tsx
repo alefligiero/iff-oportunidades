@@ -25,42 +25,60 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  const validateField = (fieldName: keyof FieldErrors): string | undefined => {
+    switch (fieldName) {
+      case 'name':
+        return !name ? 'O campo de nome é obrigatório.' : undefined;
+      case 'email':
+        if (!email) return 'O campo de email é obrigatório.';
+        if (!/\S+@\S+\.\S+/.test(email)) return 'Por favor, insira um formato de email válido.';
+        return undefined;
+      case 'document':
+        const unmaskedDocument = document.replace(/[^\d]/g, '');
+        if (!unmaskedDocument) return `O campo de ${role === 'STUDENT' ? 'matrícula' : 'CNPJ'} é obrigatório.`;
+        if (role === 'STUDENT' && unmaskedDocument.length !== 12) return 'A matrícula deve conter exatamente 12 números.';
+        if (role === 'COMPANY' && unmaskedDocument.length !== 14) return 'O CNPJ deve conter 14 números.';
+        return undefined;
+      case 'password':
+        if (!password) return 'O campo de senha é obrigatório.';
+        if (password.length < 6) return 'A senha deve ter no mínimo 6 caracteres.';
+        return undefined;
+      default:
+        return undefined;
+    }
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const fieldName = e.target.name as keyof FieldErrors;
+    const error = validateField(fieldName);
+    setErrors(prev => ({ ...prev, [fieldName]: error }));
+  };
+  
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    
+    const nameError = validateField('name');
+    const emailError = validateField('email');
+    const documentError = validateField('document');
+    const passwordError = validateField('password');
+    
+    const newErrors: FieldErrors = {};
+    if (nameError) newErrors.name = nameError;
+    if (emailError) newErrors.email = emailError;
+    if (documentError) newErrors.document = documentError;
+    if (passwordError) newErrors.password = passwordError;
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     setIsLoading(true);
     setErrors({});
     setSuccess(null);
 
-    const tempErrors: FieldErrors = {};
-    if (!name) tempErrors.name = 'O campo de nome é obrigatório.';
-    if (!password) tempErrors.password = 'O campo de senha é obrigatório.';
-
-    if (!email) {
-      tempErrors.email = 'O campo de email é obrigatório.';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      tempErrors.email = 'Por favor, insira um formato de email válido.';
-    }
-    
-    const unmaskedDocument = document.replace(/[^\d]/g, '');
-    if (!unmaskedDocument) {
-      tempErrors.document = `O campo de ${role === 'STUDENT' ? 'matrícula' : 'CNPJ'} é obrigatório.`;
-    } else if (role === 'STUDENT') {
-      if (unmaskedDocument.length !== 12) {
-        tempErrors.document = 'A matrícula deve conter exatamente 12 números.';
-      }
-    } else if (role === 'COMPANY') {
-      if (unmaskedDocument.length !== 14) {
-        tempErrors.document = 'O CNPJ deve conter 14 números.';
-      }
-    }
-    
-    if (Object.keys(tempErrors).length > 0) {
-      setErrors(tempErrors);
-      setIsLoading(false);
-      return;
-    }
-
     try {
+      const unmaskedDocument = document.replace(/[^\d]/g, '');
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -71,11 +89,7 @@ export default function RegisterPage() {
 
       if (!response.ok) {
         if (data.details) {
-          const formattedErrors: FieldErrors = {};
-          for (const key in data.details) {
-            formattedErrors[key as keyof FieldErrors] = data.details[key][0];
-          }
-          setErrors(formattedErrors);
+          setErrors(data.details);
         } else {
           setErrors({ form: data.error || 'Falha ao realizar o cadastro.' });
         }
@@ -154,22 +168,22 @@ export default function RegisterPage() {
 
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nome {role === 'COMPANY' ? ' da Empresa' : 'Completo'}</label>
-            <input id="name" type="text" required value={name} onChange={(e) => setName(e.target.value)} className={getInputClassName('name')} />
+            <input id="name" name="name" type="text" required value={name} onChange={(e) => setName(e.target.value)} onBlur={handleBlur} className={getInputClassName('name')} />
             {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}
           </div>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-            <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={getInputClassName('email')} />
+            <input id="email" name="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} onBlur={handleBlur} className={getInputClassName('email')} />
             {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
           </div>
           <div>
             <label htmlFor="document" className="block text-sm font-medium text-gray-700">{documentLabel}</label>
-            <input id="document" type="text" required value={document} onChange={handleDocumentChange} placeholder={documentPlaceholder} className={getInputClassName('document')} maxLength={maxLength} />
+            <input id="document" name="document" type="text" required value={document} onChange={handleDocumentChange} onBlur={handleBlur} placeholder={documentPlaceholder} className={getInputClassName('document')} maxLength={maxLength} />
             {errors.document && <p className="mt-1 text-xs text-red-600">{errors.document}</p>}
           </div>
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">Senha</label>
-            <input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className={getInputClassName('password')} />
+            <input id="password" name="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} onBlur={handleBlur} className={getInputClassName('password')} />
             {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
           </div>
 

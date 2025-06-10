@@ -18,27 +18,39 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  const validateField = (fieldName: keyof FieldErrors): string | undefined => {
+    switch (fieldName) {
+      case 'email':
+        if (!email) return 'O campo de email é obrigatório.';
+        if (!/\S+@\S+\.\S+/.test(email)) return 'Por favor, insira um formato de email válido.';
+        return undefined;
+      case 'password':
+        if (!password) return 'O campo de senha é obrigatório.';
+        return undefined;
+      default:
+        return undefined;
+    }
+  };
+  
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const fieldName = e.target.name as keyof FieldErrors;
+    const error = validateField(fieldName);
+    setErrors(prev => ({ ...prev, [fieldName]: error }));
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setIsLoading(true);
-    setErrors({});
 
-    const tempErrors: FieldErrors = {};
-    if (!email) {
-      tempErrors.email = 'O campo de email é obrigatório.';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      tempErrors.email = 'Por favor, insira um formato de email válido.';
-    }
+    const emailError = validateField('email');
+    const passwordError = validateField('password');
 
-    if (!password) {
-      tempErrors.password = 'O campo de senha é obrigatório.';
-    }
-
-    if (Object.keys(tempErrors).length > 0) {
-      setErrors(tempErrors);
-      setIsLoading(false);
+    if (emailError || passwordError) {
+      setErrors({ email: emailError, password: passwordError });
       return;
     }
+
+    setIsLoading(true);
+    setErrors({});
 
     try {
       const response = await fetch('/api/auth/login', {
@@ -111,6 +123,7 @@ export default function HomePage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onBlur={handleBlur}
               className={getInputClassName('email')}
             />
              {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
@@ -131,6 +144,7 @@ export default function HomePage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onBlur={handleBlur}
               className={getInputClassName('password')}
             />
             {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
