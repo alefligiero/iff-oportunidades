@@ -5,17 +5,40 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 
+type FieldErrors = {
+  email?: string;
+  password?: string;
+  form?: string;
+};
+
 export default function HomePage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<FieldErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
-    setError(null);
+    setErrors({});
+
+    const tempErrors: FieldErrors = {};
+    if (!email) {
+      tempErrors.email = 'O campo de email é obrigatório.';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      tempErrors.email = 'Por favor, insira um formato de email válido.';
+    }
+
+    if (!password) {
+      tempErrors.password = 'O campo de senha é obrigatório.';
+    }
+
+    if (Object.keys(tempErrors).length > 0) {
+      setErrors(tempErrors);
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch('/api/auth/login', {
@@ -29,7 +52,8 @@ export default function HomePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Falha no login. Verifique suas credenciais.');
+        setErrors({ form: data.error || 'Falha no login. Verifique suas credenciais.' });
+        return;
       }
 
       console.log('Login bem-sucedido!', data.token);
@@ -37,13 +61,17 @@ export default function HomePage() {
 
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
+        setErrors({ form: 'Não foi possível conectar ao servidor. Verifique sua conexão.' });
       } else {
-        setError('Ocorreu um erro inesperado.');
+        setErrors({ form: 'Ocorreu um erro inesperado.' });
       }
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  const getInputClassName = (fieldName: keyof FieldErrors) => {
+    return `input-form ${errors[fieldName] ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`;
   };
 
   return (
@@ -83,8 +111,9 @@ export default function HomePage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="input-form"
+              className={getInputClassName('email')}
             />
+             {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
           </div>
 
           <div>
@@ -102,13 +131,14 @@ export default function HomePage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="input-form"
+              className={getInputClassName('password')}
             />
+            {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
           </div>
           
-          {error && (
+          {errors.form && (
             <div className="p-3 text-sm text-red-700 bg-red-100 rounded-md">
-              {error}
+              {errors.form}
             </div>
           )}
 
