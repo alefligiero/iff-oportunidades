@@ -39,7 +39,7 @@ export default function RegisterPage() {
 
       setSuccess('Cadastro realizado com sucesso! Redirecionando para a página de login...');
       setTimeout(() => {
-        router.push('/login');
+        router.push('/');
       }, 2000);
 
     } catch (err: unknown) {
@@ -119,7 +119,7 @@ export default function RegisterPage() {
 
         <p className="text-sm text-center text-gray-600">
           Já tem uma conta?{' '}
-          <Link href="/login" className="font-medium text-green-700 hover:text-green-600">
+          <Link href="/" className="font-medium text-green-700 hover:text-green-600">
             Faça login
           </Link>
         </p>
