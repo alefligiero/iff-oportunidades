@@ -28,7 +28,7 @@ export default function DashboardPage() {
             <div>
               <button
                 onClick={handleLogout}
-                className="text-sm font-medium text-gray-600 hover:text-green-700"
+                className="cursor-pointer text-sm font-medium text-gray-600 hover:text-green-700"
               >
                 Sair
               </button>
