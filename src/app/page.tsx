@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import Cookies from 'js-cookie';
 
 type FieldErrors = {
   email?: string;
@@ -68,7 +69,12 @@ export default function HomePage() {
         return;
       }
 
-      console.log('Login bem-sucedido!', data.token);
+      Cookies.set('auth_token', data.token, {
+        expires: 7,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+
       router.push('/dashboard');
 
     } catch (err: unknown) {
