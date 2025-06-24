@@ -1,4 +1,3 @@
-// src/app/dashboard/layout.tsx
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Image from 'next/image';
@@ -10,11 +9,11 @@ import LogoutButton from './LogoutButton';
 const prisma = new PrismaClient();
 
 async function getSession() {
-  const token = cookies().get('auth_token')?.value;
+  const token = (await cookies()).get('auth_token')?.value;
   if (!token) return null;
 
   try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET as string);
     const { payload } = await jwtVerify(token, secret);
     
     const userId = payload.userId as string;
