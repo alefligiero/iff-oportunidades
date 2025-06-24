@@ -10,6 +10,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// --- MODELOS DE AUTENTICAÇÃO E PERFIS ---
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -41,35 +43,78 @@ model Company {
   userId String @unique
   user   User   @relation(fields: [userId], references: [id])
   
-  internships   Internship[]
   jobVacancies  JobVacancy[]
 }
 
-model Internship {
-  id          String   @id @default(cuid())
-  startDate   DateTime
-  endDate     DateTime
-  status      InternshipStatus @default(IN_ANALYSIS)
-  type        InternshipType
-  
-  studentId String
-  student   Student @relation(fields: [studentId], references: [id])
-  
-  companyId String
-  company   Company @relation(fields: [companyId], references: [id])
-  
-  documents Document[]
+// --- MODELOS CENTRAIS DO NEGÓCIO ---
 
+model Internship {
+  id        String   @id @default(cuid())
+  status    InternshipStatus @default(IN_ANALYSIS)
+  type      InternshipType   @default(DIRECT)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Dados do Aluno (alguns podem ser preenchidos automaticamente)
+  studentId             String
+  student               Student          @relation(fields: [studentId], references: [id])
+  studentGender         Gender
+  studentAddressStreet  String
+  studentAddressNumber  String
+  studentAddressDistrict String
+  studentAddressCityState String
+  studentAddressCep     String
+  studentPhone          String
+  studentCpf            String
+  studentCourse         Course
+  studentCoursePeriod   String
+  studentSchoolYear     String
+
+  // Dados da Empresa (informados pelo aluno)
+  companyName                 String
+  companyCnpj                 String
+  companyRepresentativeName   String
+  companyRepresentativeRole   String
+  companyAddressStreet        String
+  companyAddressNumber        String
+  companyAddressDistrict      String
+  companyAddressCityState     String
+  companyAddressCep           String
+  companyEmail                String
+  companyPhone                String
+
+  // Detalhes do Estágio
+  modality             InternshipModality
+  startDate            DateTime
+  endDate              DateTime
+  weeklyHours          Int
+  dailyHours           String
+  monthlyGrant         Float
+  transportationGrant  Float
+  advisorProfessorName String
+  advisorProfessorId   String
+  supervisorName       String
+  supervisorRole       String
+  internshipSector     String
+  technicalActivities  String
+
+  // Detalhes do Seguro
+  insuranceCompany      String
+  insurancePolicyNumber String
+  insuranceCompanyCnpj  String
+  insuranceValidity     String
+  insuranceProofUrl     String? // Para o upload do comprovativo
+
+  // Relação com Documentos
+  documents Document[]
 }
 
 model Document {
   id                String   @id @default(cuid())
   type              DocumentType
   status            DocumentStatus @default(PENDING_ANALYSIS)
-  fileUrl           String? // URL para o arquivo no storage (opcional no início)
-  rejectionComments String? // Comentários do admin em caso de recusa
+  fileUrl           String?
+  rejectionComments String?
 
   internshipId String
   internship   Internship @relation(fields: [internshipId], references: [id])
@@ -92,10 +137,36 @@ model JobVacancy {
   updatedAt DateTime @updatedAt
 }
 
+// --- ENUMS (Tipos e Status) ---
+
 enum Role {
   ADMIN
   STUDENT
   COMPANY
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum Course {
+  BSI
+  LIC_QUIMICA
+  ENG_MECANICA
+  TEC_ADM_INTEGRADO
+  TEC_ELETRO_INTEGRADO
+  TEC_INFO_INTEGRADO
+  TEC_QUIMICA_INTEGRADO
+  TEC_AUTOMACAO_SUBSEQUENTE
+  TEC_ELETRO_CONCOMITANTE
+  TEC_MECANICA_CONCOMITANTE
+  TEC_QUIMICA_CONCOMITANTE
+}
+
+enum InternshipModality {
+  PRESENCIAL
+  REMOTO
 }
 
 enum InternshipStatus {
