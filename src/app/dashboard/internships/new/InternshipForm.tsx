@@ -1,0 +1,513 @@
+// src/app/dashboard/internships/new/InternshipForm.tsx
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Course, Gender, InternshipModality } from '@prisma/client';
+
+// Tipo para os dados pré-preenchidos
+type PrefilledData = {
+  name: string;
+  email: string;
+  matricula: string;
+} | null;
+
+// Objeto para mapear os valores do enum de Cursos para texto legível
+const courseLabels: { [key in Course]: string } = {
+  [Course.BSI]: 'Bacharelado em Sistemas de Informação',
+  [Course.LIC_QUIMICA]: 'Licenciatura em Química',
+  [Course.ENG_MECANICA]: 'Bacharelado em Engenharia Mecânica',
+  [Course.TEC_ADM_INTEGRADO]: 'Técnico em Administração Integrado',
+  [Course.TEC_ELETRO_INTEGRADO]: 'Técnico em Eletrotécnica Integrado',
+  [Course.TEC_INFO_INTEGRADO]: 'Técnico em Informática Integrado',
+  [Course.TEC_QUIMICA_INTEGRADO]: 'Técnico em Química Integrado',
+  [Course.TEC_AUTOMACAO_SUBSEQUENTE]: 'Técnico em Automação Industrial Subsequente',
+  [Course.TEC_ELETRO_CONCOMITANTE]: 'Técnico em Eletrotécnica Concomitante',
+  [Course.TEC_MECANICA_CONCOMITANTE]: 'Técnico em Mecânica Concomitante',
+  [Course.TEC_QUIMICA_CONCOMITANTE]: 'Técnico em Química Concomitante',
+};
+
+type FormErrors = { [key: string]: string; };
+type FormData = { [key: string]: string | number };
+
+export default function InternshipForm({ prefilledData }: { prefilledData: PrefilledData }) {
+  const router = useRouter();
+  const [formData, setFormData] = useState<FormData>({
+    studentGender: '',
+    studentAddressStreet: '',
+    studentAddressNumber: '',
+    studentAddressDistrict: '',
+    studentAddressCityState: '',
+    studentAddressCep: '',
+    studentPhone: '',
+    studentCpf: '',
+    studentCourse: '',
+    studentCoursePeriod: '',
+    studentSchoolYear: '',
+    companyName: '',
+    companyCnpj: '',
+    companyRepresentativeName: '',
+    companyRepresentativeRole: '',
+    companyAddressStreet: '',
+    companyAddressNumber: '',
+    companyAddressDistrict: '',
+    companyAddressCityState: '',
+    companyAddressCep: '',
+    companyEmail: '',
+    companyPhone: '',
+    modality: '',
+    startDate: '',
+    endDate: '',
+    weeklyHours: '',
+    dailyHours: '',
+    monthlyGrant: '',
+    transportationGrant: '',
+    advisorProfessorName: '',
+    advisorProfessorId: '',
+    supervisorName: '',
+    supervisorRole: '',
+    internshipSector: '',
+    technicalActivities: '',
+    insuranceCompany: '',
+    insurancePolicyNumber: '',
+    insuranceCompanyCnpj: '',
+    insuranceStartDate: '', // Novo campo
+    insuranceEndDate: '',   // Novo campo
+  });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isLoading, setIsLoading] = useState(false);
+
+  // --- Funções de Máscara ---
+  const maskCPF = (value: string) => value.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').slice(0, 14);
+  const maskCEP = (value: string) => value.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2').slice(0, 9);
+  const maskPhone = (value: string) => value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2').slice(0, 15);
+  const maskCNPJ = (value: string) => value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d)/, '$1-$2').slice(0, 18);
+  const maskCurrency = (value: string) => {
+    let v = value.replace(/\D/g, '');
+    if (!v) return '';
+    v = (parseInt(v, 10) / 100).toFixed(2) + '';
+    v = v.replace(".", ",");
+    v = v.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+    return "R$ " + v;
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    let finalValue: string | number = value;
+    
+    if (name === 'studentCpf') finalValue = maskCPF(value);
+    else if (name === 'studentAddressCep' || name === 'companyAddressCep') finalValue = maskCEP(value);
+    else if (name === 'studentPhone' || name === 'companyPhone') finalValue = maskPhone(value);
+    else if (name === 'companyCnpj' || name === 'insuranceCompanyCnpj') finalValue = maskCNPJ(value);
+    else if (name === 'monthlyGrant' || name === 'transportationGrant') finalValue = maskCurrency(value);
+    
+    setFormData(prev => ({ ...prev, [name]: finalValue }));
+  };
+
+  const validateField = (name: string, value: string | number) => {
+    if (typeof value === 'string' && !value.trim()) {
+        return 'Este campo é obrigatório.';
+    }
+    // Adicionar outras validações específicas aqui se necessário
+    return '';
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    const error = validateField(name, value);
+    setErrors(prev => ({ ...prev, [name]: error }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    const newErrors: FormErrors = {};
+    let formIsValid = true;
+
+    Object.keys(formData).forEach(key => {
+        const error = validateField(key, formData[key]);
+        if (error) {
+            newErrors[key] = error;
+            formIsValid = false;
+        }
+    });
+
+    setErrors(newErrors);
+
+    if (!formIsValid) {
+        return;
+    }
+
+    setIsLoading(true);
+
+    // Preparar os dados para a API
+    const unmaskCurrency = (value: string) => parseFloat(value.replace('R$ ', '').replace(/\./g, '').replace(',', '.'));
+    const unmaskNumbers = (value: string) => value.replace(/\D/g, '');
+    const formatDate = (dateStr: string) => new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR');
+
+    const { insuranceStartDate, insuranceEndDate, ...restOfData } = formData;
+    const insuranceValidity = `${formatDate(insuranceStartDate as string)} a ${formatDate(insuranceEndDate as string)}`;
+
+    const apiData = {
+        ...restOfData,
+        studentCpf: unmaskNumbers(formData.studentCpf as string),
+        studentAddressCep: unmaskNumbers(formData.studentAddressCep as string),
+        studentPhone: unmaskNumbers(formData.studentPhone as string),
+        companyCnpj: unmaskNumbers(formData.companyCnpj as string),
+        companyAddressCep: unmaskNumbers(formData.companyAddressCep as string),
+        companyPhone: unmaskNumbers(formData.companyPhone as string),
+        insuranceCompanyCnpj: unmaskNumbers(formData.insuranceCompanyCnpj as string),
+        monthlyGrant: unmaskCurrency(formData.monthlyGrant as string),
+        transportationGrant: unmaskCurrency(formData.transportationGrant as string),
+        weeklyHours: parseInt(formData.weeklyHours as string, 10),
+        insuranceValidity: insuranceValidity,
+    };
+
+    try {
+      const response = await fetch('/api/internships', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(apiData),
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setErrors(data.details || { form: data.error || 'Ocorreu um erro ao submeter o formulário.' });
+        throw new Error('Falha ao submeter o formulário');
+      }
+
+      alert('Estágio formalizado com sucesso!');
+      router.push('/dashboard/internships');
+
+    } catch (error) {
+      console.error(error);
+      setErrors(prev => ({ ...prev, form: 'Não foi possível conectar ao servidor.' }));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getInputClassName = (fieldName: string) => {
+    return `input-form ${errors[fieldName] ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`;
+  };
+
+  return (
+    <form onSubmit={handleSubmit} noValidate className="space-y-8 bg-white p-8 rounded-lg shadow-md">
+      {/* --- DADOS DO ALUNO --- */}
+      <fieldset className="space-y-4">
+        <legend className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Dados do Aluno</legend>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Nome Completo</label>
+            <input type="text" value={prefilledData?.name || ''} disabled className="input-form-disabled mt-1" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <input type="email" value={prefilledData?.email || ''} disabled className="input-form-disabled mt-1" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Matrícula</label>
+            <input type="text" value={prefilledData?.matricula || ''} disabled className="input-form-disabled mt-1" />
+          </div>
+          <div>
+            <label htmlFor="studentGender" className="block text-sm font-medium text-gray-700">Gênero</label>
+            <select name="studentGender" id="studentGender" value={formData.studentGender as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('studentGender')}>
+              <option value="">Selecione...</option>
+              <option value={Gender.MALE}>Masculino</option>
+              <option value={Gender.FEMALE}>Feminino</option>
+            </select>
+            {errors.studentGender && <p className="mt-1 text-xs text-red-600">{errors.studentGender}</p>}
+          </div>
+          <div>
+            <label htmlFor="studentCpf" className="block text-sm font-medium text-gray-700">CPF</label>
+            <input type="text" name="studentCpf" id="studentCpf" value={formData.studentCpf as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('studentCpf')} placeholder="000.000.000-00" />
+            {errors.studentCpf && <p className="mt-1 text-xs text-red-600">{errors.studentCpf}</p>}
+          </div>
+           <div>
+              <label htmlFor="studentPhone" className="block text-sm font-medium text-gray-700">Telefone</label>
+              <input type="text" name="studentPhone" id="studentPhone" value={formData.studentPhone as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('studentPhone')} placeholder="(00) 00000-0000" />
+              {errors.studentPhone && <p className="mt-1 text-xs text-red-600">{errors.studentPhone}</p>}
+          </div>
+        </div>
+        
+        <div className="pt-4">
+            <h3 className="text-md font-medium text-gray-800">Endereço</h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <label htmlFor="studentAddressStreet" className="block text-sm font-medium text-gray-700">Rua/Avenida</label>
+                <input type="text" name="studentAddressStreet" id="studentAddressStreet" value={formData.studentAddressStreet as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('studentAddressStreet')} />
+                {errors.studentAddressStreet && <p className="mt-1 text-xs text-red-600">{errors.studentAddressStreet}</p>}
+            </div>
+            <div>
+                <label htmlFor="studentAddressNumber" className="block text-sm font-medium text-gray-700">Número</label>
+                <input type="text" name="studentAddressNumber" id="studentAddressNumber" value={formData.studentAddressNumber as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('studentAddressNumber')} />
+                {errors.studentAddressNumber && <p className="mt-1 text-xs text-red-600">{errors.studentAddressNumber}</p>}
+            </div>
+             <div>
+                <label htmlFor="studentAddressDistrict" className="block text-sm font-medium text-gray-700">Bairro</label>
+                <input type="text" name="studentAddressDistrict" id="studentAddressDistrict" value={formData.studentAddressDistrict as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('studentAddressDistrict')} />
+                {errors.studentAddressDistrict && <p className="mt-1 text-xs text-red-600">{errors.studentAddressDistrict}</p>}
+            </div>
+        </div>
+
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+              <label htmlFor="studentAddressCityState" className="block text-sm font-medium text-gray-700">Cidade/Estado</label>
+              <input type="text" name="studentAddressCityState" id="studentAddressCityState" value={formData.studentAddressCityState as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('studentAddressCityState')} placeholder="Ex: Itaperuna/RJ" />
+              {errors.studentAddressCityState && <p className="mt-1 text-xs text-red-600">{errors.studentAddressCityState}</p>}
+          </div>
+          <div>
+              <label htmlFor="studentAddressCep" className="block text-sm font-medium text-gray-700">CEP</label>
+              <input type="text" name="studentAddressCep" id="studentAddressCep" value={formData.studentAddressCep as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('studentAddressCep')} placeholder="00000-000" />
+              {errors.studentAddressCep && <p className="mt-1 text-xs text-red-600">{errors.studentAddressCep}</p>}
+          </div>
+        </div>
+
+        <div className="pt-4">
+            <h3 className="text-md font-medium text-gray-800">Dados Acadêmicos</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+           <div>
+            <label htmlFor="studentCourse" className="block text-sm font-medium text-gray-700">Curso</label>
+            <select name="studentCourse" id="studentCourse" value={formData.studentCourse as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('studentCourse')}>
+              <option value="">Selecione o seu curso</option>
+              {Object.entries(courseLabels).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+            {errors.studentCourse && <p className="mt-1 text-xs text-red-600">{errors.studentCourse}</p>}
+          </div>
+          <div>
+            <label htmlFor="studentCoursePeriod" className="block text-sm font-medium text-gray-700">Série/Período</label>
+            <input type="text" name="studentCoursePeriod" id="studentCoursePeriod" value={formData.studentCoursePeriod as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('studentCoursePeriod')} placeholder="Ex: 1º" />
+            {errors.studentCoursePeriod && <p className="mt-1 text-xs text-red-600">{errors.studentCoursePeriod}</p>}
+          </div>
+          <div>
+            <label htmlFor="studentSchoolYear" className="block text-sm font-medium text-gray-700">Ano/Semestre Letivo</label>
+            <input type="text" name="studentSchoolYear" id="studentSchoolYear" value={formData.studentSchoolYear as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('studentSchoolYear')} placeholder="Ex: 2025/1" />
+            {errors.studentSchoolYear && <p className="mt-1 text-xs text-red-600">{errors.studentSchoolYear}</p>}
+          </div>
+        </div>
+      </fieldset>
+
+      {/* --- DADOS DA EMPRESA --- */}
+      <fieldset className="space-y-4">
+        <legend className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Dados da Instituição/Empresa</legend>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">Nome da Instituição/Empresa</label>
+            <input type="text" name="companyName" id="companyName" value={formData.companyName as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('companyName')} />
+            {errors.companyName && <p className="mt-1 text-xs text-red-600">{errors.companyName}</p>}
+          </div>
+          <div>
+            <label htmlFor="companyCnpj" className="block text-sm font-medium text-gray-700">CNPJ/MF</label>
+            <input type="text" name="companyCnpj" id="companyCnpj" value={formData.companyCnpj as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('companyCnpj')} placeholder="00.000.000/0000-00" />
+            {errors.companyCnpj && <p className="mt-1 text-xs text-red-600">{errors.companyCnpj}</p>}
+          </div>
+          <div>
+            <label htmlFor="companyRepresentativeName" className="block text-sm font-medium text-gray-700">Nome do Representante</label>
+            <input type="text" name="companyRepresentativeName" id="companyRepresentativeName" value={formData.companyRepresentativeName as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('companyRepresentativeName')} />
+            {errors.companyRepresentativeName && <p className="mt-1 text-xs text-red-600">{errors.companyRepresentativeName}</p>}
+          </div>
+          <div>
+            <label htmlFor="companyRepresentativeRole" className="block text-sm font-medium text-gray-700">Cargo/Função do Representante</label>
+            <input type="text" name="companyRepresentativeRole" id="companyRepresentativeRole" value={formData.companyRepresentativeRole as string} onChange={handleInputChange} onBlur={handleBlur} className="input-form mt-1" />
+            {errors.companyRepresentativeRole && <p className="mt-1 text-xs text-red-600">{errors.companyRepresentativeRole}</p>}
+          </div>
+           <div>
+              <label htmlFor="companyEmail" className="block text-sm font-medium text-gray-700">Email de Contato</label>
+              <input type="email" name="companyEmail" id="companyEmail" value={formData.companyEmail as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('companyEmail')} />
+              {errors.companyEmail && <p className="mt-1 text-xs text-red-600">{errors.companyEmail}</p>}
+          </div>
+          <div>
+              <label htmlFor="companyPhone" className="block text-sm font-medium text-gray-700">Telefone de Contato</label>
+              <input type="text" name="companyPhone" id="companyPhone" value={formData.companyPhone as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('companyPhone')} placeholder="(00) 0000-0000" />
+              {errors.companyPhone && <p className="mt-1 text-xs text-red-600">{errors.companyPhone}</p>}
+          </div>
+        </div>
+
+        <div className="pt-4">
+            <h3 className="text-md font-medium text-gray-800">Endereço da Empresa</h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <label htmlFor="companyAddressStreet" className="block text-sm font-medium text-gray-700">Rua/Avenida</label>
+                <input type="text" name="companyAddressStreet" id="companyAddressStreet" value={formData.companyAddressStreet as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('companyAddressStreet')} />
+                {errors.companyAddressStreet && <p className="mt-1 text-xs text-red-600">{errors.companyAddressStreet}</p>}
+            </div>
+            <div>
+                <label htmlFor="companyAddressNumber" className="block text-sm font-medium text-gray-700">Número</label>
+                <input type="text" name="companyAddressNumber" id="companyAddressNumber" value={formData.companyAddressNumber as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('companyAddressNumber')} />
+                {errors.companyAddressNumber && <p className="mt-1 text-xs text-red-600">{errors.companyAddressNumber}</p>}
+            </div>
+             <div>
+                <label htmlFor="companyAddressDistrict" className="block text-sm font-medium text-gray-700">Bairro</label>
+                <input type="text" name="companyAddressDistrict" id="companyAddressDistrict" value={formData.companyAddressDistrict as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('companyAddressDistrict')} />
+                {errors.companyAddressDistrict && <p className="mt-1 text-xs text-red-600">{errors.companyAddressDistrict}</p>}
+            </div>
+        </div>
+
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+              <label htmlFor="companyAddressCityState" className="block text-sm font-medium text-gray-700">Cidade/Estado</label>
+              <input type="text" name="companyAddressCityState" id="companyAddressCityState" value={formData.companyAddressCityState as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('companyAddressCityState')} placeholder="Ex: Itaperuna/RJ" />
+              {errors.companyAddressCityState && <p className="mt-1 text-xs text-red-600">{errors.companyAddressCityState}</p>}
+          </div>
+          <div>
+              <label htmlFor="companyAddressCep" className="block text-sm font-medium text-gray-700">CEP</label>
+              <input type="text" name="companyAddressCep" id="companyAddressCep" value={formData.companyAddressCep as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('companyAddressCep')} placeholder="00000-000" />
+              {errors.companyAddressCep && <p className="mt-1 text-xs text-red-600">{errors.companyAddressCep}</p>}
+          </div>
+        </div>
+      </fieldset>
+
+      {/* --- DETALHES DO ESTÁGIO --- */}
+      <fieldset className="space-y-4">
+        <legend className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Detalhes do Estágio</legend>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label htmlFor="modality" className="block text-sm font-medium text-gray-700">Tipo de Estágio</label>
+            <select name="modality" id="modality" value={formData.modality as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('modality')}>
+              <option value="">Selecione...</option>
+              <option value={InternshipModality.PRESENCIAL}>Presencial</option>
+              <option value={InternshipModality.REMOTO}>Remoto</option>
+            </select>
+            {errors.modality && <p className="mt-1 text-xs text-red-600">{errors.modality}</p>}
+          </div>
+          <div>
+            <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">Data de Início</label>
+            <input type="date" name="startDate" id="startDate" value={formData.startDate as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('startDate')} />
+            {errors.startDate && <p className="mt-1 text-xs text-red-600">{errors.startDate}</p>}
+          </div>
+          <div>
+            <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">Data Final</label>
+            <input type="date" name="endDate" id="endDate" value={formData.endDate as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('endDate')} />
+            {errors.endDate && <p className="mt-1 text-xs text-red-600">{errors.endDate}</p>}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label htmlFor="weeklyHours" className="block text-sm font-medium text-gray-700">Carga Horária Semanal</label>
+            <select name="weeklyHours" id="weeklyHours" value={formData.weeklyHours as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('weeklyHours')}>
+              <option value="">Selecione...</option>
+              {[10, 15, 20, 25, 30].map(h => <option key={h} value={h}>{h} horas</option>)}
+            </select>
+            {errors.weeklyHours && <p className="mt-1 text-xs text-red-600">{errors.weeklyHours}</p>}
+          </div>
+          <div>
+            <label htmlFor="dailyHours" className="block text-sm font-medium text-gray-700">Jornada Diária</label>
+            <input type="text" name="dailyHours" id="dailyHours" value={formData.dailyHours as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('dailyHours')} placeholder="Ex: 08:00 às 12:00" />
+            {errors.dailyHours && <p className="mt-1 text-xs text-red-600">{errors.dailyHours}</p>}
+          </div>
+          <div>
+            <label htmlFor="monthlyGrant" className="block text-sm font-medium text-gray-700">Valor da Bolsa Mensal</label>
+            <input type="text" name="monthlyGrant" id="monthlyGrant" value={formData.monthlyGrant as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('monthlyGrant')} placeholder="R$ 0,00" />
+            {errors.monthlyGrant && <p className="mt-1 text-xs text-red-600">{errors.monthlyGrant}</p>}
+          </div>
+          <div>
+            <label htmlFor="transportationGrant" className="block text-sm font-medium text-gray-700">Auxílio Transporte Mensal</label>
+            <input type="text" name="transportationGrant" id="transportationGrant" value={formData.transportationGrant as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('transportationGrant')} placeholder="R$ 0,00" />
+            {errors.transportationGrant && <p className="mt-1 text-xs text-red-600">{errors.transportationGrant}</p>}
+          </div>
+        </div>
+
+        <div className="pt-4">
+            <h3 className="text-md font-medium text-gray-800">Responsáveis pelo Estágio</h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label htmlFor="advisorProfessorName" className="block text-sm font-medium text-gray-700">Professor-Orientador</label>
+                <input type="text" name="advisorProfessorName" id="advisorProfessorName" value={formData.advisorProfessorName as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('advisorProfessorName')} />
+                {errors.advisorProfessorName && <p className="mt-1 text-xs text-red-600">{errors.advisorProfessorName}</p>}
+            </div>
+            <div>
+                <label htmlFor="advisorProfessorId" className="block text-sm font-medium text-gray-700">Matrícula do Professor</label>
+                <input type="text" name="advisorProfessorId" id="advisorProfessorId" value={formData.advisorProfessorId as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('advisorProfessorId')} />
+                {errors.advisorProfessorId && <p className="mt-1 text-xs text-red-600">{errors.advisorProfessorId}</p>}
+            </div>
+            <div>
+                <label htmlFor="supervisorName" className="block text-sm font-medium text-gray-700">Supervisor de Estágio</label>
+                <input type="text" name="supervisorName" id="supervisorName" value={formData.supervisorName as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('supervisorName')} />
+                {errors.supervisorName && <p className="mt-1 text-xs text-red-600">{errors.supervisorName}</p>}
+            </div>
+            <div>
+                <label htmlFor="supervisorRole" className="block text-sm font-medium text-gray-700">Cargo/Função do Supervisor</label>
+                <input type="text" name="supervisorRole" id="supervisorRole" value={formData.supervisorRole as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('supervisorRole')} />
+                {errors.supervisorRole && <p className="mt-1 text-xs text-red-600">{errors.supervisorRole}</p>}
+            </div>
+        </div>
+
+        <div>
+            <label htmlFor="internshipSector" className="block text-sm font-medium text-gray-700">Setor do Estágio</label>
+            <input type="text" name="internshipSector" id="internshipSector" value={formData.internshipSector as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('internshipSector')} />
+            {errors.internshipSector && <p className="mt-1 text-xs text-red-600">{errors.internshipSector}</p>}
+        </div>
+
+        <div>
+            <label htmlFor="technicalActivities" className="block text-sm font-medium text-gray-700">Atividades Técnicas Previstas</label>
+            <textarea name="technicalActivities" id="technicalActivities" value={formData.technicalActivities as string} onChange={handleInputChange} onBlur={handleBlur} rows={4} className={getInputClassName('technicalActivities')}></textarea>
+            {errors.technicalActivities && <p className="mt-1 text-xs text-red-600">{errors.technicalActivities}</p>}
+        </div>
+      </fieldset>
+      
+      {/* --- DADOS DO SEGURO --- */}
+      <fieldset className="space-y-4">
+        <legend className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Dados do Seguro de Vida</legend>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label htmlFor="insuranceCompany" className="block text-sm font-medium text-gray-700">Seguradora</label>
+            <input type="text" name="insuranceCompany" id="insuranceCompany" value={formData.insuranceCompany as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('insuranceCompany')} />
+            {errors.insuranceCompany && <p className="mt-1 text-xs text-red-600">{errors.insuranceCompany}</p>}
+          </div>
+          <div>
+            <label htmlFor="insurancePolicyNumber" className="block text-sm font-medium text-gray-700">Número da Apólice</label>
+            <input type="text" name="insurancePolicyNumber" id="insurancePolicyNumber" value={formData.insurancePolicyNumber as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('insurancePolicyNumber')} />
+            {errors.insurancePolicyNumber && <p className="mt-1 text-xs text-red-600">{errors.insurancePolicyNumber}</p>}
+          </div>
+          <div>
+            <label htmlFor="insuranceCompanyCnpj" className="block text-sm font-medium text-gray-700">CNPJ da Seguradora</label>
+            <input type="text" name="insuranceCompanyCnpj" id="insuranceCompanyCnpj" value={formData.insuranceCompanyCnpj as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('insuranceCompanyCnpj')} placeholder="00.000.000/0000-00" />
+            {errors.insuranceCompanyCnpj && <p className="mt-1 text-xs text-red-600">{errors.insuranceCompanyCnpj}</p>}
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="insuranceStartDate" className="block text-sm font-medium text-gray-700">Início da Vigência</label>
+              <input type="date" name="insuranceStartDate" id="insuranceStartDate" value={formData.insuranceStartDate as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('insuranceStartDate')} />
+              {errors.insuranceStartDate && <p className="mt-1 text-xs text-red-600">{errors.insuranceStartDate}</p>}
+            </div>
+            <div>
+              <label htmlFor="insuranceEndDate" className="block text-sm font-medium text-gray-700">Fim da Vigência</label>
+              <input type="date" name="insuranceEndDate" id="insuranceEndDate" value={formData.insuranceEndDate as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('insuranceEndDate')} />
+              {errors.insuranceEndDate && <p className="mt-1 text-xs text-red-600">{errors.insuranceEndDate}</p>}
+            </div>
+        </div>
+
+        <div>
+           <label htmlFor="insuranceProofUrl" className="block text-sm font-medium text-gray-700">Comprovante do Seguro</label>
+           <input type="file" name="insuranceProofUrl" id="insuranceProofUrl" className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"/>
+           <p className="mt-1 text-xs text-gray-500">Apenas ficheiros PDF ou JPEG.</p>
+        </div>
+      </fieldset>
+      
+      <div className="pt-4 flex justify-end">
+        <button type="submit" disabled={isLoading} className="button-primary px-6 py-2">
+            {isLoading ? 'A enviar...' : 'Enviar Formalização'}
+        </button>
+      </div>
+    </form>
+  );
+}
