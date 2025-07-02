@@ -36,9 +36,6 @@ async function getStudentInternships() {
 
     const internships = await prisma.internship.findMany({
       where: { studentId: studentProfile.id },
-      include: {
-        company: { select: { name: true } },
-      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -76,7 +73,7 @@ export default async function MyInternshipsPage() {
             {internships.map((internship) => (
               <li key={internship.id} className="p-4 border rounded-lg flex justify-between items-center hover:bg-gray-50">
                 <div>
-                  <p className="font-semibold text-gray-900">{internship.company.name}</p>
+                  <p className="font-semibold text-gray-900">{internship.companyName}</p>
                   <p className="text-sm text-gray-600">
                     {formatDate(internship.startDate)} - {formatDate(internship.endDate)}
                   </p>
