@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { PrismaClient, Gender, Course, InternshipModality } from '@prisma/client';
+import { PrismaClient, Gender, Course, InternshipModality, Role } from '@prisma/client';
 import { z } from 'zod';
-import { getUserFromToken } from '@/lib/get-user-from-token';
 
 const prisma = new PrismaClient();
 
@@ -52,13 +51,15 @@ const createInternshipSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const userPayload = await getUserFromToken(request);
-    if (userPayload.role !== 'STUDENT') {
+    const userId = request.headers.get('x-user-id');
+    const userRole = request.headers.get('x-user-role') as Role;
+
+    if (!userId || userRole !== 'STUDENT') {
       return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
     }
 
     const studentProfile = await prisma.student.findUnique({
-      where: { userId: userPayload.userId },
+      where: { userId: userId },
     });
     if (!studentProfile) {
       return NextResponse.json({ error: 'Perfil de aluno não encontrado.' }, { status: 404 });
@@ -94,9 +95,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(newInternship, { status: 201 });
 
   } catch (error: unknown) {
-    if (error instanceof Error && error.message.includes('Token')) {
-        return NextResponse.json({ error: error.message }, { status: 401 });
-    }
     console.error('Erro ao criar estágio:', error);
     return NextResponse.json({ error: 'Ocorreu um erro interno no servidor.' }, { status: 500 });
   }
