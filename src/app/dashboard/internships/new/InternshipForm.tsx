@@ -1,18 +1,13 @@
-// src/app/dashboard/internships/new/InternshipForm.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Course, Gender, InternshipModality } from '@prisma/client';
+import { Course, Gender, InternshipModality, Internship } from '@prisma/client';
 
-// Tipo para os dados pré-preenchidos
-type PrefilledData = {
-  name: string;
-  email: string;
-  matricula: string;
-} | null;
+type PrefilledData = { name: string; email: string; matricula: string; } | null;
+type FormErrors = { [key: string]: string; };
+type FormData = { [key: string]: string | number };
 
-// Objeto para mapear os valores do enum de Cursos para texto legível
 const courseLabels: { [key in Course]: string } = {
   [Course.BSI]: 'Bacharelado em Sistemas de Informação',
   [Course.LIC_QUIMICA]: 'Licenciatura em Química',
@@ -27,10 +22,15 @@ const courseLabels: { [key in Course]: string } = {
   [Course.TEC_QUIMICA_CONCOMITANTE]: 'Técnico em Química Concomitante',
 };
 
-type FormErrors = { [key: string]: string; };
-type FormData = { [key: string]: string | number };
-
-export default function InternshipForm({ prefilledData }: { prefilledData: PrefilledData }) {
+export default function InternshipForm({ 
+  prefilledData,
+  internshipData,
+  isEditing = false 
+}: { 
+  prefilledData: PrefilledData,
+  internshipData?: Internship | null,
+  isEditing?: boolean
+}) {
   const router = useRouter();
   const [formData, setFormData] = useState<FormData>({
     studentGender: '',
@@ -71,8 +71,8 @@ export default function InternshipForm({ prefilledData }: { prefilledData: Prefi
     insuranceCompany: '',
     insurancePolicyNumber: '',
     insuranceCompanyCnpj: '',
-    insuranceStartDate: '', // Novo campo
-    insuranceEndDate: '',   // Novo campo
+    insuranceStartDate: '',
+    insuranceEndDate: '',
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -80,7 +80,7 @@ export default function InternshipForm({ prefilledData }: { prefilledData: Prefi
   // --- Funções de Máscara ---
   const maskCPF = (value: string) => value.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').slice(0, 14);
   const maskCEP = (value: string) => value.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2').slice(0, 9);
-  const maskPhone = (value: string) => value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2').slice(0, 15);
+  const maskPhone = (value: string) => value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{4,5})(\d{4})/, '$1-$2').slice(0, 15);
   const maskCNPJ = (value: string) => value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d)/, '$1-$2').slice(0, 18);
   const maskCurrency = (value: string) => {
     let v = value.replace(/\D/g, '');
@@ -90,6 +90,57 @@ export default function InternshipForm({ prefilledData }: { prefilledData: Prefi
     v = v.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
     return "R$ " + v;
   };
+  const formatDateForInput = (date: Date | null | undefined) => {
+    if (!date) return '';
+    return new Date(date).toISOString().split('T')[0];
+  };
+
+  useEffect(() => {
+    if (isEditing && internshipData) {
+      setFormData({
+        studentGender: internshipData.studentGender,
+        studentAddressStreet: internshipData.studentAddressStreet,
+        studentAddressNumber: internshipData.studentAddressNumber,
+        studentAddressDistrict: internshipData.studentAddressDistrict,
+        studentAddressCityState: internshipData.studentAddressCityState,
+        studentAddressCep: maskCEP(internshipData.studentAddressCep),
+        studentPhone: maskPhone(internshipData.studentPhone),
+        studentCpf: maskCPF(internshipData.studentCpf),
+        studentCourse: internshipData.studentCourse,
+        studentCoursePeriod: internshipData.studentCoursePeriod,
+        studentSchoolYear: internshipData.studentSchoolYear,
+        companyName: internshipData.companyName,
+        companyCnpj: maskCNPJ(internshipData.companyCnpj),
+        companyRepresentativeName: internshipData.companyRepresentativeName,
+        companyRepresentativeRole: internshipData.companyRepresentativeRole,
+        companyAddressStreet: internshipData.companyAddressStreet,
+        companyAddressNumber: internshipData.companyAddressNumber,
+        companyAddressDistrict: internshipData.companyAddressDistrict,
+        companyAddressCityState: internshipData.companyAddressCityState,
+        companyAddressCep: maskCEP(internshipData.companyAddressCep),
+        companyEmail: internshipData.companyEmail,
+        companyPhone: maskPhone(internshipData.companyPhone),
+        modality: internshipData.modality,
+        startDate: formatDateForInput(internshipData.startDate),
+        endDate: formatDateForInput(internshipData.endDate),
+        weeklyHours: internshipData.weeklyHours,
+        dailyHours: internshipData.dailyHours,
+        monthlyGrant: maskCurrency(String(internshipData.monthlyGrant * 100)),
+        transportationGrant: maskCurrency(String(internshipData.transportationGrant * 100)),
+        advisorProfessorName: internshipData.advisorProfessorName,
+        advisorProfessorId: internshipData.advisorProfessorId,
+        supervisorName: internshipData.supervisorName,
+        supervisorRole: internshipData.supervisorRole,
+        internshipSector: internshipData.internshipSector,
+        technicalActivities: internshipData.technicalActivities,
+        insuranceCompany: internshipData.insuranceCompany,
+        insurancePolicyNumber: internshipData.insurancePolicyNumber,
+        insuranceCompanyCnpj: maskCNPJ(internshipData.insuranceCompanyCnpj),
+        insuranceStartDate: formatDateForInput(internshipData.insuranceStartDate),
+        insuranceEndDate: formatDateForInput(internshipData.insuranceEndDate),
+      });
+    }
+  }, [isEditing, internshipData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -121,51 +172,44 @@ export default function InternshipForm({ prefilledData }: { prefilledData: Prefi
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    const newErrors: FormErrors = {};
     let formIsValid = true;
-
+    const newErrors: FormErrors = {};
     Object.keys(formData).forEach(key => {
-        const error = validateField(key, formData[key]);
-        if (error) {
-            newErrors[key] = error;
-            formIsValid = false;
-        }
+      const error = validateField(key, formData[key]);
+      if (error) {
+        newErrors[key] = error;
+        formIsValid = false;
+      }
     });
 
     setErrors(newErrors);
-
-    if (!formIsValid) {
-        return;
-    }
+    if (!formIsValid) return;
 
     setIsLoading(true);
 
-    // Preparar os dados para a API
     const unmaskCurrency = (value: string) => parseFloat(value.replace('R$ ', '').replace(/\./g, '').replace(',', '.'));
     const unmaskNumbers = (value: string) => value.replace(/\D/g, '');
-    const formatDate = (dateStr: string) => new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR');
-
-    const { insuranceStartDate, insuranceEndDate, ...restOfData } = formData;
-    const insuranceValidity = `${formatDate(insuranceStartDate as string)} a ${formatDate(insuranceEndDate as string)}`;
 
     const apiData = {
-        ...restOfData,
-        studentCpf: unmaskNumbers(formData.studentCpf as string),
-        studentAddressCep: unmaskNumbers(formData.studentAddressCep as string),
-        studentPhone: unmaskNumbers(formData.studentPhone as string),
-        companyCnpj: unmaskNumbers(formData.companyCnpj as string),
-        companyAddressCep: unmaskNumbers(formData.companyAddressCep as string),
-        companyPhone: unmaskNumbers(formData.companyPhone as string),
-        insuranceCompanyCnpj: unmaskNumbers(formData.insuranceCompanyCnpj as string),
-        monthlyGrant: unmaskCurrency(formData.monthlyGrant as string),
-        transportationGrant: unmaskCurrency(formData.transportationGrant as string),
-        weeklyHours: parseInt(formData.weeklyHours as string, 10),
-        insuranceValidity: insuranceValidity,
+      ...formData,
+      studentCpf: unmaskNumbers(formData.studentCpf as string),
+      studentAddressCep: unmaskNumbers(formData.studentAddressCep as string),
+      studentPhone: unmaskNumbers(formData.studentPhone as string),
+      companyCnpj: unmaskNumbers(formData.companyCnpj as string),
+      companyAddressCep: unmaskNumbers(formData.companyAddressCep as string),
+      companyPhone: unmaskNumbers(formData.companyPhone as string),
+      insuranceCompanyCnpj: unmaskNumbers(formData.insuranceCompanyCnpj as string),
+      monthlyGrant: unmaskCurrency(formData.monthlyGrant as string),
+      transportationGrant: unmaskCurrency(formData.transportationGrant as string),
+      weeklyHours: parseInt(formData.weeklyHours as string, 10),
     };
 
     try {
-      const response = await fetch('/api/internships', {
-        method: 'POST',
+      const url = isEditing ? `/api/internships/${internshipData?.id}` : '/api/internships';
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(apiData),
         credentials: 'include',
@@ -174,12 +218,13 @@ export default function InternshipForm({ prefilledData }: { prefilledData: Prefi
       const data = await response.json();
 
       if (!response.ok) {
-        setErrors(data.details || { form: data.error || 'Ocorreu um erro ao submeter o formulário.' });
-        throw new Error('Falha ao submeter o formulário');
+        setErrors(data.details || { form: data.error || 'Ocorreu um erro.' });
+        throw new Error('Falha na submissão do formulário');
       }
 
-      alert('Estágio formalizado com sucesso!');
+      alert(`Estágio ${isEditing ? 'atualizado' : 'formalizado'} com sucesso!`);
       router.push('/dashboard/internships');
+      router.refresh();
 
     } catch (error) {
       console.error(error);

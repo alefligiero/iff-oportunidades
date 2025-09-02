@@ -55,6 +55,8 @@ model Internship {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  rejectionReason String?
+
   // Dados do Aluno (alguns podem ser preenchidos automaticamente)
   studentId             String
   student               Student          @relation(fields: [studentId], references: [id])
@@ -102,7 +104,8 @@ model Internship {
   insuranceCompany      String
   insurancePolicyNumber String
   insuranceCompanyCnpj  String
-  insuranceValidity     String
+  insuranceStartDate    DateTime?
+  insuranceEndDate      DateTime?
   insuranceProofUrl     String? // Para o upload do comprovativo
 
   // Relação com Documentos

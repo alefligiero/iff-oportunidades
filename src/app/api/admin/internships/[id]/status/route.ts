@@ -7,6 +7,7 @@ const prisma = new PrismaClient();
 
 const updateStatusSchema = z.object({
   status: z.enum([InternshipStatus.APPROVED, InternshipStatus.CANCELED]),
+  rejectionReason: z.string().optional(),
 });
 
 export async function PATCH(
@@ -31,7 +32,11 @@ export async function PATCH(
       return NextResponse.json({ error: 'Dados inválidos.', details: validation.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const { status } = validation.data;
+    const { status, rejectionReason } = validation.data;
+
+    if (status === InternshipStatus.CANCELED && !rejectionReason) {
+      return NextResponse.json({ error: 'É obrigatório fornecer um motivo para a recusa.' }, { status: 400 });
+    }
 
     const updatedInternship = await prisma.internship.update({
       where: {
@@ -39,6 +44,7 @@ export async function PATCH(
       },
       data: {
         status,
+        rejectionReason: status === InternshipStatus.CANCELED ? rejectionReason : null,
       },
     });
 
@@ -54,3 +60,4 @@ export async function PATCH(
     return NextResponse.json({ error: 'Ocorreu um erro interno no servidor.' }, { status: 500 });
   }
 }
+

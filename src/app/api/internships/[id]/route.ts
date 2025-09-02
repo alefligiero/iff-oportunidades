@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { PrismaClient, Gender, Course, InternshipModality, Role } from '@prisma/client';
+import { PrismaClient, Role, Gender, Course, InternshipModality } from '@prisma/client';
 import { z } from 'zod';
 
 const prisma = new PrismaClient();
 
-const createInternshipSchema = z.object({
+const updateInternshipSchema = z.object({
   studentGender: z.nativeEnum(Gender),
   studentAddressStreet: z.string().min(1, 'O endereço é obrigatório.'),
   studentAddressNumber: z.string().min(1, 'O número é obrigatório.'),
@@ -47,8 +47,12 @@ const createInternshipSchema = z.object({
   insuranceEndDate: z.coerce.date({ required_error: 'A data de fim da vigência é obrigatória.' }),
 });
 
-export async function POST(request: NextRequest) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id: internshipId } = await params;
     const userId = request.headers.get('x-user-id');
     const userRole = request.headers.get('x-user-role') as Role;
 
@@ -56,44 +60,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
     }
 
-    const studentProfile = await prisma.student.findUnique({
-      where: { userId: userId },
+    const existingInternship = await prisma.internship.findFirst({
+        where: {
+            id: internshipId,
+            student: {
+                userId: userId
+            }
+        }
     });
-    if (!studentProfile) {
-      return NextResponse.json({ error: 'Perfil de aluno não encontrado.' }, { status: 404 });
+
+    if (!existingInternship) {
+        return NextResponse.json({ error: 'Estágio não encontrado ou não pertence a este utilizador.' }, { status: 404 });
     }
 
     const body = await request.json();
-    const validation = createInternshipSchema.safeParse(body);
+    const validation = updateInternshipSchema.safeParse(body);
 
     if (!validation.success) {
       return NextResponse.json({ error: 'Dados inválidos.', details: validation.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const internshipData = validation.data;
+    const updatedData = validation.data;
 
-    const newInternship = await prisma.$transaction(async (tx) => {
-      const internship = await tx.internship.create({
-        data: {
-          ...internshipData,
-          studentId: studentProfile.id,
-        },
-      });
-
-      await tx.document.createMany({
-        data: [
-          { type: 'TCE', internshipId: internship.id },
-          { type: 'PAE', internshipId: internship.id },
-        ],
-      });
-
-      return internship;
+    const updatedInternship = await prisma.internship.update({
+      where: { id: internshipId },
+      data: {
+        ...updatedData,
+        status: 'IN_ANALYSIS', 
+        rejectionReason: null,
+      },
     });
 
-    return NextResponse.json(newInternship, { status: 201 });
+    return NextResponse.json(updatedInternship, { status: 200 });
 
   } catch (error: unknown) {
-    console.error('Erro ao criar estágio:', error);
+    console.error('Erro ao atualizar estágio:', error);
     return NextResponse.json({ error: 'Ocorreu um erro interno no servidor.' }, { status: 500 });
   }
 }
