@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { jwtVerify } from 'jose';
-import { PrismaClient, Role, Course } from '@prisma/client';
+import { PrismaClient, Role, Course, Gender } from '@prisma/client';
 import ActionButtons from './ActionButtons';
 
 const prisma = new PrismaClient();
@@ -22,6 +22,12 @@ const courseLabels: { [key in Course]: string } = {
   [Course.TEC_MECANICA_CONCOMITANTE]: 'Técnico em Mecânica Concomitante',
   [Course.TEC_QUIMICA_CONCOMITANTE]: 'Técnico em Química Concomitante',
 };
+
+const genderLabels: { [key in Gender]: string } = {
+  [Gender.MALE]: 'Masculino',
+  [Gender.FEMALE]: 'Feminino',
+};
+
 
 async function getInternshipDetails(id: string) {
   const cookieStore = await cookies();
@@ -101,7 +107,7 @@ export default async function InternshipDetailPage({ params }: { params: Promise
                 <DetailItem label="Nome Completo" value={internship.student.name} />
                 <DetailItem label="Email" value={internship.student.user.email} />
                 <DetailItem label="Matrícula" value={internship.student.matricula} />
-                <DetailItem label="Gênero" value={internship.studentGender} />
+                <DetailItem label="Gênero" value={genderLabels[internship.studentGender]} />
                 <DetailItem label="CPF" value={internship.studentCpf} />
                 <DetailItem label="Telefone" value={internship.studentPhone} />
                 <DetailItem label="Endereço" value={`${internship.studentAddressStreet}, ${internship.studentAddressNumber}`} />
@@ -157,7 +163,7 @@ export default async function InternshipDetailPage({ params }: { params: Promise
                 <DetailItem label="Seguradora" value={internship.insuranceCompany} />
                 <DetailItem label="Nº da Apólice" value={internship.insurancePolicyNumber} />
                 <DetailItem label="CNPJ da Seguradora" value={internship.insuranceCompanyCnpj} />
-                <DetailItem label="Vigência do Seguro" value={internship.insuranceValidity} />
+                <DetailItem label="Vigência do Seguro" value={`${formatDate(internship.insuranceStartDate)} a ${formatDate(internship.insuranceEndDate)}`} />
             </dl>
         </div>
 

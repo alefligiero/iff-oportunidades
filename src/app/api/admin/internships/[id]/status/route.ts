@@ -1,26 +1,28 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { PrismaClient, InternshipStatus } from '@prisma/client';
+import { PrismaClient, InternshipStatus, Role } from '@prisma/client';
 import { z } from 'zod';
-import { getUserFromToken } from '@/lib/get-user-from-token';
+import { headers } from 'next/headers';
 
 const prisma = new PrismaClient();
 
 const updateStatusSchema = z.object({
   status: z.enum([InternshipStatus.APPROVED, InternshipStatus.CANCELED]),
-  rejectionComments: z.string().optional(),
 });
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const internshipId = params.id;
+  const headersList = headers();
+  const userId = (await headersList).get('x-user-id');
+  const userRole = (await headersList).get('x-user-role');
 
-    const userPayload = await getUserFromToken(request);
-    if (userPayload.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
-    }
+  if (!userId || userRole !== Role.ADMIN) {
+    return NextResponse.json({ error: 'Acesso negado. Apenas administradores podem realizar esta ação.' }, { status: 403 });
+  }
+  
+  try {
+    const { id: internshipId } = await params;
 
     const body = await request.json();
     const validation = updateStatusSchema.safeParse(body);
@@ -29,18 +31,14 @@ export async function PATCH(
       return NextResponse.json({ error: 'Dados inválidos.', details: validation.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const { status, rejectionComments } = validation.data;
-
-    if (status !== InternshipStatus.CANCELED && rejectionComments) {
-        return NextResponse.json({ error: 'Comentários de rejeição só podem ser enviados ao recusar um estágio.' }, { status: 400 });
-    }
+    const { status } = validation.data;
 
     const updatedInternship = await prisma.internship.update({
       where: {
         id: internshipId,
       },
       data: {
-        status: status,
+        status,
       },
     });
 
@@ -49,10 +47,10 @@ export async function PATCH(
     return NextResponse.json(updatedInternship);
 
   } catch (error: unknown) {
-    if (error instanceof Error && error.message.includes('Token')) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
-    }
     console.error('Erro ao atualizar status do estágio:', error);
+    if (error instanceof z.ZodError) {
+        return NextResponse.json({ error: 'Dados inválidos.', details: error.flatten().fieldErrors }, { status: 400 });
+    }
     return NextResponse.json({ error: 'Ocorreu um erro interno no servidor.' }, { status: 500 });
   }
 }
