@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { PrismaClient, VacancyType } from '@prisma/client';
+import { PrismaClient, VacancyType, Role } from '@prisma/client';
 import { z } from 'zod';
-import { getUserFromToken } from '@/lib/get-user-from-token';
 
 const prisma = new PrismaClient();
 
@@ -15,13 +14,15 @@ const createVacancySchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const userPayload = await getUserFromToken(request);
-    if (userPayload.role !== 'COMPANY') {
+    const userId = request.headers.get('x-user-id');
+    const userRole = request.headers.get('x-user-role') as Role;
+
+    if (!userId || userRole !== 'COMPANY') {
       return NextResponse.json({ error: 'Acesso negado. Apenas empresas podem publicar vagas.' }, { status: 403 });
     }
 
     const companyProfile = await prisma.company.findUnique({
-      where: { userId: userPayload.userId },
+      where: { userId: userId },
     });
 
     if (!companyProfile) {
@@ -51,10 +52,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(newVacancy, { status: 201 });
 
   } catch (error: unknown) {
-    if (error instanceof Error && error.message.includes('Token')) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
-    }
     console.error('Erro ao criar vaga:', error);
     return NextResponse.json({ error: 'Ocorreu um erro interno no servidor.' }, { status: 500 });
   }
 }
+
