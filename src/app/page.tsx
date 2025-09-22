@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import Cookies from 'js-cookie';
+import { useAuth } from '@/contexts/AuthContext';
+import { AuthError } from '@/types/auth';
 
 type FieldErrors = {
   email?: string;
@@ -16,8 +17,15 @@ export default function HomePage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [isLoading, setIsLoading] = useState(false);
+  const { login, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+
+  // Redirecionar se já estiver autenticado
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, isLoading, router]);
 
   const validateField = (fieldName: keyof FieldErrors): string | undefined => {
     switch (fieldName) {
@@ -50,41 +58,17 @@ export default function HomePage() {
       return;
     }
 
-    setIsLoading(true);
     setErrors({});
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setErrors({ form: data.error || 'Falha no login. Verifique suas credenciais.' });
-        return;
-      }
-
-      Cookies.set('auth_token', data.token, {
-        expires: 7,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-      });
-
-      router.push('/dashboard');
-
+      await login({ email, password });
+      // O redirecionamento será feito automaticamente pelo useEffect
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setErrors({ form: 'Não foi possível conectar ao servidor. Verifique sua conexão.' });
+        setErrors({ form: err.message });
       } else {
         setErrors({ form: 'Ocorreu um erro inesperado.' });
       }
-    } finally {
-      setIsLoading(false);
     }
   };
   
