@@ -1,43 +1,36 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
-import { z } from 'zod';
+import { registerSchema } from '@/lib/validations/schemas';
+import { validateRequestBody, createErrorResponse, createSuccessResponse } from '@/lib/validations/utils';
 
 const prisma = new PrismaClient();
-
-const userSchema = z.object({
-  email: z.string().email({ message: 'Email inválido' }),
-  password: z.string().min(6, { message: 'A senha deve ter no mínimo 6 caracteres' }),
-  role: z.enum(['STUDENT', 'COMPANY']),
-  name: z.string().min(3, { message: 'O nome é obrigatório' }),
-  document: z.string().min(5, { message: 'Documento inválido' }),
-});
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const validation = userSchema.safeParse(body);
+    const validation = validateRequestBody(registerSchema, body);
 
     if (!validation.success) {
-      return NextResponse.json({ error: 'Dados inválidos', details: validation.error.flatten().fieldErrors }, { status: 400 });
+      return validation.error;
     }
 
     const { email, password, role, name, document } = validation.data;
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return NextResponse.json({ error: 'Este email já está em uso' }, { status: 409 });
+      return createErrorResponse('Este email já está em uso', 409);
     }
 
     if (role === 'STUDENT') {
       const existingStudent = await prisma.student.findUnique({ where: { matricula: document } });
       if (existingStudent) {
-        return NextResponse.json({ error: 'Esta matrícula já está cadastrada' }, { status: 409 });
+        return createErrorResponse('Esta matrícula já está cadastrada', 409);
       }
     } else if (role === 'COMPANY') {
       const existingCompany = await prisma.company.findUnique({ where: { cnpj: document } });
       if (existingCompany) {
-        return NextResponse.json({ error: 'Este CNPJ já está cadastrado' }, { status: 409 });
+        return createErrorResponse('Este CNPJ já está cadastrado', 409);
       }
     }
 
@@ -76,10 +69,10 @@ export async function POST(request: Request) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...userWithoutPassword } = user;
 
-    return NextResponse.json(userWithoutPassword, { status: 201 });
+    return createSuccessResponse(userWithoutPassword, 201);
 
   } catch (error) {
     console.error('Erro no cadastro:', error);
-    return NextResponse.json({ error: 'Ocorreu um erro interno no servidor.' }, { status: 500 });
+    return createErrorResponse('Ocorreu um erro interno no servidor.', 500);
   }
 }

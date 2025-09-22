@@ -2,22 +2,18 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { z } from 'zod';
+import { loginSchema } from '@/lib/validations/schemas';
+import { validateRequestBody, createErrorResponse, createSuccessResponse } from '@/lib/validations/utils';
 
 const prisma = new PrismaClient();
-
-const loginSchema = z.object({
-  email: z.string().email({ message: 'Email inválido' }),
-  password: z.string().min(1, { message: 'A senha é obrigatória' }),
-});
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const validation = loginSchema.safeParse(body);
+    const validation = validateRequestBody(loginSchema, body);
 
     if (!validation.success) {
-      return NextResponse.json({ error: 'Dados inválidos', details: validation.error.flatten().fieldErrors }, { status: 400 });
+      return validation.error;
     }
 
     const { email, password } = validation.data;
@@ -27,13 +23,13 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 });
+      return createErrorResponse('Credenciais inválidas', 401);
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 });
+      return createErrorResponse('Credenciais inválidas', 401);
     }
 
     const jwtSecret = process.env.JWT_SECRET;
@@ -47,10 +43,10 @@ export async function POST(request: Request) {
       { expiresIn: '7d' }
     );
     
-    return NextResponse.json({ token });
+    return createSuccessResponse({ token });
 
   } catch (error) {
     console.error('Erro no login:', error);
-    return NextResponse.json({ error: 'Ocorreu um erro interno no servidor.' }, { status: 500 });
+    return createErrorResponse('Ocorreu um erro interno no servidor.', 500);
   }
 }
