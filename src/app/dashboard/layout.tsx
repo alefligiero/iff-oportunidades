@@ -36,7 +36,9 @@ export default function DashboardLayout({
       <div className="flex h-screen bg-gray-100">
         <aside className="w-64 bg-white shadow-md flex flex-col">
           <div className="flex items-center justify-center h-20 border-b">
-            <Image src="/logo-iff.png" alt="Logo IFF" width={48} height={48} />
+            <Link href="/dashboard">
+              <Image src="/logo-iff.png" alt="Logo IFF" width={48} height={48} />
+            </Link>
           </div>
           <nav className="flex-grow px-4 py-6">
             <ul>
