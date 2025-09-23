@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Gender, Course, InternshipModality, Role, VacancyType, InternshipStatus, DocumentType, DocumentStatus } from '@prisma/client';
+import { Gender, Course, InternshipModality, VacancyType, InternshipStatus, DocumentType, DocumentStatus } from '@prisma/client';
 
 // ===== SCHEMAS DE AUTENTICAÇÃO =====
 
@@ -80,7 +80,9 @@ export const updateInternshipSchema = createInternshipSchema.partial();
 export const createVacancySchema = z.object({
   title: z.string().min(1, 'O título é obrigatório.'),
   description: z.string().min(10, 'A descrição deve ter pelo menos 10 caracteres.'),
-  type: z.nativeEnum(VacancyType, { message: 'Tipo de vaga inválido' }),
+  type: z.nativeEnum(VacancyType, { required_error: 'O tipo de vaga é obrigatório' }),
+  remuneration: z.coerce.number({ required_error: 'A remuneração é obrigatória.' }).min(0, 'O valor não pode ser negativo.'),
+  workload: z.coerce.number({ required_error: 'A carga horária é obrigatória.' }).int('A carga horária deve ser um número inteiro.').positive('A carga horária deve ser positiva.'),
 });
 
 export const updateVacancyStatusSchema = z.object({

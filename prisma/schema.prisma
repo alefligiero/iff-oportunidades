@@ -132,6 +132,8 @@ model JobVacancy {
   description  String
   type         VacancyType
   status       VacancyStatus @default(PENDING_APPROVAL)
+  remuneration Float
+  workload     Int
   
   companyId String
   company   Company @relation(fields: [companyId], references: [id])

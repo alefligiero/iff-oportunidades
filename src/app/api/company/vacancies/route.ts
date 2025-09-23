@@ -1,16 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { PrismaClient, VacancyType, Role } from '@prisma/client';
-import { z } from 'zod';
+import { PrismaClient, Role } from '@prisma/client';
+import { createVacancySchema } from '@/lib/validations/schemas';
 
 const prisma = new PrismaClient();
-
-const createVacancySchema = z.object({
-  title: z.string().min(5, { message: 'O título deve ter no mínimo 5 caracteres.' }),
-  description: z.string().min(20, { message: 'A descrição deve ter no mínimo 20 caracteres.' }),
-  type: z.nativeEnum(VacancyType, {
-    errorMap: () => ({ message: 'Tipo de vaga inválido.' }),
-  }),
-});
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,13 +28,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Dados da vaga inválidos.', details: validation.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const { title, description, type } = validation.data;
+    const { title, description, type, remuneration, workload } = validation.data;
 
     const newVacancy = await prisma.jobVacancy.create({
       data: {
         title,
         description,
         type,
+        remuneration,
+        workload,
         companyId: companyProfile.id,
       },
     });
