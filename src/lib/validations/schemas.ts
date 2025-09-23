@@ -81,8 +81,17 @@ export const createVacancySchema = z.object({
   title: z.string().min(1, 'O título é obrigatório.'),
   description: z.string().min(10, 'A descrição deve ter pelo menos 10 caracteres.'),
   type: z.nativeEnum(VacancyType, { required_error: 'O tipo de vaga é obrigatório' }),
-  remuneration: z.coerce.number({ required_error: 'A remuneração é obrigatória.' }).min(0, 'O valor não pode ser negativo.'),
-  workload: z.coerce.number({ required_error: 'A carga horária é obrigatória.' }).int('A carga horária deve ser um número inteiro.').positive('A carga horária deve ser positiva.'),
+  remuneration: z.preprocess(
+    (val) => (val === undefined || val === null || val === '' ? undefined : Number(String(val).replace(/[^0-9,.]/g, '').replace('.', '').replace(',', '.'))),
+    z.number({ required_error: 'A remuneração é obrigatória.', invalid_type_error: 'A remuneração deve ser um número.' })
+      .min(0, 'O valor não pode ser negativo.')
+  ),
+  workload: z.preprocess(
+    (val) => (val === undefined || val === null || val === '' ? undefined : Number(val)),
+    z.number({ required_error: 'A carga horária é obrigatória.', invalid_type_error: 'A carga horária deve ser um número.' })
+      .int('A carga horária deve ser um número inteiro.')
+      .positive('A carga horária deve ser positiva.')
+  ),
 });
 
 export const updateVacancyStatusSchema = z.object({
