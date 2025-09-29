@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -40,7 +39,7 @@ export async function POST(request: Request) {
     const token = jwt.sign(
       { userId: user.id, role: user.role },
       jwtSecret,
-      { expiresIn: '7d' }
+      { expiresIn: '12h' }
     );
     
     return createSuccessResponse({ token });
