@@ -38,7 +38,8 @@ export default function ActionButtons({ internshipId }: { internshipId: string }
       router.push('/dashboard/admin/internships');
       router.refresh();
 
-    } catch (err: any) {
+    } catch (rawError) {
+      const err = rawError instanceof Error ? rawError : new Error('Erro desconhecido');
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -80,8 +81,8 @@ export default function ActionButtons({ internshipId }: { internshipId: string }
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity animate-fadeIn">
+          <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md transform animate-scaleIn">
             <h3 className="text-lg font-bold text-gray-900">Motivo da Recusa</h3>
             <p className="text-sm text-gray-600 mt-2 mb-4">
               Por favor, descreva o motivo pelo qual o estágio está a ser recusado. Esta informação será partilhada com o aluno.
@@ -114,3 +115,12 @@ export default function ActionButtons({ internshipId }: { internshipId: string }
     </>
   );
 }
+
+/* Tailwind keyframes (se não existirem, adicionar em config para produção)
+@layer utilities {
+  @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes scaleIn { from { opacity:0; transform: scale(.95) } to { opacity:1; transform: scale(1)} }
+  .animate-fadeIn { animation: fadeIn .18s ease-out; }
+  .animate-scaleIn { animation: scaleIn .18s ease-out; }
+}
+*/
