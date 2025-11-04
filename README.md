@@ -27,7 +27,7 @@ A arquitetura Full-Stack do Next.js permite que o **Frontend (React)** e o **Bac
 
 O projeto foi desenvolvido utilizando as seguintes tecnologias:
 
-* [**Next.js**](https://nextjs.org/) (v14+) - Framework Full-Stack React.
+* [**Next.js**](https://nextjs.org/) (v15) - Framework Full-Stack React.
 * [**React.js**](https://react.dev/) - Biblioteca para a construção da interface de usuário.
 * [**TypeScript**](https://www.typescriptlang.org/) - Superset do JavaScript que adiciona tipagem estática.
 * [**Tailwind CSS**](https://tailwindcss.com/) - Framework de estilização CSS.
@@ -45,10 +45,18 @@ Siga as instruções abaixo para configurar e rodar o projeto em seu ambiente lo
 
 ### Pré-requisitos
 
-* [Node.js](https://nodejs.org/en/) (v18.17 ou superior)
-* [npm](https://www.npmjs.com/) ou [Yarn](https://yarnpkg.com/)
-* Uma instância do **PostgreSQL** rodando.
-* [Git](https://git-scm.com/)
+Escolha uma das duas opções para o banco de dados:
+
+- Com Docker (recomendado):
+    - [Docker](https://www.docker.com/) e [Docker Compose](https://docs.docker.com/compose/)
+- Sem Docker:
+    - Uma instância local do **PostgreSQL** rodando
+
+Além disso:
+
+- [Node.js](https://nodejs.org/en/) (v18.18+ ou v20+ recomendado)
+- [npm](https://www.npmjs.com/) (ou Yarn/Pnpm, se preferir)
+- [Git](https://git-scm.com/)
 
 ### Instalação
 
@@ -64,16 +72,28 @@ Siga as instruções abaixo para configurar e rodar o projeto em seu ambiente lo
     ```
 
 3.  **Configure as variáveis de ambiente:**
-    * Crie arquivo `.env`.
-    * Abra o arquivo `.env` e configure as variáveis:
-    ```env
-    DATABASE_URL="postgresql://USUARIO:SENHA@HOST:PORTA/NOME_DO_BANCO"
-    JWT_SECRET="SUA_CHAVE_SECRETA_AQUI"
+        - Copie os exemplos e ajuste conforme necessário:
+        ```bash
+        cp .env.example .env
+        cp .env.db.example .env.db   # necessário apenas se for usar o Docker do Postgres
+        ```
+        - No `.env`, confirme:
+            - `DATABASE_URL` apontando para seu Postgres (por padrão: localhost:5432)
+            - `JWT_SECRET` com um valor não previsível em produção
+
+4.  **Suba o banco de dados (se usar Docker):**
+    ```bash
+    docker compose up -d
     ```
 
-4.  **Execute as migrações do banco de dados:**
+5.  **Execute as migrações do banco de dados:**
     ```bash
     npx prisma migrate dev
+    ```
+
+6.  **(Opcional, mas recomendado) Popular dados de exemplo:**
+    ```bash
+    npx prisma db seed
     ```
 
 ---
@@ -85,3 +105,15 @@ Para iniciar o servidor de desenvolvimento, que servirá tanto o frontend quanto
 npm run dev
 ```
 A aplicação estará disponível em `http://localhost:3000`.
+
+### 🔐 Usuários de teste (seed)
+
+Se você rodou o seed, os usuários a seguir foram criados (senha padrão: `123456`):
+
+- Admin: `admin@iff.edu.br`
+- Estudante 1: `joao.silva@estudante.iff.edu.br`
+- Estudante 2: `maria.oliveira@estudante.iff.edu.br`
+- Empresa 1: `rh@techcorp.com.br`
+- Empresa 2: `contato@inovadata.com.br`
+
+Obs.: O cookie `auth_token` é usado na autenticação e o middleware protege rotas `/api/*` (exceto `/api/auth/*`) e `/dashboard/*`. Certifique-se de definir `JWT_SECRET` no `.env`.
