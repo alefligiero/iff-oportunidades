@@ -47,6 +47,49 @@ const updateInternshipSchema = z.object({
   insuranceEndDate: z.coerce.date({ required_error: 'A data de fim da vigência é obrigatória.' }),
 });
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: internshipId } = await params;
+    const userId = request.headers.get('x-user-id');
+    const userRole = request.headers.get('x-user-role') as Role;
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Acesso negado.' }, { status: 401 });
+    }
+
+    // Buscar o estágio
+    const internship = await prisma.internship.findUnique({
+      where: { id: internshipId },
+      include: {
+        student: {
+          include: {
+            user: true
+          }
+        },
+        documents: true
+      }
+    });
+
+    if (!internship) {
+      return NextResponse.json({ error: 'Estágio não encontrado.' }, { status: 404 });
+    }
+
+    // Verificar permissões: apenas o próprio aluno ou admin pode ver
+    if (userRole !== 'ADMIN' && internship.student.userId !== userId) {
+      return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
+    }
+
+    return NextResponse.json(internship);
+
+  } catch (error) {
+    console.error('Erro ao buscar detalhes do estágio:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor.' }, { status: 500 });
+  }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
