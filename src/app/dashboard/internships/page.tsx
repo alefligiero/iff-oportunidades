@@ -79,15 +79,23 @@ export default async function MyInternshipsPage() {
                       {formatDate(internship.startDate)} - {formatDate(internship.endDate)}
                     </p>
                   </div>
-                  <span className={`px-3 py-1 text-xs font-medium rounded-full ${statusMap[internship.status]?.color ?? 'bg-gray-100'}`}>
-                    {statusMap[internship.status]?.text ?? 'Desconhecido'}
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${statusMap[internship.status]?.color ?? 'bg-gray-100'}`}>
+                      {statusMap[internship.status]?.text ?? 'Desconhecido'}
+                    </span>
+                    <Link
+                      href={`/dashboard/internships/${internship.id}`}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    >
+                      Ver detalhes
+                    </Link>
+                  </div>
                 </div>
 
                 {internship.status === InternshipStatus.CANCELED && internship.rejectionReason && (
                   <div className="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400">
                     <p className="text-sm font-semibold text-yellow-800">Observações da Agência:</p>
-                    <p className="text-sm text-yellow-700 mt-1">"{internship.rejectionReason}"</p>
+                    <p className="text-sm text-yellow-700 mt-1">&ldquo;{internship.rejectionReason}&rdquo;</p>
                     <Link href={`/dashboard/internships/edit/${internship.id}`} className="inline-block mt-3 text-sm font-medium text-green-700 hover:text-green-900">
                       Corrigir e Reenviar
                     </Link>
