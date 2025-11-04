@@ -98,11 +98,12 @@ const formatCurrency = (value: number) => {
 };
 
 interface InternshipDetailsPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function InternshipDetailsPage({ params }: InternshipDetailsPageProps) {
-  const { data: internship, error } = await getInternshipDetails(params.id);
+  const { id } = await params;
+  const { data: internship, error } = await getInternshipDetails(id);
 
   if (error) {
     return (

@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
-import { PrismaClient, Role, VacancyStatus } from '@prisma/client';
+import { PrismaClient, Role, VacancyStatus, VacancyType, Prisma } from '@prisma/client';
+import VacancyFilters from '@/app/dashboard/vacancies/VacancyFilters';
 
 const prisma = new PrismaClient();
 
@@ -12,7 +13,19 @@ const statusMap = {
   [VacancyStatus.CLOSED_BY_COMPANY]: { text: 'Fechada', color: 'bg-gray-100 text-gray-800' },
 };
 
-async function getVacancies() {
+type VacanciesParams = {
+  searchParams: Promise<{
+    search?: string;
+    type?: string;
+    minSalary?: string;
+    maxSalary?: string;
+    minWorkload?: string;
+    maxWorkload?: string;
+    sort?: string;
+  }>;
+};
+
+async function getVacancies(searchParams: Awaited<VacanciesParams['searchParams']>) {
   const cookieStore = cookies();
   const token = (await cookieStore).get('auth_token')?.value;
 
@@ -38,10 +51,66 @@ async function getVacancies() {
     }
 
     if (userRole === 'STUDENT') {
+      // Build where clause for filters
+      const where: Prisma.JobVacancyWhereInput = {
+        status: 'APPROVED',
+      };
+
+      // Text search (title or description)
+      if (searchParams.search) {
+        where.OR = [
+          { title: { contains: searchParams.search, mode: 'insensitive' } },
+          { description: { contains: searchParams.search, mode: 'insensitive' } },
+        ];
+      }
+
+      // Type filter (INTERNSHIP or JOB)
+      if (searchParams.type && (searchParams.type === 'INTERNSHIP' || searchParams.type === 'JOB')) {
+        where.type = searchParams.type as VacancyType;
+      }
+
+      // Salary range filter
+      if (searchParams.minSalary || searchParams.maxSalary) {
+        where.remuneration = {};
+        if (searchParams.minSalary) {
+          where.remuneration.gte = parseFloat(searchParams.minSalary);
+        }
+        if (searchParams.maxSalary) {
+          where.remuneration.lte = parseFloat(searchParams.maxSalary);
+        }
+      }
+
+      // Workload range filter (hours per week)
+      if (searchParams.minWorkload || searchParams.maxWorkload) {
+        where.workload = {} as any;
+        if (searchParams.minWorkload) {
+          const v = parseInt(searchParams.minWorkload, 10);
+          if (!Number.isNaN(v)) (where.workload as any).gte = v;
+        }
+        if (searchParams.maxWorkload) {
+          const v = parseInt(searchParams.maxWorkload, 10);
+          if (!Number.isNaN(v)) (where.workload as any).lte = v;
+        }
+      }
+
+      // Sorting
+      let orderBy: Prisma.JobVacancyOrderByWithRelationInput = { createdAt: 'desc' };
+      if (searchParams.sort === 'salary_desc') {
+        orderBy = { remuneration: 'desc' };
+      } else if (searchParams.sort === 'salary_asc') {
+        orderBy = { remuneration: 'asc' };
+      } else if (searchParams.sort === 'workload_asc') {
+        orderBy = { workload: 'asc' };
+      } else if (searchParams.sort === 'workload_desc') {
+        orderBy = { workload: 'desc' };
+      } else if (searchParams.sort === 'title_asc') {
+        orderBy = { title: 'asc' };
+      }
+
       const vacancies = await prisma.jobVacancy.findMany({
-        where: { status: 'APPROVED' },
+        where,
         include: { company: { select: { name: true } } },
-        orderBy: { createdAt: 'desc' },
+        orderBy,
       });
       return { data: vacancies, error: null, role: userRole };
     }
@@ -58,8 +127,16 @@ const formatDate = (dateString: Date) => {
   return new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 };
 
-export default async function MyVacanciesPage() {
-  const { data: vacancies, error, role } = await getVacancies();
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(value);
+};
+
+export default async function MyVacanciesPage({ searchParams }: VacanciesParams) {
+  const params = await searchParams;
+  const { data: vacancies, error, role } = await getVacancies(params);
 
   const isCompany = role === 'COMPANY';
 
@@ -76,35 +153,60 @@ export default async function MyVacanciesPage() {
         )}
       </div>
 
+      {/* Filtros - apenas para estudantes */}
+      {!isCompany && <VacancyFilters />}
+
       <div className="bg-white p-6 rounded-lg shadow-md">
         {error && <p className="text-red-500">{error}</p>}
         {!error && vacancies.length === 0 && (
           <p className="text-gray-700">{isCompany ? 'Você ainda não publicou nenhuma vaga.' : 'Nenhuma vaga disponível no momento.'}</p>
         )}
         {!error && vacancies.length > 0 && (
-          <ul className="space-y-6">
-            {vacancies.map((vacancy : any) => (
-              <li key={vacancy.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-semibold text-gray-900 text-lg">{vacancy.title}</p>
-                    <p className="text-sm text-gray-600">
-                      {isCompany ? `Publicada em: ${formatDate(vacancy.createdAt)}` : `Empresa: ${vacancy.company.name}`}
-                    </p>
+          <div className="space-y-6">
+            {vacancies.map((vacancy) => {
+              const companyName = 'company' in vacancy ? vacancy.company.name : '';
+              return (
+                <div key={vacancy.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-900 text-lg">{vacancy.title}</p>
+                      <p className="text-sm text-gray-600">
+                        {isCompany ? `Publicada em: ${formatDate(vacancy.createdAt)}` : `Empresa: ${companyName}`}
+                      </p>
+                    </div>
+                    {isCompany && (
+                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${statusMap[vacancy.status as VacancyStatus]?.color ?? 'bg-gray-100'}`}>
+                        {statusMap[vacancy.status as VacancyStatus]?.text ?? 'Desconhecido'}
+                      </span>
+                    )}
                   </div>
-                  {isCompany && (
-                     <span className={`px-3 py-1 text-xs font-medium rounded-full ${statusMap[vacancy.status]?.color ?? 'bg-gray-100'}`}>
-                       {statusMap[vacancy.status]?.text ?? 'Desconhecido'}
-                     </span>
+
+                  {/* Informações da vaga para estudantes */}
+                  {!isCompany && (
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-2">
+                      <span className="flex items-center">
+                        <span className="font-medium mr-1">Tipo:</span>
+                        {vacancy.type === 'INTERNSHIP' ? '🎓 Estágio' : '💼 Emprego'}
+                      </span>
+                      <span className="flex items-center">
+                        <span className="font-medium mr-1">Remuneração:</span>
+                        {formatCurrency(vacancy.remuneration)}
+                      </span>
+                      <span className="flex items-center">
+                        <span className="font-medium mr-1">Carga horária:</span>
+                        {vacancy.workload}h/semana
+                      </span>
+                    </div>
                   )}
+
+                  <p className="text-sm text-gray-800 mt-2 mb-3 line-clamp-2">{vacancy.description}</p>
+                  <Link href={`/dashboard/vacancies/${vacancy.id}`} className="inline-block text-sm font-medium text-green-700 hover:text-green-900">
+                    Ver Detalhes →
+                  </Link>
                 </div>
-                 <p className="text-sm text-gray-800 mt-2 whitespace-pre-line">{vacancy.description.substring(0, 150)}...</p>
-                 <Link href={`/dashboard/vacancies/${vacancy.id}`} className="inline-block mt-3 text-sm font-medium text-green-700 hover:text-green-900">
-                    Ver Detalhes
-                </Link>
-              </li>
-            ))}
-          </ul>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>
