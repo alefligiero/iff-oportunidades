@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { PrismaClient, Role, VacancyStatus, VacancyType, Prisma } from '@prisma/client';
 import VacancyFilters from '@/app/dashboard/vacancies/VacancyFilters';
+import CloseVacancyButton from '@/app/dashboard/vacancies/CloseVacancyButton';
 
 const prisma = new PrismaClient();
 
@@ -200,9 +201,18 @@ export default async function MyVacanciesPage({ searchParams }: VacanciesParams)
                   )}
 
                   <p className="text-sm text-gray-800 mt-2 mb-3 line-clamp-2">{vacancy.description}</p>
-                  <Link href={`/dashboard/vacancies/${vacancy.id}`} className="inline-block text-sm font-medium text-green-700 hover:text-green-900">
-                    Ver Detalhes →
-                  </Link>
+                  <div className="flex gap-3 items-center">
+                    <Link href={`/dashboard/vacancies/${vacancy.id}`} className="inline-block text-sm font-medium text-green-700 hover:text-green-900">
+                      Ver Detalhes →
+                    </Link>
+                    {isCompany && (
+                      <CloseVacancyButton 
+                        vacancyId={vacancy.id} 
+                        vacancyTitle={vacancy.title}
+                        status={vacancy.status}
+                      />
+                    )}
+                  </div>
                 </div>
               );
             })}

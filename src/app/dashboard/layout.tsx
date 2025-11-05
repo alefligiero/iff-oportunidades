@@ -19,16 +19,27 @@ export default function DashboardLayout({
 
   const getNavigationLinks = () => {
     const baseLinks = [{ name: 'Início', href: '/dashboard' }];
+    let roleLinks: { name: string; href: string; }[] = [];
+    
     switch (user.role) {
       case 'STUDENT':
-        return [...baseLinks, { name: 'Meus Estágios', href: '/dashboard/internships' }, { name: 'Vagas', href: '/dashboard/vacancies' }];
+        roleLinks = [{ name: 'Meus Estágios', href: '/dashboard/internships' }, { name: 'Vagas', href: '/dashboard/vacancies' }];
+        break;
       case 'COMPANY':
-        return [...baseLinks, { name: 'Publicar Vaga', href: '/dashboard/vacancies/new' }, { name: 'Minhas Vagas', href: '/dashboard/vacancies' }];
+        roleLinks = [{ name: 'Publicar Vaga', href: '/dashboard/vacancies/new' }, { name: 'Minhas Vagas', href: '/dashboard/vacancies' }];
+        break;
       case 'ADMIN':
-        return [...baseLinks, { name: 'Estágios Pendentes', href: '/dashboard/admin/internships' }, { name: 'Vagas Pendentes', href: '/dashboard/admin/vacancies' }];
+        roleLinks = [
+          { name: 'Estágios Pendentes', href: '/dashboard/admin/internships' },
+          { name: 'Vagas Pendentes', href: '/dashboard/admin/vacancies' },
+          { name: 'Vagas Aprovadas', href: '/dashboard/admin/vacancies/approved' }
+        ];
+        break;
       default:
-        return baseLinks;
+        roleLinks = [];
     }
+    
+    return [...baseLinks, ...roleLinks, { name: 'Configurações', href: '/dashboard/settings' }];
   };
 
   return (
