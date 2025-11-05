@@ -23,6 +23,26 @@ export const updateUserSchema = z.object({
   name: z.string().min(3, { message: 'O nome é obrigatório' }).optional(),
 });
 
+export const updateUserProfileSchema = z.object({
+  email: z.string().email({ message: 'Por favor, insira um formato de email válido.' }).optional(),
+  name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }).optional(),
+  matricula: z.string().optional().refine((val) => {
+    if (!val) return true;
+    const unmasked = val.replace(/[^\d]/g, '');
+    return unmasked.length === 12;
+  }, { message: 'A matrícula deve conter exatamente 12 números.' }),
+  cnpj: z.string().optional().refine((val) => {
+    if (!val) return true;
+    const unmasked = val.replace(/[^\d]/g, '');
+    return unmasked.length === 14;
+  }, { message: 'O CNPJ deve conter 14 números.' }),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, { message: 'A senha atual é obrigatória.' }),
+  newPassword: z.string().min(6, { message: 'A nova senha deve ter no mínimo 6 caracteres.' }),
+});
+
 // ===== SCHEMAS DE ESTÁGIO =====
 
 export const createInternshipSchema = z.object({
@@ -78,20 +98,65 @@ export const updateInternshipSchema = createInternshipSchema.partial();
 // ===== SCHEMAS DE VAGA =====
 
 export const createVacancySchema = z.object({
-  title: z.string().min(1, 'O título é obrigatório.'),
-  description: z.string().min(10, 'A descrição deve ter pelo menos 10 caracteres.'),
+  title: z.string()
+    .min(1, 'O título é obrigatório.')
+    .min(5, 'O título deve ter pelo menos 5 caracteres.')
+    .max(100, 'O título não pode ter mais de 100 caracteres.'),
+  description: z.string()
+    .min(1, 'A descrição é obrigatória.')
+    .min(10, 'A descrição deve ter pelo menos 10 caracteres.')
+    .max(1000, 'A descrição não pode ter mais de 1000 caracteres.'),
   type: z.nativeEnum(VacancyType, { required_error: 'O tipo de vaga é obrigatório' }),
   remuneration: z.preprocess(
     (val) => (val === undefined || val === null || val === '' ? undefined : Number(String(val).replace(/[^0-9,.]/g, '').replace('.', '').replace(',', '.'))),
     z.number({ required_error: 'A remuneração é obrigatória.', invalid_type_error: 'A remuneração deve ser um número.' })
       .min(0, 'O valor não pode ser negativo.')
+      .max(100000, 'Valor muito alto. Verifique se está correto.')
   ),
   workload: z.preprocess(
     (val) => (val === undefined || val === null || val === '' ? undefined : Number(val)),
     z.number({ required_error: 'A carga horária é obrigatória.', invalid_type_error: 'A carga horária deve ser um número.' })
       .int('A carga horária deve ser um número inteiro.')
       .positive('A carga horária deve ser positiva.')
+      .min(4, 'A carga horária mínima é 4 horas por semana.')
+      .max(44, 'A carga horária não pode ultrapassar 44 horas por semana.')
   ),
+  // Novos campos
+  modality: z.enum(['PRESENCIAL', 'HIBRIDO', 'REMOTO'], { 
+    required_error: 'A modalidade é obrigatória',
+    invalid_type_error: 'Selecione uma modalidade válida'
+  }),
+  eligibleCourses: z.array(z.nativeEnum(Course))
+    .min(1, 'Selecione pelo menos um curso elegível')
+    .max(11, 'Você selecionou todos os cursos. Isso pode não ser necessário.'),
+  minPeriod: z.preprocess(
+    (val) => (val === undefined || val === null || val === '' ? undefined : Number(val)),
+    z.number()
+      .int('O período deve ser um número inteiro.')
+      .positive('O período deve ser positivo.')
+      .min(1, 'O período mínimo é 1.')
+      .max(10, 'O período não pode ser maior que 10.')
+      .optional()
+  ),
+  responsibilities: z.string()
+    .min(1, 'As responsabilidades são obrigatórias.')
+    .min(10, 'As responsabilidades devem ter pelo menos 10 caracteres.')
+    .max(2000, 'As responsabilidades não podem ter mais de 2000 caracteres.'),
+  technicalSkills: z.string()
+    .min(1, 'As habilidades técnicas são obrigatórias.')
+    .min(10, 'As habilidades técnicas devem ter pelo menos 10 caracteres.')
+    .max(2000, 'As habilidades técnicas não podem ter mais de 2000 caracteres.'),
+  softSkills: z.string()
+    .min(1, 'As habilidades comportamentais são obrigatórias.')
+    .min(10, 'As habilidades comportamentais devem ter pelo menos 10 caracteres.')
+    .max(2000, 'As habilidades comportamentais não podem ter mais de 2000 caracteres.'),
+  benefits: z.string()
+    .max(1000, 'Os benefícios não podem ter mais de 1000 caracteres.')
+    .optional(),
+  contactInfo: z.string()
+    .min(1, 'As informações de contato são obrigatórias.')
+    .min(5, 'As informações de contato devem ter pelo menos 5 caracteres.')
+    .max(500, 'As informações de contato não podem ter mais de 500 caracteres.'),
 });
 
 export const updateVacancyStatusSchema = z.object({
@@ -177,6 +242,8 @@ export const companyProfileSchema = z.object({
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+export type UpdateUserProfileInput = z.infer<typeof updateUserProfileSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type CreateInternshipInput = z.infer<typeof createInternshipSchema>;
 export type UpdateInternshipInput = z.infer<typeof updateInternshipSchema>;
 export type UpdateInternshipStatusInput = z.infer<typeof updateInternshipStatusSchema>;

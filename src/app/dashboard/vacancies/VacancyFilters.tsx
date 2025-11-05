@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
+import { Course } from '@prisma/client';
 
 const sortLabels: Record<string, string> = {
   createdAt_desc: 'Mais recentes',
@@ -12,6 +13,26 @@ const sortLabels: Record<string, string> = {
   title_asc: 'Título (A-Z)'
 };
 
+const courseLabels: Record<Course, string> = {
+  BSI: 'BSI',
+  LIC_QUIMICA: 'Lic. Química',
+  ENG_MECANICA: 'Eng. Mecânica',
+  TEC_ADM_INTEGRADO: 'Téc. Adm.',
+  TEC_ELETRO_INTEGRADO: 'Téc. Eletro.',
+  TEC_INFO_INTEGRADO: 'Téc. Info.',
+  TEC_QUIMICA_INTEGRADO: 'Téc. Química',
+  TEC_AUTOMACAO_SUBSEQUENTE: 'Téc. Automação',
+  TEC_ELETRO_CONCOMITANTE: 'Téc. Eletro. (Conc.)',
+  TEC_MECANICA_CONCOMITANTE: 'Téc. Mecânica (Conc.)',
+  TEC_QUIMICA_CONCOMITANTE: 'Téc. Química (Conc.)',
+};
+
+const modalityLabels: Record<string, string> = {
+  PRESENCIAL: 'Presencial',
+  HIBRIDO: 'Híbrido',
+  REMOTO: 'Remoto',
+};
+
 export default function VacancyFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -19,6 +40,8 @@ export default function VacancyFilters() {
   // Estados dos filtros
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [type, setType] = useState(searchParams.get('type') || '');
+  const [modality, setModality] = useState(searchParams.get('modality') || '');
+  const [course, setCourse] = useState(searchParams.get('course') || '');
   const [minSalary, setMinSalary] = useState(searchParams.get('minSalary') || '');
   const [maxSalary, setMaxSalary] = useState(searchParams.get('maxSalary') || '');
   const [minWorkload, setMinWorkload] = useState(searchParams.get('minWorkload') || '');
@@ -31,6 +54,8 @@ export default function VacancyFilters() {
   useEffect(() => {
     setSearch(searchParams.get('search') || '');
     setType(searchParams.get('type') || '');
+    setModality(searchParams.get('modality') || '');
+    setCourse(searchParams.get('course') || '');
     setMinSalary(searchParams.get('minSalary') || '');
     setMaxSalary(searchParams.get('maxSalary') || '');
     setMinWorkload(searchParams.get('minWorkload') || '');
@@ -60,6 +85,20 @@ export default function VacancyFilters() {
     setType(value);
     navigateWithParams((p) => {
       if (value) p.set('type', value); else p.delete('type');
+    });
+  };
+
+  const onModalityChange = (value: string) => {
+    setModality(value);
+    navigateWithParams((p) => {
+      if (value) p.set('modality', value); else p.delete('modality');
+    });
+  };
+
+  const onCourseChange = (value: string) => {
+    setCourse(value);
+    navigateWithParams((p) => {
+      if (value) p.set('course', value); else p.delete('course');
     });
   };
 
@@ -101,6 +140,8 @@ export default function VacancyFilters() {
   const clearFilters = () => {
     setSearch('');
     setType('');
+    setModality('');
+    setCourse('');
     setMinSalary('');
     setMaxSalary('');
     setMinWorkload('');
@@ -110,7 +151,7 @@ export default function VacancyFilters() {
   };
 
   const hasActiveFilters = Boolean(
-    search || type || minSalary || maxSalary || minWorkload || maxWorkload || (sort && sort !== 'createdAt_desc')
+    search || type || modality || course || minSalary || maxSalary || minWorkload || maxWorkload || (sort && sort !== 'createdAt_desc')
   );
 
   return (
@@ -147,6 +188,42 @@ export default function VacancyFilters() {
             <option value="">Todos os tipos</option>
             <option value="INTERNSHIP">🎓 Estágio</option>
             <option value="JOB">💼 Emprego</option>
+          </select>
+        </div>
+
+        {/* Modalidade */}
+        <div>
+          <label htmlFor="modality" className="block text-sm font-medium text-gray-700 mb-1">
+            Modalidade
+          </label>
+          <select
+            id="modality"
+            value={modality}
+            onChange={(e) => onModalityChange(e.target.value)}
+            className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${modality ? 'text-gray-900' : 'text-gray-700'}`}
+          >
+            <option value="">Todas as modalidades</option>
+            <option value="PRESENCIAL">Presencial</option>
+            <option value="HIBRIDO">Híbrido</option>
+            <option value="REMOTO">Remoto</option>
+          </select>
+        </div>
+
+        {/* Curso */}
+        <div>
+          <label htmlFor="course" className="block text-sm font-medium text-gray-700 mb-1">
+            Curso
+          </label>
+          <select
+            id="course"
+            value={course}
+            onChange={(e) => onCourseChange(e.target.value)}
+            className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${course ? 'text-gray-900' : 'text-gray-700'}`}
+          >
+            <option value="">Todos os cursos</option>
+            {Object.entries(courseLabels).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
           </select>
         </div>
 
@@ -258,6 +335,8 @@ export default function VacancyFilters() {
             <span className="font-medium">Filtros ativos:</span>
             {search && <span className="ml-2 inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Busca: &quot;{search}&quot;</span>}
             {type && <span className="ml-2 inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs">{type === 'INTERNSHIP' ? 'Estágio' : 'Emprego'}</span>}
+            {modality && <span className="ml-2 inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs">{modalityLabels[modality]}</span>}
+            {course && <span className="ml-2 inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs">{courseLabels[course as Course]}</span>}
             {minSalary && <span className="ml-2 inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Min: R$ {minSalary}</span>}
             {maxSalary && <span className="ml-2 inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Max: R$ {maxSalary}</span>}
             {minWorkload && <span className="ml-2 inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Min: {minWorkload}h/sem</span>}

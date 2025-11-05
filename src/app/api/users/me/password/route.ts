@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { changePasswordSchema } from '@/lib/validations/schemas';
 
 const prisma = new PrismaClient();
 
@@ -13,15 +14,20 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { currentPassword, newPassword } = body;
-
-    if (!currentPassword || !newPassword) {
-      return NextResponse.json({ error: 'Senha atual e nova senha são obrigatórias.' }, { status: 400 });
+    
+    // Validação com Zod
+    const validation = changePasswordSchema.safeParse(body);
+    
+    if (!validation.success) {
+      const errors = validation.error.flatten().fieldErrors;
+      const firstError = Object.values(errors)[0]?.[0];
+      return NextResponse.json({ 
+        error: firstError || 'Dados inválidos.',
+        details: errors 
+      }, { status: 400 });
     }
 
-    if (newPassword.length < 6) {
-      return NextResponse.json({ error: 'Nova senha deve ter no mínimo 6 caracteres.' }, { status: 400 });
-    }
+    const { currentPassword, newPassword } = validation.data;
 
     // Buscar usuário
     const user = await prisma.user.findUnique({

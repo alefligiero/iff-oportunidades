@@ -18,6 +18,8 @@ type VacanciesParams = {
   searchParams: Promise<{
     search?: string;
     type?: string;
+    modality?: string;
+    course?: string;
     minSalary?: string;
     maxSalary?: string;
     minWorkload?: string;
@@ -68,6 +70,18 @@ async function getVacancies(searchParams: Awaited<VacanciesParams['searchParams'
       // Type filter (INTERNSHIP or JOB)
       if (searchParams.type && (searchParams.type === 'INTERNSHIP' || searchParams.type === 'JOB')) {
         where.type = searchParams.type as VacancyType;
+      }
+
+      // Modality filter (PRESENCIAL, HIBRIDO, REMOTO)
+      if (searchParams.modality && ['PRESENCIAL', 'HIBRIDO', 'REMOTO'].includes(searchParams.modality)) {
+        where.modality = searchParams.modality as any;
+      }
+
+      // Course filter (check if vacancy has this course in eligibleCourses array)
+      if (searchParams.course) {
+        where.eligibleCourses = {
+          has: searchParams.course as any,
+        };
       }
 
       // Salary range filter

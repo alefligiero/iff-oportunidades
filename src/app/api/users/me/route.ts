@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { PrismaClient, Role } from '@prisma/client';
+import { updateUserProfileSchema } from '@/lib/validations/schemas';
 
 const prisma = new PrismaClient();
 
@@ -64,28 +65,20 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, name, matricula, cnpj } = body;
-
-    // Validar email
-    if (email && !/\S+@\S+\.\S+/.test(email)) {
-      return NextResponse.json({ error: 'Por favor, insira um formato de email válido.' }, { status: 400 });
+    
+    // Validação com Zod
+    const validation = updateUserProfileSchema.safeParse(body);
+    
+    if (!validation.success) {
+      const errors = validation.error.flatten().fieldErrors;
+      const firstError = Object.values(errors)[0]?.[0];
+      return NextResponse.json({ 
+        error: firstError || 'Dados inválidos.',
+        details: errors 
+      }, { status: 400 });
     }
 
-    // Validar matrícula (12 dígitos) para estudantes
-    if (userRole === 'STUDENT' && matricula) {
-      const unmaskedMatricula = matricula.replace(/[^\d]/g, '');
-      if (unmaskedMatricula.length !== 12) {
-        return NextResponse.json({ error: 'A matrícula deve conter exatamente 12 números.' }, { status: 400 });
-      }
-    }
-
-    // Validar CNPJ (14 dígitos) para empresas
-    if (userRole === 'COMPANY' && cnpj) {
-      const unmaskedCnpj = cnpj.replace(/[^\d]/g, '');
-      if (unmaskedCnpj.length !== 14) {
-        return NextResponse.json({ error: 'O CNPJ deve conter 14 números.' }, { status: 400 });
-      }
-    }
+    const { email, name, matricula, cnpj } = validation.data;
 
     // Verificar se email já existe (se tentando mudar)
     if (email) {

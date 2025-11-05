@@ -36,9 +36,11 @@ model Student {
 }
 
 model Company {
-  id    String @id @default(cuid())
-  name  String
-  cnpj  String @unique
+  id          String @id @default(cuid())
+  name        String
+  cnpj        String @unique
+  location    String? // Localização da empresa (cidade/estado)
+  description String? // Breve descrição da empresa
 
   userId String @unique
   user   User   @relation(fields: [userId], references: [id])
@@ -127,13 +129,23 @@ model Document {
 }
 
 model JobVacancy {
-  id           String    @id @default(cuid())
+  id           String        @id @default(cuid())
   title        String
   description  String
   type         VacancyType
   status       VacancyStatus @default(PENDING_APPROVAL)
   remuneration Float
   workload     Int
+  
+  // Novos campos
+  modality            VacancyModality @default(PRESENCIAL) // Presencial, híbrido ou remoto
+  eligibleCourses     Course[]                             // Cursos elegíveis para a vaga
+  minPeriod           Int?                                 // Período mínimo para estágio (ex: 3 = 3º período)
+  responsibilities    String          @default("")         // Responsabilidades e atividades (formato texto, será exibido como tópicos)
+  technicalSkills     String          @default("")         // Conhecimentos técnicos/hard skills (formato texto)
+  softSkills          String          @default("")         // Habilidades comportamentais (formato texto)
+  benefits            String?                              // Benefícios adicionais (opcional)
+  contactInfo         String          @default("")         // Informações de contato (email, telefone, etc.)
   
   companyId String
   company   Company @relation(fields: [companyId], references: [id])
@@ -214,4 +226,10 @@ enum VacancyStatus {
   APPROVED
   REJECTED
   CLOSED_BY_COMPANY
+}
+
+enum VacancyModality {
+  PRESENCIAL
+  HIBRIDO
+  REMOTO
 }

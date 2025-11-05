@@ -7,6 +7,9 @@ async function main() {
   console.log('🌱 Iniciando o seed...');
 
   // Limpar dados existentes (opcional - remova se não quiser)
+  // Ordem: primeiro filhos, depois pais
+  await prisma.document.deleteMany({});
+  await prisma.internship.deleteMany({});
   await prisma.jobVacancy.deleteMany({});
   await prisma.student.deleteMany({});
   await prisma.company.deleteMany({});
@@ -72,6 +75,8 @@ async function main() {
         create: {
           name: 'TechCorp Soluções Ltda',
           cnpj: '12.345.678/0001-90',
+          location: 'Campos dos Goytacazes, RJ',
+          description: 'Empresa de tecnologia especializada em desenvolvimento de software e soluções digitais para empresas de diversos segmentos.',
         },
       },
     },
@@ -89,6 +94,8 @@ async function main() {
         create: {
           name: 'InovaData Tecnologia',
           cnpj: '98.765.432/0001-10',
+          location: 'Macaé, RJ',
+          description: 'Startup focada em ciência de dados, analytics e inteligência artificial para otimização de processos empresariais.',
         },
       },
     },
@@ -115,6 +122,14 @@ async function main() {
         status: VacancyStatus.APPROVED,
         remuneration: 800.0,
         workload: 20,
+        modality: 'HIBRIDO',
+        eligibleCourses: ['BSI', 'TEC_INFO_INTEGRADO'],
+        minPeriod: 3,
+        responsibilities: '- Desenvolver interfaces web responsivas usando React\n- Participar de reuniões de planejamento e code reviews\n- Criar e manter documentação técnica\n- Auxiliar na manutenção de APIs REST\n- Realizar testes unitários e de integração',
+        technicalSkills: '- JavaScript/TypeScript básico\n- HTML5 e CSS3\n- Git básico\n- Conhecimento em React (diferencial)',
+        softSkills: '- Comunicação clara e objetiva\n- Trabalho em equipe\n- Proatividade\n- Vontade de aprender\n- Organização',
+        benefits: 'Vale-transporte, Vale-refeição, Horário flexível, Ambiente descontraído',
+        contactInfo: 'Enviar currículo para rh@techcorp.com.br ou WhatsApp (22) 98765-4321',
         companyId: techCorpProfile.id,
       },
     });
@@ -127,6 +142,13 @@ async function main() {
         status: VacancyStatus.APPROVED,
         remuneration: 3500.0,
         workload: 40,
+        modality: 'PRESENCIAL',
+        eligibleCourses: ['BSI', 'TEC_INFO_INTEGRADO', 'ENG_MECANICA'],
+        responsibilities: '- Desenvolver e manter aplicações web frontend\n- Implementar designs responsivos e acessíveis\n- Integrar APIs REST e GraphQL\n- Otimizar performance de aplicações\n- Colaborar com equipe de UX/UI',
+        technicalSkills: '- React e TypeScript (intermediário)\n- Next.js (básico a intermediário)\n- Tailwind CSS ou similar\n- Git e GitHub\n- Testes com Jest ou similar',
+        softSkills: '- Bom relacionamento interpessoal\n- Capacidade analítica\n- Autonomia\n- Comprometimento\n- Adaptabilidade',
+        benefits: 'Plano de saúde, Vale-alimentação, Auxílio home office, Plano de carreira',
+        contactInfo: 'Candidaturas através do site: techcorp.com.br/carreiras',
         companyId: techCorpProfile.id,
       },
     });
@@ -141,6 +163,14 @@ async function main() {
         status: VacancyStatus.APPROVED,
         remuneration: 900.0,
         workload: 25,
+        modality: 'REMOTO',
+        eligibleCourses: ['BSI', 'LIC_QUIMICA', 'TEC_INFO_INTEGRADO'],
+        minPeriod: 2,
+        responsibilities: '- Coletar e processar dados de diversas fontes\n- Criar dashboards e relatórios em Power BI\n- Realizar análises exploratórias de dados\n- Auxiliar na criação de modelos estatísticos\n- Documentar processos e metodologias',
+        technicalSkills: '- Python básico\n- SQL básico\n- Excel intermediário\n- Noções de estatística\n- Power BI ou similar (diferencial)',
+        softSkills: '- Atenção aos detalhes\n- Pensamento analítico\n- Curiosidade intelectual\n- Capacidade de aprendizado rápido\n- Comunicação de insights',
+        benefits: 'Auxílio internet, Cursos e certificações, Ambiente de aprendizado, Flexibilidade de horários',
+        contactInfo: 'Candidaturas pelo email: vagas@inovadata.com.br',
         companyId: inovaDataProfile.id,
       },
     });
@@ -153,6 +183,13 @@ async function main() {
         status: VacancyStatus.PENDING_APPROVAL,
         remuneration: 5500.0,
         workload: 40,
+        modality: 'HIBRIDO',
+        eligibleCourses: ['BSI', 'ENG_MECANICA', 'TEC_INFO_INTEGRADO'],
+        responsibilities: '- Desenvolver e manter APIs REST\n- Modelar e otimizar bancos de dados\n- Implementar lógica de negócio complexa\n- Realizar code reviews e mentorias\n- Participar de definições de arquitetura',
+        technicalSkills: '- Node.js ou Python (avançado)\n- SQL e bancos relacionais\n- Design de APIs REST\n- Docker e containerização\n- Metodologias ágeis',
+        softSkills: '- Liderança técnica\n- Mentalidade de crescimento\n- Resolução de problemas\n- Comunicação efetiva\n- Gestão de tempo',
+        benefits: 'Plano de saúde e odontológico, Vale-refeição, Home office, PLR, Day off no aniversário',
+        contactInfo: 'Candidaturas pelo LinkedIn ou email: carreiras@inovadata.com.br',
         companyId: inovaDataProfile.id,
       },
     });
