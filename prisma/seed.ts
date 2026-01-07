@@ -208,7 +208,7 @@ async function main() {
 
   // 9. Criar estágios de exemplo
   if (joaoProfile) {
-    await prisma.internship.create({
+    const internship1 = await prisma.internship.create({
       data: {
         studentId: joaoProfile.id,
         status: 'IN_ANALYSIS',
@@ -263,10 +263,19 @@ async function main() {
         insuranceEndDate: new Date('2024-12-15'),
       },
     });
+    
+    // Criar documento de seguro pendente (estágio direto)
+    await prisma.document.create({
+      data: {
+        type: 'LIFE_INSURANCE',
+        status: 'PENDING_ANALYSIS',
+        internshipId: internship1.id,
+      },
+    });
   }
 
   if (mariaProfile) {
-    await prisma.internship.create({
+    const internship2 = await prisma.internship.create({
       data: {
         studentId: mariaProfile.id,
         status: 'APPROVED',
@@ -320,6 +329,22 @@ async function main() {
         insuranceStartDate: new Date('2024-03-01'),
         insuranceEndDate: new Date('2025-02-28'),
       },
+    });
+    
+    // Criar documentos TCE e PAE (estágio via integrador)
+    await prisma.document.createMany({
+      data: [
+        {
+          type: 'TCE',
+          status: 'APPROVED',
+          internshipId: internship2.id,
+        },
+        {
+          type: 'PAE',
+          status: 'APPROVED',
+          internshipId: internship2.id,
+        },
+      ],
     });
   }
 

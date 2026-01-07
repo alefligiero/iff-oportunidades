@@ -40,13 +40,17 @@ export default function DocumentsSection({ internshipId, status, initialDocument
 
   const allowedTypes = useMemo<DocumentType[]>(() => {
     const types = new Set<DocumentType>();
-
-    // Tipos básicos enviados na análise inicial
-    types.add(DocumentType.TCE);
-    types.add(DocumentType.PAE);
     
-    // Seguro de vida pode ser enviado em qualquer momento (opcional desde o início)
+    // Seguro de vida sempre disponível (opcional desde o início para estágios diretos)
     types.add(DocumentType.LIFE_INSURANCE);
+
+    // TCE e PAE apenas se foram enviados via Agente Integrador
+    // (se existem nos documentos, significa que o estágio é via integrador)
+    const hasTceOrPae = documents.some(doc => doc.type === DocumentType.TCE || doc.type === DocumentType.PAE);
+    if (hasTceOrPae) {
+      types.add(DocumentType.TCE);
+      types.add(DocumentType.PAE);
+    }
 
     if (status === InternshipStatus.APPROVED || status === InternshipStatus.IN_PROGRESS || status === InternshipStatus.FINISHED) {
       types.add(DocumentType.SIGNED_CONTRACT);
@@ -62,7 +66,7 @@ export default function DocumentsSection({ internshipId, status, initialDocument
     }
 
     return Array.from(types);
-  }, [status]);
+  }, [status, documents]);
 
   const refreshDocuments = async () => {
     setLoading(true);

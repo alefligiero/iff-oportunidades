@@ -153,17 +153,11 @@ async function createInternship(request: NextRequest) {
         },
       });
 
-      // Criar documentos TCE e PAE pendentes
-      await tx.document.createMany({
-        data: [
-          { type: 'TCE', internshipId: internship.id, status: 'PENDING_ANALYSIS' },
-          { type: 'PAE', internshipId: internship.id, status: 'PENDING_ANALYSIS' },
-        ],
-      });
-
-      // Upload opcional de seguro
+      // Criar documento de seguro (sempre, mesmo se não enviado)
       const insuranceFile = formData.get('insurance') as File | null;
+      
       if (insuranceFile) {
+        // Se enviado, fazer upload e criar com arquivo
         const insuranceResult = await processUploadedFile(insuranceFile, internship.id, 'LIFE_INSURANCE');
         if (!('error' in insuranceResult)) {
           await tx.document.create({
@@ -175,6 +169,15 @@ async function createInternship(request: NextRequest) {
             },
           });
         }
+      } else {
+        // Se não enviado, criar documento pendente sem arquivo
+        await tx.document.create({
+          data: {
+            type: 'LIFE_INSURANCE',
+            status: 'PENDING_ANALYSIS',
+            internshipId: internship.id,
+          },
+        });
       }
 
       return internship;
