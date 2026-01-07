@@ -98,7 +98,12 @@ export default async function InternshipDetailPage({ params }: { params: Promise
         <div className="p-4 bg-gray-50 rounded-lg">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Ações de Moderação</h3>
             <p className="text-sm text-gray-600 mb-4">Reveja as informações abaixo e aprove ou recuse a solicitação de estágio.</p>
-            <ActionButtons internshipId={internship.id} />
+            <ActionButtons
+              internshipId={internship.id}
+              earlyTerminationRequested={Boolean(internship.earlyTerminationRequested)}
+              earlyTerminationApproved={internship.earlyTerminationApproved}
+              earlyTerminationReason={internship.earlyTerminationReason}
+            />
         </div>
 
         <div className="border-t border-gray-200 pt-6">

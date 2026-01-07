@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { PrismaClient, InternshipStatus, InternshipType, InternshipModality, Gender, Course } from '@prisma/client';
 import { redirect } from 'next/navigation';
+import RequestEarlyTermination from './RequestEarlyTermination';
 
 const prisma = new PrismaClient();
 
@@ -158,6 +159,15 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
       </div>
 
       <div className="space-y-6">
+        <RequestEarlyTermination
+          internshipId={internship.id}
+          status={internship.status}
+          earlyTerminationRequested={Boolean(internship.earlyTerminationRequested)}
+          earlyTerminationApproved={internship.earlyTerminationApproved}
+          earlyTerminationReason={internship.earlyTerminationReason}
+          earlyTerminationHandledAt={internship.earlyTerminationHandledAt ? internship.earlyTerminationHandledAt.toISOString() : null}
+        />
+
         {/* Cabeçalho */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">

@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,151 +7,127 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// --- MODELOS DE AUTENTICAÇÃO E PERFIS ---
-
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  role      Role
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  studentProfile Student?
+  id             String   @id @default(cuid())
+  email          String   @unique
+  password       String
+  role           Role
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
   companyProfile Company?
+  studentProfile Student?
 }
 
 model Student {
-  id        String @id @default(cuid())
-  name      String
-  matricula String @unique
-
-  userId String      @unique
-  user   User        @relation(fields: [userId], references: [id])
-  
+  id          String       @id @default(cuid())
+  name        String
+  matricula   String       @unique
+  userId      String       @unique
   internships Internship[]
+  user        User         @relation(fields: [userId], references: [id])
 }
 
 model Company {
-  id          String @id @default(cuid())
-  name        String
-  cnpj        String @unique
-  location    String? // Localização da empresa (cidade/estado)
-  description String? // Breve descrição da empresa
-
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id])
-  
-  jobVacancies  JobVacancy[]
+  id           String       @id @default(cuid())
+  name         String
+  cnpj         String       @unique
+  userId       String       @unique
+  description  String?
+  location     String?
+  user         User         @relation(fields: [userId], references: [id])
+  jobVacancies JobVacancy[]
 }
 
-// --- MODELOS CENTRAIS DO NEGÓCIO ---
-
 model Internship {
-  id        String   @id @default(cuid())
-  status    InternshipStatus @default(IN_ANALYSIS)
-  type      InternshipType   @default(DIRECT)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  rejectionReason String?
-
-  // Dados do Aluno (alguns podem ser preenchidos automaticamente)
-  studentId             String
-  student               Student          @relation(fields: [studentId], references: [id])
-  studentGender         Gender
-  studentAddressStreet  String
-  studentAddressNumber  String
-  studentAddressDistrict String
-  studentAddressCityState String
-  studentAddressCep     String
-  studentPhone          String
-  studentCpf            String
-  studentCourse         Course
-  studentCoursePeriod   String
-  studentSchoolYear     String
-
-  // Dados da Empresa (informados pelo aluno)
-  companyName                 String
-  companyCnpj                 String
-  companyRepresentativeName   String
-  companyRepresentativeRole   String
-  companyAddressStreet        String
-  companyAddressNumber        String
-  companyAddressDistrict      String
-  companyAddressCityState     String
-  companyAddressCep           String
-  companyEmail                String
-  companyPhone                String
-
-  // Detalhes do Estágio
-  modality             InternshipModality
-  startDate            DateTime
-  endDate              DateTime
-  weeklyHours          Int
-  dailyHours           String
-  monthlyGrant         Float
-  transportationGrant  Float
-  advisorProfessorName String
-  advisorProfessorId   String
-  supervisorName       String
-  supervisorRole       String
-  internshipSector     String
-  technicalActivities  String
-
-  // Detalhes do Seguro
-  insuranceCompany      String
-  insurancePolicyNumber String
-  insuranceCompanyCnpj  String
-  insuranceStartDate    DateTime?
-  insuranceEndDate      DateTime?
-  insuranceProofUrl     String? // Para o upload do comprovativo
-
-  // Relação com Documentos
-  documents Document[]
+  id                        String             @id @default(cuid())
+  startDate                 DateTime
+  endDate                   DateTime
+  status                    InternshipStatus   @default(IN_ANALYSIS)
+  type                      InternshipType     @default(DIRECT)
+  studentId                 String
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
+  advisorProfessorId        String
+  advisorProfessorName      String
+  companyAddressCep         String
+  companyAddressCityState   String
+  companyAddressDistrict    String
+  companyAddressNumber      String
+  companyAddressStreet      String
+  companyCnpj               String
+  companyEmail              String
+  companyName               String
+  companyPhone              String
+  companyRepresentativeName String
+  companyRepresentativeRole String
+  dailyHours                String
+  insuranceCompany          String
+  insuranceCompanyCnpj      String
+  insurancePolicyNumber     String
+  insuranceProofUrl         String?
+  internshipSector          String
+  modality                  InternshipModality
+  monthlyGrant              Float
+  studentAddressCep         String
+  studentAddressCityState   String
+  studentAddressDistrict    String
+  studentAddressNumber      String
+  studentAddressStreet      String
+  studentCourse             Course
+  studentCoursePeriod       String
+  studentCpf                String
+  studentGender             Gender
+  studentPhone              String
+  studentSchoolYear         String
+  supervisorName            String
+  supervisorRole            String
+  technicalActivities       String
+  transportationGrant       Float
+  weeklyHours               Int
+  insuranceEndDate          DateTime?
+  insuranceStartDate        DateTime?
+  rejectionReason           String?
+  earlyTerminationApproved  Boolean?
+  earlyTerminationHandledAt DateTime?
+  earlyTerminationReason    String?
+  earlyTerminationRequested Boolean            @default(false)
+  documents                 Document[]
+  student                   Student            @relation(fields: [studentId], references: [id])
 }
 
 model Document {
-  id                String   @id @default(cuid())
+  id                String         @id @default(cuid())
   type              DocumentType
   status            DocumentStatus @default(PENDING_ANALYSIS)
   fileUrl           String?
   rejectionComments String?
-
-  internshipId String
-  internship   Internship @relation(fields: [internshipId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  internshipId      String
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  internship        Internship     @relation(fields: [internshipId], references: [id])
 }
 
 model JobVacancy {
-  id           String        @id @default(cuid())
-  title        String
-  description  String
-  type         VacancyType
-  status       VacancyStatus @default(PENDING_APPROVAL)
-  remuneration Float
-  workload     Int
-  
-  // Novos campos
-  modality            VacancyModality @default(PRESENCIAL) // Presencial, híbrido ou remoto
-  eligibleCourses     Course[]                             // Cursos elegíveis para a vaga
-  minPeriod           Int?                                 // Período mínimo para estágio (ex: 3 = 3º período)
-  responsibilities    String          @default("")         // Responsabilidades e atividades (formato texto, será exibido como tópicos)
-  technicalSkills     String          @default("")         // Conhecimentos técnicos/hard skills (formato texto)
-  softSkills          String          @default("")         // Habilidades comportamentais (formato texto)
-  benefits            String?                              // Benefícios adicionais (opcional)
-  contactInfo         String          @default("")         // Informações de contato (email, telefone, etc.)
-  
-  companyId String
-  company   Company @relation(fields: [companyId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String          @id @default(cuid())
+  title            String
+  description      String
+  type             VacancyType
+  status           VacancyStatus   @default(PENDING_APPROVAL)
+  companyId        String
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  remuneration     Float
+  workload         Int
+  benefits         String?
+  contactInfo      String          @default("")
+  eligibleCourses  Course[]
+  minPeriod        Int?
+  modality         VacancyModality @default(PRESENCIAL)
+  responsibilities String          @default("")
+  softSkills       String          @default("")
+  technicalSkills  String          @default("")
+  company          Company         @relation(fields: [companyId], references: [id])
 }
-
-// --- ENUMS (Tipos e Status) ---
 
 enum Role {
   ADMIN

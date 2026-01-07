@@ -10,18 +10,19 @@ async function getPendingInternships(request: NextRequest) {
     where: {
       status: 'IN_ANALYSIS',
     },
-    include: {
+    select: {
+      id: true,
+      status: true,
+      createdAt: true,
       student: {
         select: {
           name: true,
           matricula: true,
         },
       },
-      company: {
-        select: {
-          name: true,
-        },
-      },
+      companyName: true,
+      companyCnpj: true,
+      companyEmail: true,
     },
     orderBy: {
       createdAt: 'asc',

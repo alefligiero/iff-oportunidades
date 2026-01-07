@@ -93,6 +93,23 @@ export const updateInternshipStatusSchema = z.object({
   rejectionReason: z.string().optional(),
 });
 
+export const requestEarlyTerminationSchema = z.object({
+  reason: z.string().min(5, 'A justificativa deve ter pelo menos 5 caracteres.'),
+});
+
+export const decideEarlyTerminationSchema = z.object({
+  action: z.enum(['APPROVE', 'REJECT'], { required_error: 'Ação é obrigatória.' }),
+  rejectionReason: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.action === 'REJECT' && !data.rejectionReason) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Forneça uma justificativa para a recusa.',
+      path: ['rejectionReason']
+    });
+  }
+});
+
 export const updateInternshipSchema = createInternshipSchema.partial();
 
 // ===== SCHEMAS DE VAGA =====
@@ -247,6 +264,8 @@ export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type CreateInternshipInput = z.infer<typeof createInternshipSchema>;
 export type UpdateInternshipInput = z.infer<typeof updateInternshipSchema>;
 export type UpdateInternshipStatusInput = z.infer<typeof updateInternshipStatusSchema>;
+export type RequestEarlyTerminationInput = z.infer<typeof requestEarlyTerminationSchema>;
+export type DecideEarlyTerminationInput = z.infer<typeof decideEarlyTerminationSchema>;
 export type CreateVacancyInput = z.infer<typeof createVacancySchema>;
 export type UpdateVacancyInput = z.infer<typeof updateVacancySchema>;
 export type UpdateVacancyStatusInput = z.infer<typeof updateVacancyStatusSchema>;

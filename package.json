@@ -8,9 +8,6 @@
     "start": "next start",
     "lint": "next lint"
   },
-  "prisma": {
-    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
-  },
   "dependencies": {
     "@prisma/client": "^6.18.0",
     "axios": "^1.12.2",
@@ -44,6 +41,7 @@
     "prisma": "^6.18.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
