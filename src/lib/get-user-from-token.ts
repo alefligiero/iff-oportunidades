@@ -11,7 +11,10 @@ interface UserPayload extends JWTPayload {
  * @returns
  */
 export async function getUserFromToken(request: NextRequest): Promise<UserPayload> {
-  const token = request.headers.get('authorization')?.split(' ')[1];
+  // Prioriza cookie (auth_token); fallback para Authorization header
+  const cookieToken = request.cookies.get('auth_token')?.value;
+  const headerToken = request.headers.get('authorization')?.split(' ')[1];
+  const token = cookieToken || headerToken;
 
   if (!token) {
     throw new Error('Token de autenticação não fornecido.');

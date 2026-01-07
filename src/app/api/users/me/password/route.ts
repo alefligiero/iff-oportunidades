@@ -1,9 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { changePasswordSchema } from '@/lib/validations/schemas';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function PUT(request: NextRequest) {
   try {

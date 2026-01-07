@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { PrismaClient, Role, VacancyStatus } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { Role, VacancyStatus } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
 export async function PATCH(
   request: NextRequest,

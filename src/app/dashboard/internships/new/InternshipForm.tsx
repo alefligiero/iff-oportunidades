@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Course, Gender, InternshipModality, Internship } from '@prisma/client';
+import { Course, Gender, InternshipModality, InternshipType, Internship } from '@prisma/client';
 
 type PrefilledData = { name: string; email: string; matricula: string; } | null;
 type FormErrors = { [key: string]: string; };
@@ -32,6 +32,14 @@ export default function InternshipForm({
   isEditing?: boolean
 }) {
   const router = useRouter();
+  const [internshipType, setInternshipType] = useState<InternshipType>(InternshipType.DIRECT);
+  const [tceFile, setTceFile] = useState<File | null>(null);
+  const [paeFile, setPaeFile] = useState<File | null>(null);
+  const [insuranceFile, setInsuranceFile] = useState<File | null>(null);
+  const tceInputRef = useRef<HTMLInputElement>(null);
+  const paeInputRef = useRef<HTMLInputElement>(null);
+  const insuranceInputRef = useRef<HTMLInputElement>(null);
+  
   const [formData, setFormData] = useState<FormData>({
     studentGender: '',
     studentAddressStreet: '',
@@ -172,46 +180,80 @@ export default function InternshipForm({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    let formIsValid = true;
-    const newErrors: FormErrors = {};
-    Object.keys(formData).forEach(key => {
-      const error = validateField(key, formData[key]);
-      if (error) {
-        newErrors[key] = error;
-        formIsValid = false;
+    // Validação específica por tipo
+    if (internshipType === InternshipType.INTEGRATOR) {
+      // Via Agente Integrador - apenas TCE e PAE obrigatórios
+      if (!tceFile) {
+        setErrors({ tce: 'TCE é obrigatório para estágios via Agente Integrador' });
+        return;
       }
-    });
+      if (!paeFile) {
+        setErrors({ pae: 'PAE é obrigatório para estágios via Agente Integrador' });
+        return;
+      }
+    } else {
+      // Estágio Direto - validar formulário completo
+      let formIsValid = true;
+      const newErrors: FormErrors = {};
+      Object.keys(formData).forEach(key => {
+        const error = validateField(key, formData[key]);
+        if (error) {
+          newErrors[key] = error;
+          formIsValid = false;
+        }
+      });
 
-    setErrors(newErrors);
-    if (!formIsValid) return;
+      setErrors(newErrors);
+      if (!formIsValid) return;
+    }
 
     setIsLoading(true);
 
-    const unmaskCurrency = (value: string) => parseFloat(value.replace('R$ ', '').replace(/\./g, '').replace(',', '.'));
-    const unmaskNumbers = (value: string) => value.replace(/\D/g, '');
-
-    const apiData = {
-      ...formData,
-      studentCpf: unmaskNumbers(formData.studentCpf as string),
-      studentAddressCep: unmaskNumbers(formData.studentAddressCep as string),
-      studentPhone: unmaskNumbers(formData.studentPhone as string),
-      companyCnpj: unmaskNumbers(formData.companyCnpj as string),
-      companyAddressCep: unmaskNumbers(formData.companyAddressCep as string),
-      companyPhone: unmaskNumbers(formData.companyPhone as string),
-      insuranceCompanyCnpj: unmaskNumbers(formData.insuranceCompanyCnpj as string),
-      monthlyGrant: unmaskCurrency(formData.monthlyGrant as string),
-      transportationGrant: unmaskCurrency(formData.transportationGrant as string),
-      weeklyHours: parseInt(formData.weeklyHours as string, 10),
-    };
-
     try {
+      const formDataToSend = new FormData();
+      
+      // Tipo de estágio
+      formDataToSend.append('type', internshipType);
+      
+      if (internshipType === InternshipType.INTEGRATOR) {
+        // Via Agente Integrador - apenas uploads
+        formDataToSend.append('tce', tceFile!);
+        formDataToSend.append('pae', paeFile!);
+      } else {
+        // Estágio Direto - dados completos + seguro opcional
+        const unmaskCurrency = (value: string) => parseFloat(value.replace('R$ ', '').replace(/\./g, '').replace(',', '.'));
+        const unmaskNumbers = (value: string) => value.replace(/\D/g, '');
+
+        const apiData = {
+          ...formData,
+          type: InternshipType.DIRECT,
+          studentCpf: unmaskNumbers(formData.studentCpf as string),
+          studentAddressCep: unmaskNumbers(formData.studentAddressCep as string),
+          studentPhone: unmaskNumbers(formData.studentPhone as string),
+          companyCnpj: unmaskNumbers(formData.companyCnpj as string),
+          companyAddressCep: unmaskNumbers(formData.companyAddressCep as string),
+          companyPhone: unmaskNumbers(formData.companyPhone as string),
+          insuranceCompanyCnpj: unmaskNumbers(formData.insuranceCompanyCnpj as string),
+          monthlyGrant: unmaskCurrency(formData.monthlyGrant as string),
+          transportationGrant: unmaskCurrency(formData.transportationGrant as string),
+          weeklyHours: parseInt(formData.weeklyHours as string, 10),
+        };
+
+        // Adicionar dados do formulário
+        formDataToSend.append('data', JSON.stringify(apiData));
+        
+        // Upload opcional de seguro
+        if (insuranceFile) {
+          formDataToSend.append('insurance', insuranceFile);
+        }
+      }
+
       const url = isEditing ? `/api/internships/${internshipData?.id}` : '/api/internships';
       const method = isEditing ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
         method: method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(apiData),
+        body: formDataToSend,
         credentials: 'include',
       });
 
@@ -240,6 +282,143 @@ export default function InternshipForm({
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-8 bg-white p-8 rounded-lg shadow-md">
+      {/* --- SELEÇÃO DO TIPO DE ESTÁGIO --- */}
+      {!isEditing && (
+        <fieldset className="space-y-4 border-2 border-green-200 rounded-lg p-6 bg-green-50">
+          <legend className="text-lg font-semibold text-gray-900 px-2">Tipo de Estágio</legend>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${
+              internshipType === InternshipType.DIRECT 
+                ? 'border-green-600 bg-green-100' 
+                : 'border-gray-300 bg-white hover:border-green-400'
+            }`}>
+              <input
+                type="radio"
+                name="internshipType"
+                value={InternshipType.DIRECT}
+                checked={internshipType === InternshipType.DIRECT}
+                onChange={() => setInternshipType(InternshipType.DIRECT)}
+                className="mr-3 h-4 w-4 text-green-600"
+              />
+              <div>
+                <span className="font-medium text-gray-900">Estágio Direto</span>
+                <p className="text-sm text-gray-600">Preencher formulário completo</p>
+              </div>
+            </label>
+
+            <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition ${
+              internshipType === InternshipType.INTEGRATOR 
+                ? 'border-green-600 bg-green-100' 
+                : 'border-gray-300 bg-white hover:border-green-400'
+            }`}>
+              <input
+                type="radio"
+                name="internshipType"
+                value={InternshipType.INTEGRATOR}
+                checked={internshipType === InternshipType.INTEGRATOR}
+                onChange={() => setInternshipType(InternshipType.INTEGRATOR)}
+                className="mr-3 h-4 w-4 text-green-600"
+              />
+              <div>
+                <span className="font-medium text-gray-900">Via Agente Integrador</span>
+                <p className="text-sm text-gray-600">Apenas enviar TCE e PAE</p>
+              </div>
+            </label>
+          </div>
+        </fieldset>
+      )}
+
+      {/* --- MODO AGENTE INTEGRADOR --- */}
+      {internshipType === InternshipType.INTEGRATOR && !isEditing && (
+        <>
+          <fieldset className="space-y-4">
+            <legend className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Dados do Aluno</legend>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Nome Completo</label>
+                <input type="text" value={prefilledData?.name || ''} disabled className="input-form-disabled mt-1" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Matrícula</label>
+                <input type="text" value={prefilledData?.matricula || ''} disabled className="input-form-disabled mt-1" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" value={prefilledData?.email || ''} disabled className="input-form-disabled mt-1" />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset className="space-y-4">
+            <legend className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Documentos Obrigatórios</legend>
+            
+            {errors.form && <p className="text-red-600 text-sm">{errors.form}</p>}
+            
+            {/* TCE */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Termo de Compromisso de Estágio (TCE) *
+              </label>
+              <input
+                ref={tceInputRef}
+                type="file"
+                accept=".pdf"
+                onChange={(e) => setTceFile(e.target.files?.[0] || null)}
+                className="hidden"
+              />
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => tceInputRef.current?.click()}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+                >
+                  Selecionar TCE
+                </button>
+                {tceFile && (
+                  <span className="text-sm text-gray-700">
+                    ✓ {tceFile.name}
+                  </span>
+                )}
+              </div>
+              {errors.tce && <p className="text-red-600 text-sm mt-1">{errors.tce}</p>}
+            </div>
+
+            {/* PAE */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Plano de Atividades de Estágio (PAE) *
+              </label>
+              <input
+                ref={paeInputRef}
+                type="file"
+                accept=".pdf"
+                onChange={(e) => setPaeFile(e.target.files?.[0] || null)}
+                className="hidden"
+              />
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => paeInputRef.current?.click()}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+                >
+                  Selecionar PAE
+                </button>
+                {paeFile && (
+                  <span className="text-sm text-gray-700">
+                    ✓ {paeFile.name}
+                  </span>
+                )}
+              </div>
+              {errors.pae && <p className="text-red-600 text-sm mt-1">{errors.pae}</p>}
+            </div>
+          </fieldset>
+        </>
+      )}
+
+      {/* --- MODO ESTÁGIO DIRETO (formulário completo) --- */}
+      {internshipType === InternshipType.DIRECT && (
+        <>
       {/* --- DADOS DO ALUNO --- */}
       <fieldset className="space-y-4">
         <legend className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Dados do Aluno</legend>
@@ -542,15 +721,41 @@ export default function InternshipForm({
         </div>
 
         <div>
-           <label htmlFor="insuranceProofUrl" className="block text-sm font-medium text-gray-700">Comprovante do Seguro</label>
-           <input type="file" name="insuranceProofUrl" id="insuranceProofUrl" className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"/>
-           <p className="mt-1 text-xs text-gray-500">Apenas ficheiros PDF ou JPEG.</p>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Comprovante do Seguro (Opcional)
+          </label>
+          <input
+            ref={insuranceInputRef}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            onChange={(e) => setInsuranceFile(e.target.files?.[0] || null)}
+            className="hidden"
+          />
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => insuranceInputRef.current?.click()}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm"
+            >
+              {insuranceFile ? 'Alterar arquivo' : 'Selecionar arquivo'}
+            </button>
+            {insuranceFile && (
+              <span className="text-sm text-gray-700">
+                ✓ {insuranceFile.name}
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            Você pode enviar agora ou depois na seção de documentos. Formatos aceitos: PDF, JPEG, PNG
+          </p>
         </div>
       </fieldset>
+        </>
+      )}
       
       <div className="pt-4 flex justify-end">
         <button type="submit" disabled={isLoading} className="button-primary px-6 py-2">
-            {isLoading ? 'A enviar...' : 'Enviar Formalização'}
+            {isLoading ? 'A enviar...' : (isEditing ? 'Atualizar Estágio' : 'Enviar Formalização')}
         </button>
       </div>
     </form>

@@ -4,6 +4,7 @@ import { jwtVerify } from 'jose';
 import { PrismaClient, InternshipStatus, InternshipType, InternshipModality, Gender, Course } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import RequestEarlyTermination from './RequestEarlyTermination';
+import DocumentsSection from './DocumentsSection';
 
 const prisma = new PrismaClient();
 
@@ -106,6 +107,16 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
   const { id } = await params;
   const { data: internship, error } = await getInternshipDetails(id);
 
+  const initialDocuments = internship?.documents.map((doc) => ({
+    id: doc.id,
+    type: doc.type,
+    status: doc.status,
+    fileUrl: doc.fileUrl,
+    rejectionComments: doc.rejectionComments,
+    createdAt: doc.createdAt.toISOString(),
+    updatedAt: doc.updatedAt.toISOString(),
+  })) || [];
+
   if (error) {
     return (
       <div className="text-center py-8">
@@ -166,6 +177,12 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
           earlyTerminationApproved={internship.earlyTerminationApproved}
           earlyTerminationReason={internship.earlyTerminationReason}
           earlyTerminationHandledAt={internship.earlyTerminationHandledAt ? internship.earlyTerminationHandledAt.toISOString() : null}
+        />
+
+        <DocumentsSection
+          internshipId={internship.id}
+          status={internship.status}
+          initialDocuments={initialDocuments}
         />
 
         {/* Cabeçalho */}

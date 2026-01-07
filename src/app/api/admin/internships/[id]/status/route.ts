@@ -1,9 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { PrismaClient, InternshipStatus, Role } from '@prisma/client';
+import { InternshipStatus, Role } from '@prisma/client';
 import { z } from 'zod';
 import { headers } from 'next/headers';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 const updateStatusSchema = z.object({
   status: z.enum([InternshipStatus.APPROVED, InternshipStatus.CANCELED]),

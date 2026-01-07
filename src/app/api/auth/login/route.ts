@@ -1,10 +1,8 @@
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { loginSchema } from '@/lib/validations/schemas';
 import { validateRequestBody, createErrorResponse, createSuccessResponse } from '@/lib/validations/utils';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: Request) {
   try {

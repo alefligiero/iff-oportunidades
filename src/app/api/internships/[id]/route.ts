@@ -1,8 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { PrismaClient, Role, Gender, Course, InternshipModality } from '@prisma/client';
+import { Role, Gender, Course, InternshipModality } from '@prisma/client';
 import { z } from 'zod';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 const updateInternshipSchema = z.object({
   studentGender: z.nativeEnum(Gender),

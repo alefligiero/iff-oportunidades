@@ -1,9 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { getUserFromToken } from '@/lib/get-user-from-token';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 const updateVacancySchema = z.object({
   title: z.string().min(5).optional(),

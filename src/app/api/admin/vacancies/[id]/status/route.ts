@@ -1,9 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { PrismaClient, VacancyStatus } from '@prisma/client';
+import { VacancyStatus } from '@prisma/client';
 import { z } from 'zod';
 import { getUserFromToken } from '@/lib/get-user-from-token';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 const updateVacancyStatusSchema = z.object({
   status: z.enum([VacancyStatus.APPROVED, VacancyStatus.REJECTED]),
