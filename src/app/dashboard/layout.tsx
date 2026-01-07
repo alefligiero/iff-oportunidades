@@ -30,9 +30,8 @@ export default function DashboardLayout({
         break;
       case 'ADMIN':
         roleLinks = [
-          { name: 'Estágios Pendentes', href: '/dashboard/admin/internships' },
-          { name: 'Vagas Pendentes', href: '/dashboard/admin/vacancies' },
-          { name: 'Vagas Aprovadas', href: '/dashboard/admin/vacancies/approved' }
+          { name: 'Estágios', href: '/dashboard/admin/internships' },
+          { name: 'Vagas', href: '/dashboard/admin/vacancies' }
         ];
         break;
       default:
