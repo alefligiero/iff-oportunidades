@@ -6,6 +6,8 @@ import VacancyTabs from './VacancyTabs';
 import VacancyFilters, { FilterState } from './VacancyFilters';
 import VacancyTable from './VacancyTable';
 
+type TabStatus = VacancyStatus | 'CLOSED';
+
 interface Vacancy {
   id: string;
   title: string;
@@ -25,7 +27,7 @@ interface VacanciesPageContentProps {
 }
 
 export default function VacanciesPageContent({ allVacancies }: VacanciesPageContentProps) {
-  const [activeStatus, setActiveStatus] = useState<VacancyStatus>(VacancyStatus.PENDING_APPROVAL);
+  const [activeStatus, setActiveStatus] = useState<TabStatus>(VacancyStatus.PENDING_APPROVAL);
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     course: '',
@@ -40,6 +42,7 @@ export default function VacanciesPageContent({ allVacancies }: VacanciesPageCont
       APPROVED: 0,
       REJECTED: 0,
       CLOSED_BY_COMPANY: 0,
+      CLOSED_BY_ADMIN: 0,
     };
 
     allVacancies.forEach((vacancy) => {
@@ -51,7 +54,16 @@ export default function VacanciesPageContent({ allVacancies }: VacanciesPageCont
 
   // Filtrar vagas
   const filteredVacancies = useMemo(() => {
-    let result = allVacancies.filter((vacancy) => vacancy.status === activeStatus);
+    let result;
+
+    if (activeStatus === 'CLOSED') {
+      // Mostrar ambas fechadas
+      result = allVacancies.filter(
+        (vacancy) => vacancy.status === VacancyStatus.CLOSED_BY_COMPANY || vacancy.status === VacancyStatus.CLOSED_BY_ADMIN
+      );
+    } else {
+      result = allVacancies.filter((vacancy) => vacancy.status === activeStatus);
+    }
 
     // Busca por título da vaga ou nome da empresa
     if (filters.search) {

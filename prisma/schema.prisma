@@ -91,6 +91,8 @@ model Internship {
   earlyTerminationHandledAt DateTime?
   earlyTerminationReason    String?
   earlyTerminationRequested Boolean            @default(false)
+  earlyTerminationRejectionReason String?
+  hasDetailedInfo           Boolean            @default(false)
   documents                 Document[]
   student                   Student            @relation(fields: [studentId], references: [id])
 }
@@ -126,6 +128,8 @@ model JobVacancy {
   responsibilities String          @default("")
   softSkills       String          @default("")
   technicalSkills  String          @default("")
+  rejectionReason  String?
+  closureReason    String?
   company          Company         @relation(fields: [companyId], references: [id])
 }
 
@@ -199,6 +203,7 @@ enum VacancyStatus {
   APPROVED
   REJECTED
   CLOSED_BY_COMPANY
+  CLOSED_BY_ADMIN
 }
 
 enum VacancyModality {

@@ -115,6 +115,7 @@ export default function HomePage() {
               onChange={(e) => setEmail(e.target.value)}
               onBlur={handleBlur}
               className={getInputClassName('email')}
+              suppressHydrationWarning
             />
              {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
           </div>
@@ -136,6 +137,7 @@ export default function HomePage() {
               onChange={(e) => setPassword(e.target.value)}
               onBlur={handleBlur}
               className={getInputClassName('password')}
+              suppressHydrationWarning
             />
             {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
           </div>

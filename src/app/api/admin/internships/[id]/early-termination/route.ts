@@ -54,7 +54,7 @@ export async function PATCH(
         earlyTerminationRequested: false,
         earlyTerminationApproved: false,
         earlyTerminationHandledAt: new Date(),
-        rejectionReason: rejectionReason || null,
+        earlyTerminationRejectionReason: rejectionReason || null,
       },
     });
 

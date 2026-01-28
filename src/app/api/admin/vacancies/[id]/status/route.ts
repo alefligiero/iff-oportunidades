@@ -5,7 +5,9 @@ import { getUserFromToken } from '@/lib/get-user-from-token';
 import { prisma } from '@/lib/prisma';
 
 const updateVacancyStatusSchema = z.object({
-  status: z.enum([VacancyStatus.APPROVED, VacancyStatus.REJECTED]),
+  status: z.enum([VacancyStatus.APPROVED, VacancyStatus.REJECTED, VacancyStatus.CLOSED_BY_ADMIN]),
+  rejectionReason: z.string().optional(),
+  closureReason: z.string().optional(),
 });
 
 export async function PATCH(
@@ -27,7 +29,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Dados inválidos.', details: validation.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const { status } = validation.data;
+    const { status, rejectionReason, closureReason } = validation.data;
 
     const updatedVacancy = await prisma.jobVacancy.update({
       where: {
@@ -35,6 +37,8 @@ export async function PATCH(
       },
       data: {
         status,
+        ...(status === VacancyStatus.REJECTED && rejectionReason ? { rejectionReason } : {}),
+        ...(status === VacancyStatus.CLOSED_BY_ADMIN && closureReason ? { closureReason } : {}),
       },
     });
 

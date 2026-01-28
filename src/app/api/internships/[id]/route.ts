@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { Role, Gender, Course, InternshipModality } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
+import { processUploadedFile } from '@/lib/file-upload';
 
 const updateInternshipSchema = z.object({
   studentGender: z.nativeEnum(Gender),
@@ -103,34 +104,91 @@ export async function PUT(
     }
 
     const existingInternship = await prisma.internship.findFirst({
-        where: {
-            id: internshipId,
-            student: {
-                userId: userId
-            }
+      where: {
+        id: internshipId,
+        student: {
+          userId: userId
         }
+      }
     });
 
     if (!existingInternship) {
-        return NextResponse.json({ error: 'Estágio não encontrado ou não pertence a este utilizador.' }, { status: 404 });
+      return NextResponse.json({ error: 'Estágio não encontrado ou não pertence a este utilizador.' }, { status: 404 });
     }
 
-    const body = await request.json();
-    const validation = updateInternshipSchema.safeParse(body);
+    // Processar FormData (similar ao POST)
+    const formData = await request.formData();
+    const dataString = formData.get('data') as string | null;
 
+    if (!dataString) {
+      return NextResponse.json({ error: 'Dados do formulário não fornecidos.' }, { status: 400 });
+    }
+
+    let internshipData: Record<string, unknown>;
+    try {
+      internshipData = JSON.parse(dataString);
+    } catch {
+      return NextResponse.json({ error: 'Dados do formulário inválidos. Por favor, tente novamente.' }, { status: 400 });
+    }
+
+    // Validar dados
+    const validation = updateInternshipSchema.safeParse(internshipData);
     if (!validation.success) {
-      return NextResponse.json({ error: 'Dados inválidos.', details: validation.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Dados inválidos.', details: validation.error.flatten().fieldErrors },
+        { status: 400 }
+      );
     }
 
     const updatedData = validation.data;
 
-    const updatedInternship = await prisma.internship.update({
-      where: { id: internshipId },
-      data: {
-        ...updatedData,
-        status: 'IN_ANALYSIS', 
-        rejectionReason: null,
-      },
+    // Verificar se há novo seguro para upload
+    const insuranceFile = formData.get('insurance') as File | null;
+
+    const updatedInternship = await prisma.$transaction(async (tx) => {
+      // Atualizar estágio
+      const internship = await tx.internship.update({
+        where: { id: internshipId },
+        data: {
+          ...updatedData,
+          status: 'IN_ANALYSIS',
+          rejectionReason: null,
+        },
+      });
+
+      // Se há novo arquivo de seguro, fazer upload
+      if (insuranceFile) {
+        // Deletar documento anterior de seguro se existir
+        const existingInsurance = await tx.document.findFirst({
+          where: {
+            internshipId: internshipId,
+            type: 'LIFE_INSURANCE'
+          }
+        });
+
+        if (existingInsurance && existingInsurance.fileUrl) {
+          // Aqui você poderia adicionar lógica para deletar o arquivo do storage
+          // Por enquanto, apenas vamos recriar o documento
+          await tx.document.delete({
+            where: { id: existingInsurance.id }
+          });
+        }
+
+        // Upload novo seguro
+        const insuranceResult = await processUploadedFile(insuranceFile, internship.id, 'LIFE_INSURANCE');
+        if (!('error' in insuranceResult)) {
+          await tx.document.create({
+            data: {
+              type: 'LIFE_INSURANCE',
+              fileUrl: insuranceResult.file.url,
+              status: 'PENDING_ANALYSIS',
+              internshipId: internship.id,
+            },
+          });
+        }
+      }
+
+      return internship;
     });
 
     return NextResponse.json(updatedInternship, { status: 200 });

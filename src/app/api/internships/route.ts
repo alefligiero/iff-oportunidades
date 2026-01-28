@@ -136,7 +136,12 @@ async function createInternship(request: NextRequest) {
       return createErrorResponse('Dados do formulário não fornecidos', 400);
     }
 
-    const internshipData = JSON.parse(dataString);
+    let internshipData: Record<string, unknown>;
+    try {
+      internshipData = JSON.parse(dataString);
+    } catch (error) {
+      return createErrorResponse('Dados do formulário inválidos. Por favor, tente novamente.', 400);
+    }
     
     // Validar dados
     const validation = validateRequestBody(createInternshipSchema, internshipData);
@@ -150,6 +155,7 @@ async function createInternship(request: NextRequest) {
           ...validation.data,
           type: InternshipType.DIRECT,
           studentId: studentProfile.id,
+          hasDetailedInfo: true,
         },
       });
 

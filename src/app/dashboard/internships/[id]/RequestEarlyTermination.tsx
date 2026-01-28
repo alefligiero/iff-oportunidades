@@ -10,6 +10,7 @@ interface Props {
   earlyTerminationApproved: boolean | null;
   earlyTerminationReason: string | null;
   earlyTerminationHandledAt: string | null;
+  earlyTerminationRejectionReason: string | null;
 }
 
 export default function RequestEarlyTermination(props: Props) {
@@ -20,6 +21,7 @@ export default function RequestEarlyTermination(props: Props) {
     earlyTerminationApproved,
     earlyTerminationReason,
     earlyTerminationHandledAt,
+    earlyTerminationRejectionReason,
   } = props;
 
   const [reason, setReason] = useState('');
@@ -32,8 +34,7 @@ export default function RequestEarlyTermination(props: Props) {
   const alreadyDecided = approved !== null && handledAt !== null;
 
   const canRequest =
-    status !== InternshipStatus.CANCELED &&
-    status !== InternshipStatus.FINISHED &&
+    (status === InternshipStatus.APPROVED || status === InternshipStatus.IN_PROGRESS) &&
     !requested;
 
   const submit = async () => {
@@ -64,50 +65,60 @@ export default function RequestEarlyTermination(props: Props) {
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md space-y-3">
-      <h3 className="text-lg font-semibold text-gray-900">Encerramento antecipado</h3>
+    <>
+      {/* Mostrar seção apenas se: há solicitação OU é possível fazer solicitação */}
+      {(requested || canRequest) && (
+        <div className="bg-white p-4 rounded-lg shadow-md space-y-3">
+          <h3 className="text-lg font-semibold text-gray-900">Encerramento antecipado</h3>
 
-      {requested && !alreadyDecided && (
-        <div className="text-sm text-gray-700 bg-yellow-50 border border-yellow-200 rounded-md p-3">
-          Solicitação enviada e aguardando análise da Agência.
-          {earlyTerminationReason && (
-            <div className="mt-1 text-gray-600">Justificativa: {earlyTerminationReason}</div>
+          {requested && !alreadyDecided && (
+            <div className="text-sm text-gray-700 bg-yellow-50 border border-yellow-200 rounded-md p-3">
+              Solicitação enviada e aguardando análise da Agência.
+              {earlyTerminationReason && (
+                <div className="mt-1 text-gray-600">Justificativa: {earlyTerminationReason}</div>
+              )}
+            </div>
+          )}
+
+          {requested && alreadyDecided && approved === true && (
+            <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-md p-3">
+              Encerramento antecipado aprovado em {new Date(handledAt as string).toLocaleString('pt-BR')}.
+            </div>
+          )}
+
+          {requested && alreadyDecided && approved === false && (
+            <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md p-3">
+              <div>Encerramento antecipado recusado em {new Date(handledAt as string).toLocaleString('pt-BR')}.</div>
+              {earlyTerminationRejectionReason && (
+                <div className="mt-2 text-red-600 font-medium">
+                  Motivo: {earlyTerminationRejectionReason}
+                </div>
+              )}
+            </div>
+          )}
+
+          {canRequest && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Justificativa</label>
+              <textarea
+                className="w-full border rounded-md p-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-600 placeholder-gray-500"
+                rows={3}
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Descreva por que precisa encerrar o estágio antes do prazo."
+              />
+              {error && <p className="text-sm text-red-600">{error}</p>}
+              <button
+                onClick={submit}
+                disabled={isLoading}
+                className="px-4 py-2 bg-green-700 text-white rounded-md text-sm hover:bg-green-800 disabled:bg-green-300"
+              >
+                {isLoading ? 'Enviando...' : 'Solicitar encerramento'}
+              </button>
+            </div>
           )}
         </div>
       )}
-
-      {requested && alreadyDecided && approved === true && (
-        <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-md p-3">
-          Encerramento antecipado aprovado em {new Date(handledAt as string).toLocaleString('pt-BR')}.
-        </div>
-      )}
-
-      {requested && alreadyDecided && approved === false && (
-        <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md p-3">
-          Encerramento antecipado recusado em {new Date(handledAt as string).toLocaleString('pt-BR')}.
-        </div>
-      )}
-
-      {canRequest && (
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">Justificativa</label>
-          <textarea
-            className="w-full border rounded-md p-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-600 placeholder-gray-500"
-            rows={3}
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Descreva por que precisa encerrar o estágio antes do prazo."
-          />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            onClick={submit}
-            disabled={isLoading}
-            className="px-4 py-2 bg-green-700 text-white rounded-md text-sm hover:bg-green-800 disabled:bg-green-300"
-          >
-            {isLoading ? 'Enviando...' : 'Solicitar encerramento'}
-          </button>
-        </div>
-      )}
-    </div>
+    </>
   );
 }

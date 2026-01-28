@@ -2,22 +2,31 @@
 
 import { VacancyStatus } from '@prisma/client';
 
-const statusConfig = {
+type TabStatus = VacancyStatus | 'CLOSED';
+
+const statusConfig: Record<TabStatus, { label: string; color: string }> = {
   PENDING_APPROVAL: { label: 'Pendentes', color: 'border-b-yellow-400 text-yellow-700' },
   APPROVED: { label: 'Aprovadas', color: 'border-b-green-400 text-green-700' },
   REJECTED: { label: 'Rejeitadas', color: 'border-b-red-400 text-red-700' },
-  CLOSED_BY_COMPANY: { label: 'Fechadas', color: 'border-b-gray-400 text-gray-700' },
+  CLOSED: { label: 'Fechadas', color: 'border-b-gray-400 text-gray-700' },
 };
 
-const statusOrder: VacancyStatus[] = ['PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'CLOSED_BY_COMPANY'];
+const statusOrder: TabStatus[] = ['PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'CLOSED'];
 
 interface VacancyTabsProps {
-  activeStatus: VacancyStatus;
-  onStatusChange: (status: VacancyStatus) => void;
+  activeStatus: TabStatus;
+  onStatusChange: (status: TabStatus) => void;
   counts: { [key in VacancyStatus]: number };
 }
 
 export default function VacancyTabs({ activeStatus, onStatusChange, counts }: VacancyTabsProps) {
+  const getTabCount = (tab: TabStatus) => {
+    if (tab === 'CLOSED') {
+      return (counts['CLOSED_BY_COMPANY'] || 0) + (counts['CLOSED_BY_ADMIN'] || 0);
+    }
+    return counts[tab as VacancyStatus] || 0;
+  };
+
   return (
     <div className="border-b border-gray-200 mb-6">
       <div className="flex space-x-8">
@@ -33,7 +42,7 @@ export default function VacancyTabs({ activeStatus, onStatusChange, counts }: Va
           >
             {statusConfig[status].label}
             <span className="ml-2 text-xs bg-gray-200 text-gray-800 px-2 py-0.5 rounded-full">
-              {counts[status] || 0}
+              {getTabCount(status)}
             </span>
           </button>
         ))}

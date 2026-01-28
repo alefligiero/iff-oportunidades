@@ -99,6 +99,10 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
+const isDefaultValue = (value: any): boolean => {
+  return value === '-' || value === 0 || value === '00000000000' || value === '00000000000000' || value === '00000000';
+};
+
 interface InternshipDetailsPageProps {
   params: Promise<{ id: string }>;
 }
@@ -177,6 +181,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
           earlyTerminationApproved={internship.earlyTerminationApproved}
           earlyTerminationReason={internship.earlyTerminationReason}
           earlyTerminationHandledAt={internship.earlyTerminationHandledAt ? internship.earlyTerminationHandledAt.toISOString() : null}
+          earlyTerminationRejectionReason={internship.earlyTerminationRejectionReason}
         />
 
         <DocumentsSection
@@ -298,32 +303,65 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
         {/* Detalhes do Estágio */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Detalhes do Estágio</h2>
+          
+          {internship.type === InternshipType.INTEGRATOR && (
+            <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+              <p className="text-sm text-blue-800">
+                <span className="font-semibold">📎 Informações do TCE/PAE:</span> Os detalhes do estágio estão contidos nos arquivos TCE e PAE que você enviou.
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
               <span className="font-medium text-gray-700">Setor:</span>
-              <p className="text-gray-900">{internship.internshipSector}</p>
+              <p className="text-gray-900">
+                {internship.type === InternshipType.INTEGRATOR && isDefaultValue(internship.internshipSector) 
+                  ? '📎 Informações do TCE/PAE' 
+                  : internship.internshipSector}
+              </p>
             </div>
             <div>
               <span className="font-medium text-gray-700">Supervisor:</span>
-              <p className="text-gray-900">{internship.supervisorName} ({internship.supervisorRole})</p>
+              <p className="text-gray-900">
+                {internship.type === InternshipType.INTEGRATOR && isDefaultValue(internship.supervisorName) 
+                  ? '📎 Informações do TCE/PAE' 
+                  : `${internship.supervisorName} (${internship.supervisorRole})`}
+              </p>
             </div>
             <div>
               <span className="font-medium text-gray-700">Professor Orientador:</span>
-              <p className="text-gray-900">{internship.advisorProfessorName} (SIAPE: {internship.advisorProfessorId})</p>
+              <p className="text-gray-900">
+                {internship.type === InternshipType.INTEGRATOR && isDefaultValue(internship.advisorProfessorName) 
+                  ? '📎 Informações do TCE/PAE' 
+                  : `${internship.advisorProfessorName} (SIAPE: ${internship.advisorProfessorId})`}
+              </p>
             </div>
             <div>
               <span className="font-medium text-gray-700">Bolsa:</span>
-              <p className="text-gray-900">{formatCurrency(internship.monthlyGrant)}</p>
+              <p className="text-gray-900">
+                {internship.type === InternshipType.INTEGRATOR && internship.monthlyGrant === 0 
+                  ? '📎 Informações do TCE/PAE' 
+                  : formatCurrency(internship.monthlyGrant)}
+              </p>
             </div>
             <div>
               <span className="font-medium text-gray-700">Auxílio Transporte:</span>
-              <p className="text-gray-900">{formatCurrency(internship.transportationGrant)}</p>
+              <p className="text-gray-900">
+                {internship.type === InternshipType.INTEGRATOR && internship.transportationGrant === 0 
+                  ? '📎 Informações do TCE/PAE' 
+                  : formatCurrency(internship.transportationGrant)}
+              </p>
             </div>
           </div>
           
           <div className="mt-4">
             <span className="font-medium text-gray-700">Atividades Técnicas:</span>
-            <p className="text-sm text-gray-900 mt-1">{internship.technicalActivities}</p>
+            <p className="text-sm text-gray-900 mt-1">
+              {internship.type === InternshipType.INTEGRATOR && isDefaultValue(internship.technicalActivities) 
+                ? '📎 Informações do TCE/PAE' 
+                : internship.technicalActivities}
+            </p>
           </div>
         </div>
 

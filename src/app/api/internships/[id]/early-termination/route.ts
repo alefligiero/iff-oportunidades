@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { Role } from '@prisma/client';
+import { Role, InternshipStatus } from '@prisma/client';
 import { requestEarlyTerminationSchema } from '@/lib/validations/schemas';
 import { prisma } from '@/lib/prisma';
 
@@ -25,6 +25,14 @@ export async function POST(
 
     if (!internship) {
       return NextResponse.json({ error: 'Estágio não encontrado ou não pertence ao aluno.' }, { status: 404 });
+    }
+
+    // Validar status: apenas APPROVED e IN_PROGRESS permitem solicitar encerramento
+    if (internship.status !== InternshipStatus.APPROVED && internship.status !== InternshipStatus.IN_PROGRESS) {
+      return NextResponse.json(
+        { error: `Encerramento antecipado só é permitido quando o estágio está aprovado ou em andamento. Status atual: ${internship.status}` },
+        { status: 400 }
+      );
     }
 
     const body = await request.json();

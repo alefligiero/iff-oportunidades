@@ -413,6 +413,146 @@ export default function InternshipForm({
               {errors.pae && <p className="text-red-600 text-sm mt-1">{errors.pae}</p>}
             </div>
           </fieldset>
+
+          {/* Seção de Informações Adicionais (Opcional para INTEGRATOR) */}
+          <fieldset className="space-y-4 border-2 border-blue-200 rounded-lg p-6 bg-blue-50">
+            <legend className="text-lg font-semibold text-gray-900 px-2">
+              📋 Informações Adicionais (Opcional)
+            </legend>
+            <p className="text-sm text-gray-700 mb-4">
+              Os detalhes do seu estágio (datas, supervisor, remuneração, etc.) estão contidos nos arquivos TCE e PAE que você está enviando. 
+              Você pode preencher os campos abaixo se desejar adicionar informações complementares, mas não é obrigatório.
+            </p>
+
+            {/* Setor e Supervisor */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="internshipSector" className="block text-sm font-medium text-gray-700">
+                  Setor da Empresa <span className="text-gray-500 text-xs">(opcional)</span>
+                </label>
+                <input 
+                  type="text" 
+                  name="internshipSector" 
+                  id="internshipSector" 
+                  value={formData.internshipSector as string} 
+                  onChange={handleInputChange} 
+                  className="input-form mt-1" 
+                />
+              </div>
+              <div>
+                <label htmlFor="supervisorName" className="block text-sm font-medium text-gray-700">
+                  Nome do Supervisor <span className="text-gray-500 text-xs">(opcional)</span>
+                </label>
+                <input 
+                  type="text" 
+                  name="supervisorName" 
+                  id="supervisorName" 
+                  value={formData.supervisorName as string} 
+                  onChange={handleInputChange} 
+                  className="input-form mt-1" 
+                />
+              </div>
+              <div>
+                <label htmlFor="supervisorRole" className="block text-sm font-medium text-gray-700">
+                  Cargo do Supervisor <span className="text-gray-500 text-xs">(opcional)</span>
+                </label>
+                <input 
+                  type="text" 
+                  name="supervisorRole" 
+                  id="supervisorRole" 
+                  value={formData.supervisorRole as string} 
+                  onChange={handleInputChange} 
+                  className="input-form mt-1" 
+                />
+              </div>
+              <div>
+                <label htmlFor="advisorProfessorName" className="block text-sm font-medium text-gray-700">
+                  Professor Orientador <span className="text-gray-500 text-xs">(opcional)</span>
+                </label>
+                <input 
+                  type="text" 
+                  name="advisorProfessorName" 
+                  id="advisorProfessorName" 
+                  value={formData.advisorProfessorName as string} 
+                  onChange={handleInputChange} 
+                  className="input-form mt-1" 
+                />
+              </div>
+            </div>
+
+            {/* Datas e Carga Horária */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
+                  Data de Início <span className="text-gray-500 text-xs">(opcional)</span>
+                </label>
+                <input 
+                  type="date" 
+                  name="startDate" 
+                  id="startDate" 
+                  value={formData.startDate as string} 
+                  onChange={handleInputChange} 
+                  className="input-form mt-1" 
+                />
+              </div>
+              <div>
+                <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
+                  Data de Término <span className="text-gray-500 text-xs">(opcional)</span>
+                </label>
+                <input 
+                  type="date" 
+                  name="endDate" 
+                  id="endDate" 
+                  value={formData.endDate as string} 
+                  onChange={handleInputChange} 
+                  className="input-form mt-1" 
+                />
+              </div>
+              <div>
+                <label htmlFor="weeklyHours" className="block text-sm font-medium text-gray-700">
+                  Carga Horária Semanal <span className="text-gray-500 text-xs">(opcional)</span>
+                </label>
+                <input 
+                  type="number" 
+                  name="weeklyHours" 
+                  id="weeklyHours" 
+                  value={formData.weeklyHours as string} 
+                  onChange={handleInputChange} 
+                  className="input-form mt-1" 
+                />
+              </div>
+            </div>
+
+            {/* Remuneração */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="monthlyGrant" className="block text-sm font-medium text-gray-700">
+                  Bolsa Mensal <span className="text-gray-500 text-xs">(opcional)</span>
+                </label>
+                <input 
+                  type="text" 
+                  name="monthlyGrant" 
+                  id="monthlyGrant" 
+                  value={formData.monthlyGrant as string} 
+                  onChange={handleInputChange} 
+                  className="input-form mt-1" 
+                />
+              </div>
+              <div>
+                <label htmlFor="transportationGrant" className="block text-sm font-medium text-gray-700">
+                  Auxílio Transporte <span className="text-gray-500 text-xs">(opcional)</span>
+                </label>
+                <input 
+                  type="text" 
+                  name="transportationGrant" 
+                  id="transportationGrant" 
+                  value={formData.transportationGrant as string} 
+                  onChange={handleInputChange} 
+                  className="input-form mt-1" 
+                />
+              </div>
+            </div>
+          </fieldset>
         </>
       )}
 
