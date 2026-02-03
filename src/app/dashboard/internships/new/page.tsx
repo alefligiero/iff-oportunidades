@@ -41,7 +41,7 @@ export default async function NewInternshipPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">Formalizar Novo Estágio</h1>
+      <h1 className="text-2xl font-semibold text-gray-800 mb-6">Solicitar Novo Estágio</h1>
       {/* Renderiza o formulário e passa os dados pré-preenchidos como props */}
       <InternshipForm prefilledData={userData} />
     </div>

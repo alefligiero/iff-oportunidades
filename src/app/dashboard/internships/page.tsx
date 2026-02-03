@@ -59,7 +59,7 @@ export default async function MyInternshipsPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Meus Estágios</h1>
         <Link href="/dashboard/internships/new" className="bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition-colors text-sm font-medium">
-          Formalizar Novo Estágio
+          Solicitar Novo Estágio
         </Link>
       </div>
 
