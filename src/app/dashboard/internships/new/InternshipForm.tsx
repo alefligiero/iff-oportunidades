@@ -166,6 +166,19 @@ export default function InternshipForm({
   };
 
   const validateField = (name: string, value: string | number) => {
+    // Campos opcionais (seguro de vida)
+    const optionalFields = [
+      'insuranceCompany',
+      'insurancePolicyNumber', 
+      'insuranceCompanyCnpj',
+      'insuranceStartDate',
+      'insuranceEndDate'
+    ];
+    
+    if (optionalFields.includes(name)) {
+      return '';
+    }
+    
     if (typeof value === 'string' && !value.trim()) {
         return 'Este campo é obrigatório.';
     }
@@ -277,7 +290,9 @@ export default function InternshipForm({
       const data = await response.json();
 
       if (!response.ok) {
+        console.error('Erro na resposta:', data);
         setErrors(data.details || { form: data.error || 'Ocorreu um erro.' });
+        addNotification('error', data.error || 'Erro ao enviar formulário');
         throw new Error('Falha na submissão do formulário');
       }
 
@@ -286,7 +301,7 @@ export default function InternshipForm({
       router.refresh();
 
     } catch (error) {
-      console.error(error);
+      console.error('Erro ao enviar formulário:', error);
       setErrors(prev => ({ ...prev, form: 'Não foi possível conectar ao servidor.' }));
     } finally {
       setIsLoading(false);
@@ -718,6 +733,11 @@ export default function InternshipForm({
       {/* --- DADOS DO SEGURO --- */}
       <fieldset className="space-y-4">
         <legend className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Dados do Seguro de Vida</legend>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <p className="text-sm text-blue-800">
+            ℹ️ <strong>Opcional:</strong> Preencha os dados do seguro quando obtiver o comprovante. Você pode enviar agora ou depois na seção de documentos.
+          </p>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>

@@ -61,9 +61,9 @@ model Internship {
   companyRepresentativeName String
   companyRepresentativeRole String
   dailyHours                String
-  insuranceCompany          String
-  insuranceCompanyCnpj      String
-  insurancePolicyNumber     String
+  insuranceCompany          String?
+  insuranceCompanyCnpj      String?
+  insurancePolicyNumber     String?
   insuranceProofUrl         String?
   internshipSector          String
   modality                  InternshipModality

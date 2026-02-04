@@ -7,6 +7,7 @@ import RequestEarlyTermination from './RequestEarlyTermination';
 import DocumentsSection from './DocumentsSection';
 import NextStepsGuide from './NextStepsGuide';
 import StatusProgress from './StatusProgress';
+import InsuranceDataForm from './InsuranceDataForm';
 
 const prisma = new PrismaClient();
 
@@ -189,6 +190,17 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
         <StatusProgress status={internship.status} />
 
         <NextStepsGuide status={internship.status} documents={initialDocuments} />
+
+        <InsuranceDataForm
+          internshipId={internship.id}
+          currentData={{
+            insuranceCompany: internship.insuranceCompany,
+            insurancePolicyNumber: internship.insurancePolicyNumber,
+            insuranceCompanyCnpj: internship.insuranceCompanyCnpj,
+            insuranceStartDate: internship.insuranceStartDate,
+            insuranceEndDate: internship.insuranceEndDate,
+          }}
+        />
 
         <DocumentsSection
           internshipId={internship.id}

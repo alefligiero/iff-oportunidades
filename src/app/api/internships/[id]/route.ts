@@ -40,11 +40,17 @@ const updateInternshipSchema = z.object({
   supervisorRole: z.string().min(1, 'O cargo do supervisor é obrigatório.'),
   internshipSector: z.string().min(1, 'O setor do estágio é obrigatório.'),
   technicalActivities: z.string().min(1, 'As atividades técnicas são obrigatórias.'),
-  insuranceCompany: z.string().min(1, 'O nome da seguradora é obrigatório.'),
-  insurancePolicyNumber: z.string().min(1, 'O número da apólice é obrigatório.'),
-  insuranceCompanyCnpj: z.string().min(1, 'O CNPJ da seguradora é obrigatório.'),
-  insuranceStartDate: z.coerce.date({ required_error: 'A data de início da vigência é obrigatória.' }),
-  insuranceEndDate: z.coerce.date({ required_error: 'A data de fim da vigência é obrigatória.' }),
+  insuranceCompany: z.string().optional().or(z.literal('')),
+  insurancePolicyNumber: z.string().optional().or(z.literal('')),
+  insuranceCompanyCnpj: z.string().optional().or(z.literal('')),
+  insuranceStartDate: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? null : val),
+    z.coerce.date().nullable().optional()
+  ),
+  insuranceEndDate: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? null : val),
+    z.coerce.date().nullable().optional()
+  ),
 });
 
 export async function GET(
