@@ -38,7 +38,7 @@ export async function PATCH(
       const updated = await prisma.internship.update({
         where: { id: internshipId },
         data: {
-          status: 'CANCELED',
+          status: 'FINISHED',
           earlyTerminationApproved: true,
           earlyTerminationHandledAt: new Date(),
           rejectionReason: null,
