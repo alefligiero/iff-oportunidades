@@ -127,12 +127,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
 
       if (!response.ok) {
-        throw new Error('Token inválido');
+        // Token inválido ou expirado - fazer logout silenciosamente
+        Cookies.remove('auth_token');
+        dispatch({ type: 'AUTH_FAILURE' });
+        return;
       }
 
       const userData = await response.json();
       dispatch({ type: 'AUTH_SUCCESS', payload: userData });
     } catch (error) {
+      // Erro de rede ou parsing - considerar como falha de autenticação
       console.error('Erro ao buscar dados do usuário:', error);
       dispatch({ type: 'AUTH_FAILURE' });
     }

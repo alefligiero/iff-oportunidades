@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthGuard } from '@/components/AuthGuard';
 import LogoutButton from './LogoutButton';
@@ -12,16 +13,25 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { user } = useAuth();
+  const pathname = usePathname();
 
-  if (!user) {
-    return null; // AuthGuard irá redirecionar
-  }
+  const getDefaultRouteByRole = (role?: string) => {
+    switch (role) {
+      case 'STUDENT':
+        return '/dashboard/internships';
+      case 'COMPANY':
+        return '/dashboard/vacancies';
+      case 'ADMIN':
+        return '/dashboard/admin/internships';
+      default:
+        return '/dashboard';
+    }
+  };
 
   const getNavigationLinks = () => {
-    const baseLinks = [{ name: 'Início', href: '/dashboard' }];
     let roleLinks: { name: string; href: string; }[] = [];
     
-    switch (user.role) {
+    switch (user?.role) {
       case 'STUDENT':
         roleLinks = [{ name: 'Meus Estágios', href: '/dashboard/internships' }, { name: 'Vagas', href: '/dashboard/vacancies' }];
         break;
@@ -38,15 +48,28 @@ export default function DashboardLayout({
         roleLinks = [];
     }
     
-    return [...baseLinks, ...roleLinks, { name: 'Configurações', href: '/dashboard/settings' }];
+    return [...roleLinks, { name: 'Configurações', href: '/dashboard/settings' }];
+  };
+
+  const isActiveLink = (href: string) => {
+    if (pathname === href) return true;
+
+    if (pathname?.startsWith(`${href}/`)) {
+      if (href === '/dashboard/vacancies' && pathname.startsWith('/dashboard/vacancies/new')) {
+        return false;
+      }
+      return true;
+    }
+
+    return false;
   };
 
   return (
-    <AuthGuard>
+    <AuthGuard redirectTo="/">
       <div className="flex h-screen bg-gray-100">
         <aside className="w-64 bg-white shadow-md flex flex-col">
           <div className="flex items-center justify-center h-20 border-b">
-            <Link href="/dashboard">
+            <Link href={getDefaultRouteByRole(user?.role)}>
               <Image src="/logo-iff.png" alt="Logo IFF" width={48} height={48} />
             </Link>
           </div>
@@ -54,7 +77,14 @@ export default function DashboardLayout({
             <ul>
               {getNavigationLinks().map((link) => (
                 <li key={link.name}>
-                  <Link href={link.href} className="flex items-center p-3 my-1 text-gray-700 rounded-lg hover:bg-green-100 hover:text-green-800 transition-colors">
+                  <Link
+                    href={link.href}
+                    className={`flex items-center p-3 my-1 rounded-lg transition-colors ${
+                      isActiveLink(link.href)
+                        ? 'bg-green-100 text-green-800 font-semibold'
+                        : 'text-gray-700 hover:bg-green-100 hover:text-green-800'
+                    }`}
+                  >
                     {link.name}
                   </Link>
                 </li>
@@ -69,7 +99,7 @@ export default function DashboardLayout({
         <div className="flex-1 flex flex-col">
           <header className="bg-white border-b h-20 flex items-center px-8">
             <h1 className="text-xl font-semibold text-gray-800">
-              {`Olá, ${user.name || user.email}`}
+              {`Olá, ${user?.name || user?.email}`}
             </h1>
           </header>
           <main className="flex-1 p-8 overflow-y-auto">

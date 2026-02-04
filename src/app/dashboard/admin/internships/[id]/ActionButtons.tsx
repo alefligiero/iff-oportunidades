@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { InternshipStatus } from '@prisma/client';
+import { useNotification } from '@/contexts/NotificationContext';
 
 interface Props {
   internshipId: string;
+  internshipStatus: InternshipStatus;
   earlyTerminationRequested: boolean;
   earlyTerminationApproved: boolean | null;
   earlyTerminationReason: string | null;
@@ -13,11 +15,13 @@ interface Props {
 
 export default function ActionButtons({
   internshipId,
+  internshipStatus,
   earlyTerminationRequested,
   earlyTerminationApproved,
   earlyTerminationReason,
 }: Props) {
   const router = useRouter();
+  const { addNotification } = useNotification();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -25,6 +29,8 @@ export default function ActionButtons({
   const [rejectionReason, setRejectionReason] = useState('');
   const [earlyModalOpen, setEarlyModalOpen] = useState(false);
   const [earlyRejectionReason, setEarlyRejectionReason] = useState('');
+
+  const canModerateFormalization = internshipStatus === InternshipStatus.IN_ANALYSIS;
 
   const handleUpdateStatus = async (status: InternshipStatus, reason?: string) => {
     setIsLoading(true);
@@ -48,7 +54,7 @@ export default function ActionButtons({
         throw new Error(data.error || 'Falha ao atualizar o estado.');
       }
 
-      alert(`Estágio ${status === 'APPROVED' ? 'aprovado' : 'recusado'} com sucesso!`);
+      addNotification('success', `Estágio ${status === 'APPROVED' ? 'aprovado' : 'recusado'} com sucesso!`);
       router.push('/dashboard/admin/internships');
       router.refresh();
 
@@ -77,7 +83,7 @@ export default function ActionButtons({
         throw new Error(data.error || 'Falha ao decidir encerramento.');
       }
 
-      alert(`Encerramento antecipado ${action === 'APPROVE' ? 'aprovado' : 'recusado'} com sucesso!`);
+      addNotification('success', `Encerramento antecipado ${action === 'APPROVE' ? 'aprovado' : 'recusado'} com sucesso!`);
       router.refresh();
     } catch (rawError) {
       const err = rawError instanceof Error ? rawError : new Error('Erro desconhecido');
@@ -95,7 +101,7 @@ export default function ActionButtons({
 
   const confirmRejection = () => {
     if (!rejectionReason.trim()) {
-      alert('Por favor, insira um motivo para a recusa.');
+      addNotification('warning', 'Por favor, insira um motivo para a recusa.');
       return;
     }
     handleUpdateStatus(InternshipStatus.CANCELED, rejectionReason);
@@ -103,23 +109,27 @@ export default function ActionButtons({
 
   return (
     <>
-      <div className="flex items-center space-x-4">
-        <button
-          onClick={() => handleUpdateStatus(InternshipStatus.APPROVED)}
-          disabled={isLoading}
-          className="button-primary px-4 py-2 text-sm bg-green-600 hover:bg-green-700 disabled:bg-green-300"
-        >
-          {isLoading ? 'A processar...' : 'Aprovar formalização'}
-        </button>
-        <button
-          onClick={handleRejectClick}
-          disabled={isLoading}
-          className="button-primary px-4 py-2 text-sm bg-red-600 hover:bg-red-700 disabled:bg-red-300"
-        >
-          {isLoading ? 'A processar...' : 'Recusar formalização'}
-        </button>
-        {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
-      </div>
+      {canModerateFormalization ? (
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => handleUpdateStatus(InternshipStatus.APPROVED)}
+            disabled={isLoading}
+            className="button-primary px-4 py-2 text-sm bg-green-600 hover:bg-green-700 disabled:bg-green-300"
+          >
+            {isLoading ? 'A processar...' : 'Aprovar formalização'}
+          </button>
+          <button
+            onClick={handleRejectClick}
+            disabled={isLoading}
+            className="button-primary px-4 py-2 text-sm bg-red-600 hover:bg-red-700 disabled:bg-red-300"
+          >
+            {isLoading ? 'A processar...' : 'Recusar formalização'}
+          </button>
+          {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-600">A formalização já foi analisada.</p>
+      )}
 
       {earlyTerminationRequested && (
         <div className="mt-6 border border-yellow-200 bg-yellow-50 rounded-lg p-4 space-y-3">
@@ -215,7 +225,7 @@ export default function ActionButtons({
               <button
                 onClick={() => {
                   if (!earlyRejectionReason.trim()) {
-                    alert('Informe o motivo da recusa.');
+                    addNotification('warning', 'Informe o motivo da recusa.');
                     return;
                   }
                   handleEarlyTermination('REJECT', earlyRejectionReason);

@@ -1,51 +1,72 @@
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { jwtVerify } from 'jose';
-import { PrismaClient, Role } from '@prisma/client';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { AuthGuard } from '@/components/AuthGuard';
 import InternshipsPageContent from './InternshipsPageContent';
 
-const prisma = new PrismaClient();
-
-async function getAllInternships() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('auth_token')?.value;
-
-  if (!token) {
-    redirect('/');
-  }
-
-  try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET as string);
-    const { payload } = await jwtVerify(token, secret);
-    
-    if (payload.role !== Role.ADMIN) {
-      redirect('/dashboard');
-    }
-
-    const internships = await prisma.internship.findMany({
-      include: {
-        student: {
-          select: {
-            name: true,
-            matricula: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    return internships;
-
-  } catch (error) {
-    console.error("Erro ao buscar estágios:", error);
-    redirect('/'); 
-  }
+interface Internship {
+  id: string;
+  status: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  createdAt: string;
+  student: {
+    name: string;
+    matricula: string;
+  };
 }
 
-export default async function InternshipsPage() {
-  const internships = await getAllInternships();
+function InternshipsPageLoader() {
+  const [internships, setInternships] = useState<Internship[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchInternships = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/admin/internships/all');
+        
+        if (!response.ok) {
+          throw new Error('Falha ao buscar estágios');
+        }
+
+        const data = await response.json();
+        setInternships(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro ao buscar estágios');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInternships();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-green-700"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-700">{error}</p>
+      </div>
+    );
+  }
 
   return <InternshipsPageContent allInternships={internships} />;
+}
+
+export default function InternshipsPage() {
+  return (
+    <AuthGuard requiredRole="ADMIN" redirectTo="/">
+      <InternshipsPageLoader />
+    </AuthGuard>
+  );
 }

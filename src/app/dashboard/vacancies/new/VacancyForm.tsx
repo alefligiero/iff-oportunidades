@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useNotification } from '@/contexts/NotificationContext';
 import { VacancyType, Course } from '@prisma/client';
 import CurrencyInput from 'react-currency-input-field';
 import { createVacancySchema } from '@/lib/validations/schemas';
@@ -26,6 +27,7 @@ const courseLabels: Record<Course, string> = {
 
 export default function VacancyForm() {
   const router = useRouter();
+  const { addNotification } = useNotification();
   const [formData, setFormData] = useState<Partial<FormData>>({
     title: '',
     description: '',
@@ -162,7 +164,7 @@ export default function VacancyForm() {
       }
 
       // Sucesso
-      alert(data.message || 'Vaga enviada para aprovação com sucesso!');
+      addNotification('success', data.message || 'Vaga enviada para aprovação com sucesso!');
       router.push('/dashboard/vacancies');
       router.refresh();
     } catch (error) {

@@ -30,8 +30,27 @@ async function createInternship(request: NextRequest) {
     return createErrorResponse('Tipo de estágio inválido', 400);
   }
 
+  // Para ambos os tipos, precisamos dos dados completos do formulário
+  const dataString = formData.get('data') as string;
+  if (!dataString) {
+    return createErrorResponse('Dados do formulário não fornecidos', 400);
+  }
+
+  let internshipData: Record<string, unknown>;
+  try {
+    internshipData = JSON.parse(dataString);
+  } catch (error) {
+    return createErrorResponse('Dados do formulário inválidos. Por favor, tente novamente.', 400);
+  }
+  
+  // Validar dados do formulário para ambos os tipos
+  const validation = validateRequestBody(createInternshipSchema, internshipData);
+  if (!validation.success) {
+    return validation.error;
+  }
+
   if (type === InternshipType.INTEGRATOR) {
-    // Via Agente Integrador - apenas uploads TCE e PAE
+    // Via Agente Integrador - requer TCE e PAE além do formulário completo
     const tceFile = formData.get('tce') as File | null;
     const paeFile = formData.get('pae') as File | null;
 
@@ -39,58 +58,14 @@ async function createInternship(request: NextRequest) {
       return createErrorResponse('TCE e PAE são obrigatórios para estágios via Agente Integrador', 400);
     }
 
-    // Criar internship simplificado
+    // Criar internship com dados completos
     const newInternship = await prisma.$transaction(async (tx) => {
       const internship = await tx.internship.create({
         data: {
+          ...validation.data,
           type: InternshipType.INTEGRATOR,
           studentId: studentProfile.id,
-          
-          // Dados mínimos obrigatórios do schema (vazios para integrador)
-          studentGender: studentProfile.gender || 'MALE',
-          studentCpf: studentProfile.cpf || '00000000000',
-          studentPhone: '00000000000',
-          studentAddressStreet: '-',
-          studentAddressNumber: '-',
-          studentAddressDistrict: '-',
-          studentAddressCityState: '-',
-          studentAddressCep: '00000000',
-          studentCourse: studentProfile.course || 'BSI',
-          studentCoursePeriod: '1',
-          studentSchoolYear: new Date().getFullYear().toString(),
-          
-          companyName: '-',
-          companyCnpj: '00000000000000',
-          companyRepresentativeName: '-',
-          companyRepresentativeRole: '-',
-          companyAddressStreet: '-',
-          companyAddressNumber: '-',
-          companyAddressDistrict: '-',
-          companyAddressCityState: '-',
-          companyAddressCep: '00000000',
-          companyEmail: '-',
-          companyPhone: '00000000000',
-          
-          modality: 'PRESENCIAL',
-          startDate: new Date(),
-          endDate: new Date(),
-          weeklyHours: 0,
-          dailyHours: '-',
-          monthlyGrant: 0,
-          transportationGrant: 0,
-          
-          advisorProfessorName: '-',
-          advisorProfessorId: '-',
-          supervisorName: '-',
-          supervisorRole: '-',
-          internshipSector: '-',
-          technicalActivities: '-',
-          
-          insuranceCompany: '-',
-          insurancePolicyNumber: '-',
-          insuranceCompanyCnpj: '00000000000000',
-          insuranceStartDate: new Date(),
-          insuranceEndDate: new Date(),
+          hasDetailedInfo: true,
         },
       });
 
@@ -124,31 +99,38 @@ async function createInternship(request: NextRequest) {
         },
       });
 
+      // Criar documento de seguro (sempre, mesmo se não enviado)
+      const insuranceFile = formData.get('insurance') as File | null;
+      
+      if (insuranceFile) {
+        const insuranceResult = await processUploadedFile(insuranceFile, internship.id, 'LIFE_INSURANCE');
+        if (!('error' in insuranceResult)) {
+          await tx.document.create({
+            data: {
+              type: 'LIFE_INSURANCE',
+              fileUrl: insuranceResult.file.url,
+              status: 'PENDING_ANALYSIS',
+              internshipId: internship.id,
+            },
+          });
+        }
+      } else {
+        await tx.document.create({
+          data: {
+            type: 'LIFE_INSURANCE',
+            status: 'PENDING_ANALYSIS',
+            internshipId: internship.id,
+          },
+        });
+      }
+
       return internship;
     });
 
     return createSuccessResponse(newInternship, 201);
     
   } else {
-    // Estágio Direto - dados completos
-    const dataString = formData.get('data') as string;
-    if (!dataString) {
-      return createErrorResponse('Dados do formulário não fornecidos', 400);
-    }
-
-    let internshipData: Record<string, unknown>;
-    try {
-      internshipData = JSON.parse(dataString);
-    } catch (error) {
-      return createErrorResponse('Dados do formulário inválidos. Por favor, tente novamente.', 400);
-    }
-    
-    // Validar dados
-    const validation = validateRequestBody(createInternshipSchema, internshipData);
-    if (!validation.success) {
-      return validation.error;
-    }
-
+    // Estágio Direto - dados já foram validados acima
     const newInternship = await prisma.$transaction(async (tx) => {
       const internship = await tx.internship.create({
         data: {

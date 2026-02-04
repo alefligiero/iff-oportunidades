@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { jwtVerify } from 'jose';
 import { PrismaClient, Role, Course, Gender } from '@prisma/client';
 import ActionButtons from './ActionButtons';
+import DocumentsModeration from './DocumentsModeration';
 
 const prisma = new PrismaClient();
 
@@ -44,6 +45,7 @@ async function getInternshipDetails(id: string) {
     const internship = await prisma.internship.findUnique({
       where: { id },
       include: {
+        documents: true,
         student: {
           include: {
             user: {
@@ -100,11 +102,26 @@ export default async function InternshipDetailPage({ params }: { params: Promise
             <p className="text-sm text-gray-600 mb-4">Reveja as informações abaixo e aprove ou recuse a solicitação de estágio.</p>
             <ActionButtons
               internshipId={internship.id}
+              internshipStatus={internship.status}
               earlyTerminationRequested={Boolean(internship.earlyTerminationRequested)}
               earlyTerminationApproved={internship.earlyTerminationApproved}
               earlyTerminationReason={internship.earlyTerminationReason}
             />
         </div>
+
+        <DocumentsModeration
+          internshipId={internship.id}
+          internshipStatus={internship.status}
+          initialDocuments={internship.documents.map((doc) => ({
+            id: doc.id,
+            type: doc.type,
+            status: doc.status,
+            fileUrl: doc.fileUrl,
+            rejectionComments: doc.rejectionComments,
+            createdAt: doc.createdAt.toISOString(),
+            updatedAt: doc.updatedAt.toISOString(),
+          }))}
+        />
 
         <div className="border-t border-gray-200 pt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Dados do Aluno</h3>

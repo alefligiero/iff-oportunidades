@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useNotification } from '@/contexts/NotificationContext';
 import { Course, Gender, InternshipModality, InternshipType, Internship } from '@prisma/client';
 
 type PrefilledData = { name: string; email: string; matricula: string; } | null;
@@ -32,6 +33,7 @@ export default function InternshipForm({
   isEditing?: boolean
 }) {
   const router = useRouter();
+  const { addNotification } = useNotification();
   const [internshipType, setInternshipType] = useState<InternshipType>(InternshipType.DIRECT);
   const [tceFile, setTceFile] = useState<File | null>(null);
   const [paeFile, setPaeFile] = useState<File | null>(null);
@@ -180,9 +182,8 @@ export default function InternshipForm({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    // Validação específica por tipo
+    // Validação: TCE e PAE obrigatórios para INTEGRATOR
     if (internshipType === InternshipType.INTEGRATOR) {
-      // Via Agente Integrador - apenas TCE e PAE obrigatórios
       if (!tceFile) {
         setErrors({ tce: 'TCE é obrigatório para estágios via Agente Integrador' });
         return;
@@ -191,21 +192,21 @@ export default function InternshipForm({
         setErrors({ pae: 'PAE é obrigatório para estágios via Agente Integrador' });
         return;
       }
-    } else {
-      // Estágio Direto - validar formulário completo
-      let formIsValid = true;
-      const newErrors: FormErrors = {};
-      Object.keys(formData).forEach(key => {
-        const error = validateField(key, formData[key]);
-        if (error) {
-          newErrors[key] = error;
-          formIsValid = false;
-        }
-      });
-
-      setErrors(newErrors);
-      if (!formIsValid) return;
     }
+
+    // Validar formulário completo para ambos os tipos
+    let formIsValid = true;
+    const newErrors: FormErrors = {};
+    Object.keys(formData).forEach(key => {
+      const error = validateField(key, formData[key]);
+      if (error) {
+        newErrors[key] = error;
+        formIsValid = false;
+      }
+    });
+
+    setErrors(newErrors);
+    if (!formIsValid) return;
 
     setIsLoading(true);
 
@@ -219,6 +220,22 @@ export default function InternshipForm({
         // Via Agente Integrador - apenas uploads
         formDataToSend.append('tce', tceFile!);
         formDataToSend.append('pae', paeFile!);
+
+        const unmaskCurrency = (value: string) => parseFloat(value.replace('R$ ', '').replace(/\./g, '').replace(',', '.'));
+
+        const integratorData = {
+          internshipSector: formData.internshipSector,
+          supervisorName: formData.supervisorName,
+          supervisorRole: formData.supervisorRole,
+          advisorProfessorName: formData.advisorProfessorName,
+          startDate: formData.startDate,
+          endDate: formData.endDate,
+          weeklyHours: parseInt(formData.weeklyHours as string, 10),
+          monthlyGrant: unmaskCurrency(formData.monthlyGrant as string),
+          transportationGrant: unmaskCurrency(formData.transportationGrant as string),
+        };
+
+        formDataToSend.append('data', JSON.stringify(integratorData));
       } else {
         // Estágio Direto - dados completos + seguro opcional
         const unmaskCurrency = (value: string) => parseFloat(value.replace('R$ ', '').replace(/\./g, '').replace(',', '.'));
@@ -264,7 +281,7 @@ export default function InternshipForm({
         throw new Error('Falha na submissão do formulário');
       }
 
-      alert(`Estágio ${isEditing ? 'atualizado' : 'formalizado'} com sucesso!`);
+      addNotification('success', `Estágio ${isEditing ? 'atualizado' : 'formalizado'} com sucesso!`);
       router.push('/dashboard/internships');
       router.refresh();
 
@@ -329,27 +346,17 @@ export default function InternshipForm({
         </fieldset>
       )}
 
-      {/* --- MODO AGENTE INTEGRADOR --- */}
+      {/* --- BANNER PARA MODO AGENTE INTEGRADOR --- */}
       {internshipType === InternshipType.INTEGRATOR && !isEditing && (
         <>
-          <fieldset className="space-y-4">
-            <legend className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Dados do Aluno</legend>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Nome Completo</label>
-                <input type="text" value={prefilledData?.name || ''} disabled className="input-form-disabled mt-1" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Matrícula</label>
-                <input type="text" value={prefilledData?.matricula || ''} disabled className="input-form-disabled mt-1" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
-                <input type="email" value={prefilledData?.email || ''} disabled className="input-form-disabled mt-1" />
-              </div>
-            </div>
-          </fieldset>
+          <div className="border-2 border-blue-300 rounded-lg p-4 bg-blue-50">
+            <p className="text-sm text-blue-900">
+              <strong>ℹ️ Informação:</strong> Os dados do seu estágio (supervisor, datas, remuneração, etc.) podem ser obtidos do TCE fornecido pelo Agente Integrador. 
+              Preencha os campos abaixo com as informações contidas nos documentos TCE e PAE que você está enviando.
+            </p>
+          </div>
 
+          {/* Documentos Obrigatórios */}
           <fieldset className="space-y-4">
             <legend className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Documentos Obrigatórios</legend>
             
@@ -413,153 +420,36 @@ export default function InternshipForm({
               {errors.pae && <p className="text-red-600 text-sm mt-1">{errors.pae}</p>}
             </div>
           </fieldset>
+        </>
+      )}
 
-          {/* Seção de Informações Adicionais (Opcional para INTEGRATOR) */}
-          <fieldset className="space-y-4 border-2 border-blue-200 rounded-lg p-6 bg-blue-50">
-            <legend className="text-lg font-semibold text-gray-900 px-2">
-              📋 Informações Adicionais (Opcional)
-            </legend>
-            <p className="text-sm text-gray-700 mb-4">
-              Os detalhes do seu estágio (datas, supervisor, remuneração, etc.) estão contidos nos arquivos TCE e PAE que você está enviando. 
-              Você pode preencher os campos abaixo se desejar adicionar informações complementares, mas não é obrigatório.
-            </p>
-
-            {/* Setor e Supervisor */}
+      {/* --- DADOS DO ALUNO (para ambos os tipos) --- */}
+      {!isEditing && (
+        <>
+          <fieldset className="space-y-4">
+            <legend className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Dados do Aluno</legend>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="internshipSector" className="block text-sm font-medium text-gray-700">
-                  Setor da Empresa <span className="text-gray-500 text-xs">(opcional)</span>
-                </label>
-                <input 
-                  type="text" 
-                  name="internshipSector" 
-                  id="internshipSector" 
-                  value={formData.internshipSector as string} 
-                  onChange={handleInputChange} 
-                  className="input-form mt-1" 
-                />
+                <label className="block text-sm font-medium text-gray-700">Nome Completo</label>
+                <input type="text" value={prefilledData?.name || ''} disabled className="input-form-disabled mt-1" />
               </div>
               <div>
-                <label htmlFor="supervisorName" className="block text-sm font-medium text-gray-700">
-                  Nome do Supervisor <span className="text-gray-500 text-xs">(opcional)</span>
-                </label>
-                <input 
-                  type="text" 
-                  name="supervisorName" 
-                  id="supervisorName" 
-                  value={formData.supervisorName as string} 
-                  onChange={handleInputChange} 
-                  className="input-form mt-1" 
-                />
+                <label className="block text-sm font-medium text-gray-700">Matrícula</label>
+                <input type="text" value={prefilledData?.matricula || ''} disabled className="input-form-disabled mt-1" />
               </div>
               <div>
-                <label htmlFor="supervisorRole" className="block text-sm font-medium text-gray-700">
-                  Cargo do Supervisor <span className="text-gray-500 text-xs">(opcional)</span>
-                </label>
-                <input 
-                  type="text" 
-                  name="supervisorRole" 
-                  id="supervisorRole" 
-                  value={formData.supervisorRole as string} 
-                  onChange={handleInputChange} 
-                  className="input-form mt-1" 
-                />
-              </div>
-              <div>
-                <label htmlFor="advisorProfessorName" className="block text-sm font-medium text-gray-700">
-                  Professor Orientador <span className="text-gray-500 text-xs">(opcional)</span>
-                </label>
-                <input 
-                  type="text" 
-                  name="advisorProfessorName" 
-                  id="advisorProfessorName" 
-                  value={formData.advisorProfessorName as string} 
-                  onChange={handleInputChange} 
-                  className="input-form mt-1" 
-                />
-              </div>
-            </div>
-
-            {/* Datas e Carga Horária */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
-                  Data de Início <span className="text-gray-500 text-xs">(opcional)</span>
-                </label>
-                <input 
-                  type="date" 
-                  name="startDate" 
-                  id="startDate" 
-                  value={formData.startDate as string} 
-                  onChange={handleInputChange} 
-                  className="input-form mt-1" 
-                />
-              </div>
-              <div>
-                <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
-                  Data de Término <span className="text-gray-500 text-xs">(opcional)</span>
-                </label>
-                <input 
-                  type="date" 
-                  name="endDate" 
-                  id="endDate" 
-                  value={formData.endDate as string} 
-                  onChange={handleInputChange} 
-                  className="input-form mt-1" 
-                />
-              </div>
-              <div>
-                <label htmlFor="weeklyHours" className="block text-sm font-medium text-gray-700">
-                  Carga Horária Semanal <span className="text-gray-500 text-xs">(opcional)</span>
-                </label>
-                <input 
-                  type="number" 
-                  name="weeklyHours" 
-                  id="weeklyHours" 
-                  value={formData.weeklyHours as string} 
-                  onChange={handleInputChange} 
-                  className="input-form mt-1" 
-                />
-              </div>
-            </div>
-
-            {/* Remuneração */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="monthlyGrant" className="block text-sm font-medium text-gray-700">
-                  Bolsa Mensal <span className="text-gray-500 text-xs">(opcional)</span>
-                </label>
-                <input 
-                  type="text" 
-                  name="monthlyGrant" 
-                  id="monthlyGrant" 
-                  value={formData.monthlyGrant as string} 
-                  onChange={handleInputChange} 
-                  className="input-form mt-1" 
-                />
-              </div>
-              <div>
-                <label htmlFor="transportationGrant" className="block text-sm font-medium text-gray-700">
-                  Auxílio Transporte <span className="text-gray-500 text-xs">(opcional)</span>
-                </label>
-                <input 
-                  type="text" 
-                  name="transportationGrant" 
-                  id="transportationGrant" 
-                  value={formData.transportationGrant as string} 
-                  onChange={handleInputChange} 
-                  className="input-form mt-1" 
-                />
+                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" value={prefilledData?.email || ''} disabled className="input-form-disabled mt-1" />
               </div>
             </div>
           </fieldset>
         </>
       )}
 
-      {/* --- MODO ESTÁGIO DIRETO (formulário completo) --- */}
-      {internshipType === InternshipType.DIRECT && (
+      {/* --- FORMULÁRIO COMPLETO (ambos os tipos) --- */}
+      {!isEditing && (
         <>
-      {/* --- DADOS DO ALUNO --- */}
+      {/* --- DADOS DO ALUNO (EXTENDED) --- */}
       <fieldset className="space-y-4">
         <legend className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Dados do Aluno</legend>
         

@@ -13,19 +13,34 @@ type FieldErrors = {
   form?: string;
 };
 
+// Função para obter a rota padrão baseada no role do usuário
+function getDefaultRouteByRole(role: string): string {
+  switch (role) {
+    case 'STUDENT':
+      return '/dashboard/internships';
+    case 'COMPANY':
+      return '/dashboard/vacancies';
+    case 'ADMIN':
+      return '/dashboard/admin/internships';
+    default:
+      return '/dashboard';
+  }
+}
+
 export default function HomePage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login, isAuthenticated, isLoading, user } = useAuth();
   const router = useRouter();
 
   // Redirecionar se já estiver autenticado
   useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      router.push('/dashboard');
+    if (isAuthenticated && !isLoading && user) {
+      const defaultRoute = getDefaultRouteByRole(user.role);
+      router.push(defaultRoute);
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, user, router]);
 
   const validateField = (fieldName: keyof FieldErrors): string | undefined => {
     switch (fieldName) {
@@ -78,7 +93,7 @@ export default function HomePage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md" suppressHydrationWarning>
         <div className="text-center">
             <div className="flex justify-center mb-4">
               <Image

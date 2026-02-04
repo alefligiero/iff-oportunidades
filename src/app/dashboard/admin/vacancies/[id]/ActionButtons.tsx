@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { VacancyStatus } from '@prisma/client';
+import { useNotification } from '@/contexts/NotificationContext';
 
 interface Props {
   vacancyId: string;
@@ -11,6 +12,7 @@ interface Props {
 
 export default function ActionButtons({ vacancyId, status }: Props) {
   const router = useRouter();
+  const { addNotification } = useNotification();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,7 +41,7 @@ export default function ActionButtons({ vacancyId, status }: Props) {
         throw new Error(data.error || 'Falha ao aprovar vaga.');
       }
 
-      alert('Vaga aprovada com sucesso!');
+      addNotification('success', 'Vaga aprovada com sucesso!');
       router.push('/dashboard/admin/vacancies');
       router.refresh();
     } catch (err) {
@@ -58,7 +60,7 @@ export default function ActionButtons({ vacancyId, status }: Props) {
 
   const confirmRejection = async () => {
     if (!rejectionReason.trim()) {
-      alert('Por favor, insira um motivo para a recusa.');
+      addNotification('warning', 'Por favor, insira um motivo para a recusa.');
       return;
     }
 
@@ -81,7 +83,7 @@ export default function ActionButtons({ vacancyId, status }: Props) {
         throw new Error(data.error || 'Falha ao recusar vaga.');
       }
 
-      alert('Vaga recusada com sucesso!');
+      addNotification('success', 'Vaga recusada com sucesso!');
       router.push('/dashboard/admin/vacancies');
       router.refresh();
     } catch (err) {
@@ -102,7 +104,7 @@ export default function ActionButtons({ vacancyId, status }: Props) {
 
   const confirmClosure = async () => {
     if (!closureReason.trim()) {
-      alert('Por favor, insira um motivo para o fechamento.');
+      addNotification('warning', 'Por favor, insira um motivo para o fechamento.');
       return;
     }
 
@@ -125,7 +127,7 @@ export default function ActionButtons({ vacancyId, status }: Props) {
         throw new Error(data.error || 'Falha ao fechar vaga.');
       }
 
-      alert('Vaga fechada com sucesso!');
+      addNotification('success', 'Vaga fechada com sucesso!');
       router.push('/dashboard/admin/vacancies');
       router.refresh();
     } catch (err) {

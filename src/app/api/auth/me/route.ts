@@ -16,7 +16,18 @@ export async function GET(request: NextRequest) {
     }
 
     const secret = new TextEncoder().encode(jwtSecret);
-    const { payload } = await jwtVerify(token, secret);
+    let payload;
+    
+    try {
+      const verified = await jwtVerify(token, secret);
+      payload = verified.payload;
+    } catch (jwtError: any) {
+      // Token expirado ou inválido é uma situação normal, não um erro
+      if (jwtError.code === 'ERR_JWT_EXPIRED') {
+        return NextResponse.json({ error: 'Token expirado. Por favor, faça login novamente.' }, { status: 401 });
+      }
+      return NextResponse.json({ error: 'Token inválido.' }, { status: 401 });
+    }
 
     if (!payload.userId || !payload.role) {
       return NextResponse.json({ error: 'Token inválido.' }, { status: 401 });
@@ -63,7 +74,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erro ao buscar dados do usuário:', error);
-    return NextResponse.json({ error: 'Token inválido ou expirado.' }, { status: 401 });
+    console.error('Erro crítico ao buscar dados do usuário:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor.' }, { status: 500 });
   }
 }

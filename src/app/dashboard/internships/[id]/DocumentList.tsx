@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { DocumentType, DocumentStatus } from '@prisma/client';
+import { useNotification } from '@/contexts/NotificationContext';
 
 interface Document {
   id: string;
@@ -26,7 +27,7 @@ const documentTypeLabels: Record<DocumentType, string> = {
   PERIODIC_REPORT: 'Relatório Periódico',
   TRE: 'Termo de Realização (TRE)',
   RFE: 'Relatório Final (RFE)',
-  SIGNED_CONTRACT: 'Contrato Assinado',
+  SIGNED_CONTRACT: 'TCE + PAE assinados (PDF único)',
   LIFE_INSURANCE: 'Seguro de Vida',
 };
 
@@ -45,6 +46,7 @@ export default function DocumentList({
 }: DocumentListProps) {
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const { addNotification } = useNotification();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -78,7 +80,7 @@ export default function DocumentList({
       document.body.removeChild(a);
     } catch (error) {
       console.error('Erro ao fazer download:', error);
-      alert(error instanceof Error ? error.message : 'Erro ao fazer download do documento');
+      addNotification('error', error instanceof Error ? error.message : 'Erro ao fazer download do documento');
     } finally {
       setDownloading(null);
     }

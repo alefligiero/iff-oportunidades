@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useNotification } from '@/contexts/NotificationContext';
 
 interface CloseVacancyButtonProps {
   vacancyId: string;
@@ -11,7 +12,10 @@ interface CloseVacancyButtonProps {
 
 export default function CloseVacancyButton({ vacancyId, vacancyTitle, status }: CloseVacancyButtonProps) {
   const [isClosing, setIsClosing] = useState(false);
+  const [confirmPending, setConfirmPending] = useState(false);
+  const confirmTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
+  const { addNotification } = useNotification();
 
   // Não mostrar botão se a vaga já está fechada
   if (status === 'CLOSED_BY_COMPANY') {
@@ -19,9 +23,25 @@ export default function CloseVacancyButton({ vacancyId, vacancyTitle, status }: 
   }
 
   const handleClose = async () => {
-    if (!confirm(`Tem certeza que deseja fechar a vaga "${vacancyTitle}"?\n\nEsta ação irá remover a vaga da visualização dos estudantes.`)) {
+    if (!confirmPending) {
+      setConfirmPending(true);
+      addNotification('warning', `Clique novamente para confirmar o fechamento da vaga "${vacancyTitle}".`);
+
+      if (confirmTimeoutRef.current) {
+        clearTimeout(confirmTimeoutRef.current);
+      }
+
+      confirmTimeoutRef.current = setTimeout(() => {
+        setConfirmPending(false);
+      }, 5000);
       return;
     }
+
+    if (confirmTimeoutRef.current) {
+      clearTimeout(confirmTimeoutRef.current);
+      confirmTimeoutRef.current = null;
+    }
+    setConfirmPending(false);
 
     setIsClosing(true);
 
@@ -32,14 +52,15 @@ export default function CloseVacancyButton({ vacancyId, vacancyTitle, status }: 
 
       if (response.ok) {
         // Recarregar a página para atualizar a lista
+        addNotification('success', 'Vaga fechada com sucesso.');
         router.refresh();
       } else {
         const data = await response.json();
-        alert(data.error || 'Erro ao fechar a vaga.');
+        addNotification('error', data.error || 'Erro ao fechar a vaga.');
         setIsClosing(false);
       }
     } catch (error) {
-      alert('Erro ao conectar com o servidor.');
+      addNotification('error', 'Erro ao conectar com o servidor.');
       setIsClosing(false);
     }
   };

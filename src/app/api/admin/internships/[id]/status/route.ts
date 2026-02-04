@@ -5,7 +5,7 @@ import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 
 const updateStatusSchema = z.object({
-  status: z.enum([InternshipStatus.APPROVED, InternshipStatus.CANCELED]),
+  status: z.enum([InternshipStatus.APPROVED, InternshipStatus.CANCELED, InternshipStatus.IN_PROGRESS]),
   rejectionReason: z.string().optional(),
 });
 
@@ -35,6 +35,35 @@ export async function PATCH(
 
     if (status === InternshipStatus.CANCELED && !rejectionReason) {
       return NextResponse.json({ error: 'É obrigatório fornecer um motivo para a recusa.' }, { status: 400 });
+    }
+
+    if (status === InternshipStatus.IN_PROGRESS) {
+      const internship = await prisma.internship.findUnique({
+        where: { id: internshipId },
+        include: { documents: true },
+      });
+
+      if (!internship) {
+        return NextResponse.json({ error: 'Estágio não encontrado.' }, { status: 404 });
+      }
+
+      if (internship.status !== InternshipStatus.APPROVED) {
+        return NextResponse.json({ error: 'O estágio precisa estar aprovado para iniciar.' }, { status: 400 });
+      }
+
+      const hasSignedContract = internship.documents.some(
+        (doc) => doc.type === 'SIGNED_CONTRACT' && doc.status === 'APPROVED'
+      );
+      const hasLifeInsurance = internship.documents.some(
+        (doc) => doc.type === 'LIFE_INSURANCE' && doc.status === 'APPROVED'
+      );
+
+      if (!hasSignedContract || !hasLifeInsurance) {
+        return NextResponse.json(
+          { error: 'É necessário aprovar o TCE + PAE assinados e o seguro de vida para iniciar o estágio.' },
+          { status: 400 }
+        );
+      }
     }
 
     const updatedInternship = await prisma.internship.update({
