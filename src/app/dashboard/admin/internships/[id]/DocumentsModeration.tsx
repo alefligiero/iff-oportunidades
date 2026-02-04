@@ -256,9 +256,13 @@ export default function DocumentsModeration({
               </ul>
             </div>
           )
+        ) : internshipStatus === InternshipStatus.IN_PROGRESS ? (
+          <p className="text-sm text-green-700 font-medium">
+            ✓ Estágio já está em andamento.
+          </p>
         ) : (
           <p className="text-sm text-gray-600">
-            O estágio precisa estar aprovado para iniciar o andamento.
+            Nenhuma ação disponível para este estágio.
           </p>
         )}
       </div>

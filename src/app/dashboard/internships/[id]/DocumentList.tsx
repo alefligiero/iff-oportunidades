@@ -1,13 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { DocumentType, DocumentStatus } from '@prisma/client';
 import { useNotification } from '@/contexts/NotificationContext';
 
 interface Document {
   id: string;
-  type: DocumentType;
-  status: DocumentStatus;
+  type: string; // DocumentType
+  status: string; // DocumentStatus
   fileUrl: string | null;
   rejectionComments: string | null;
   createdAt: string;
@@ -21,7 +20,7 @@ interface DocumentListProps {
   showUploadButton?: boolean;
 }
 
-const documentTypeLabels: Record<DocumentType, string> = {
+const documentTypeLabels: Record<string, string> = {
   TCE: 'Termo de Compromisso (TCE)',
   PAE: 'Plano de Atividades (PAE)',
   PERIODIC_REPORT: 'Relatório Periódico',
@@ -31,12 +30,92 @@ const documentTypeLabels: Record<DocumentType, string> = {
   LIFE_INSURANCE: 'Seguro de Vida',
 };
 
-const statusConfig: Record<DocumentStatus, { text: string; color: string; icon: string }> = {
+const statusConfig: Record<string, { text: string; color: string; icon: string }> = {
   PENDING_ANALYSIS: { text: 'Pendente', color: 'bg-yellow-100 text-yellow-800 border-yellow-300', icon: '🕐' },
   APPROVED: { text: 'Aprovado', color: 'bg-green-100 text-green-800 border-green-300', icon: '✅' },
   REJECTED: { text: 'Rejeitado', color: 'bg-red-100 text-red-800 border-red-300', icon: '❌' },
   SIGNED_VALIDATED: { text: 'Validado', color: 'bg-blue-100 text-blue-800 border-blue-300', icon: '✔️' },
 };
+
+// Componente para renderizar cada documento
+function DocumentRow({
+  doc,
+  documentTypeLabels,
+  statusConfig,
+  formatDate,
+  downloading,
+  handleDownload,
+  showUploadButton = false,
+}: {
+  doc: Document;
+  documentTypeLabels: Record<string, string>;
+  statusConfig: Record<string, { text: string; color: string; icon: string }>;
+  formatDate: (date: string) => string;
+  downloading: string | null;
+  handleDownload: (id: string, name: string) => void;
+  showUploadButton?: boolean;
+}) {
+  return (
+    <div className="p-6 hover:bg-gray-50 transition">
+      {/* Cabeçalho: Título + Status + Botão Download */}
+      <div className="flex items-center justify-between gap-4 mb-3">
+        <div className="flex items-center gap-3">
+          <h4 className="font-semibold text-gray-900">
+            {documentTypeLabels[doc.type]}
+          </h4>
+          <span
+            className={`px-2 py-0.5 text-xs font-semibold rounded-full border ${
+              statusConfig[doc.status].color
+            }`}
+          >
+            {statusConfig[doc.status].icon} {statusConfig[doc.status].text}
+          </span>
+        </div>
+
+        {/* Botão de download */}
+        {doc.fileUrl && (
+          <button
+            onClick={() => handleDownload(doc.id, `${doc.type}_${doc.id}.pdf`)}
+            disabled={downloading === doc.id}
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition whitespace-nowrap"
+            title="Fazer download"
+          >
+            {downloading === doc.id ? (
+              <>⏳ Baixando...</>
+            ) : (
+              <>📥 Download</>
+            )}
+          </button>
+        )}
+      </div>
+
+      {/* Data de envio */}
+      <p className="text-xs text-gray-500 mb-3">
+        Enviado em: {formatDate(doc.createdAt)}
+        {doc.updatedAt !== doc.createdAt && (
+          <span className="ml-2">• Atualizado em: {formatDate(doc.updatedAt)}</span>
+        )}
+      </p>
+
+      {/* Comentários de rejeição */}
+      {doc.status === 'REJECTED' && doc.rejectionComments && (
+        <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded">
+          <p className="font-semibold text-red-800 text-sm mb-1">📋 Motivo da rejeição:</p>
+          <p className="text-red-700 text-sm">{doc.rejectionComments}</p>
+        </div>
+      )}
+
+      {/* Mensagem de instrução para reenvio */}
+      {doc.status === 'REJECTED' && showUploadButton && (
+        <div className="p-3 bg-orange-50 border border-orange-200 rounded">
+          <p className="text-orange-800 text-sm">
+            ℹ️ <strong>Próximo passo:</strong> Corrija o documento conforme o motivo acima e reenvie através da seção de upload.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function DocumentList({
   internshipId,
@@ -44,7 +123,6 @@ export default function DocumentList({
   onRefresh,
   showUploadButton = false,
 }: DocumentListProps) {
-  const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
   const { addNotification } = useNotification();
 
@@ -68,7 +146,6 @@ export default function DocumentList({
         throw new Error(data.error || 'Erro ao fazer download');
       }
 
-      // Criar blob e fazer download
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -86,9 +163,19 @@ export default function DocumentList({
     }
   };
 
-  const toggleExpand = (docId: string) => {
-    setExpandedDoc(expandedDoc === docId ? null : docId);
-  };
+  // Separar documentos por status
+  const approvedDocuments = documents.filter((doc) => doc.status === 'APPROVED');
+  const pendingDocuments = documents.filter((doc) => doc.status === 'PENDING_ANALYSIS');
+  const rejectedDocuments = documents.filter((doc) => doc.status === 'REJECTED');
+
+  // Alertas importantes
+  const hasLifeInsurance = documents.some((doc) => doc.type === 'LIFE_INSURANCE');
+  const lifeInsuranceApproved = documents.some(
+    (doc) => doc.type === 'LIFE_INSURANCE' && doc.status === 'APPROVED'
+  );
+  const tcePaeApproved = documents.some(
+    (doc) => doc.type === 'TCE' && doc.status === 'APPROVED'
+  ) && documents.some((doc) => doc.type === 'PAE' && doc.status === 'APPROVED');
 
   if (documents.length === 0) {
     return (
@@ -132,75 +219,106 @@ export default function DocumentList({
         )}
       </div>
 
-      <div className="divide-y divide-gray-200">
-        {documents.map((doc) => (
-          <div key={doc.id} className="p-4 hover:bg-gray-50 transition">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h4 className="font-medium text-gray-900">
-                    {documentTypeLabels[doc.type]}
-                  </h4>
-                  <span
-                    className={`px-2 py-0.5 text-xs font-semibold rounded-full border ${
-                      statusConfig[doc.status].color
-                    }`}
-                  >
-                    {statusConfig[doc.status].icon} {statusConfig[doc.status].text}
-                  </span>
-                </div>
-
-                <p className="text-xs text-gray-500">
-                  Enviado em: {formatDate(doc.createdAt)}
-                  {doc.updatedAt !== doc.createdAt && (
-                    <span className="ml-2">• Atualizado em: {formatDate(doc.updatedAt)}</span>
-                  )}
-                </p>
-
-                {/* Comentários de rejeição */}
-                {doc.status === 'REJECTED' && doc.rejectionComments && (
-                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm">
-                    <p className="font-medium text-red-800 text-xs mb-1">Motivo da rejeição:</p>
-                    <p className="text-red-700 text-xs">{doc.rejectionComments}</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-2 ml-4">
-                {/* Botão de download */}
-                {doc.fileUrl && (
-                  <button
-                    onClick={() => handleDownload(doc.id, `${doc.type}_${doc.id}.pdf`)}
-                    disabled={downloading === doc.id}
-                    className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center gap-1"
-                    title="Fazer download"
-                  >
-                    {downloading === doc.id ? (
-                      <>⏳ Baixando...</>
-                    ) : (
-                      <>📥 Download</>
-                    )}
-                  </button>
-                )}
-
-                {/* Botão de reenviar (se rejeitado) */}
-                {doc.status === 'REJECTED' && showUploadButton && (
-                  <button
-                    onClick={() => {
-                      // Scroll para o componente de upload
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="px-3 py-1.5 bg-orange-600 text-white text-xs font-medium rounded hover:bg-orange-700 transition flex items-center gap-1"
-                    title="Reenviar documento"
-                  >
-                    🔄 Reenviar
-                  </button>
-                )}
-              </div>
-            </div>
+      {/* Alertas importantes */}
+      <div className="px-6 py-4 space-y-3 border-b border-gray-200">
+        {!hasLifeInsurance && showUploadButton && (
+          <div className="p-3 bg-orange-50 border border-orange-200 rounded">
+            <p className="text-orange-800 text-sm">
+              ⚠️ <strong>Seguro de Vida:</strong> Você ainda não enviou o comprovante de seguro de vida. 
+              Você pode enviar agora na seção de upload acima ou depois antes de iniciar o estágio.
+            </p>
           </div>
-        ))}
+        )}
+
+        {hasLifeInsurance && !lifeInsuranceApproved && showUploadButton && (
+          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
+            <p className="text-yellow-800 text-sm">
+              ⏳ <strong>Seguro de Vida:</strong> Seu comprovante de seguro de vida está pendente de análise.
+            </p>
+          </div>
+        )}
+
+        {tcePaeApproved && !pendingDocuments.some((d) => d.type === 'SIGNED_CONTRACT') && showUploadButton && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+            <p className="text-blue-800 text-sm">
+              📋 <strong>Próximo passo:</strong> Baixe os TCE e PAE abaixo, colete as assinaturas e reenvie como um PDF único.
+            </p>
+          </div>
+        )}
       </div>
+
+      {/* Documentos Aprovados */}
+      {approvedDocuments.length > 0 && (
+        <div>
+          <div className="px-6 py-3 bg-green-50 border-b border-green-200">
+            <h4 className="font-semibold text-green-900 flex items-center gap-2">
+              ✅ Documentos Aprovados ({approvedDocuments.length})
+            </h4>
+          </div>
+          <div className="divide-y divide-gray-200">
+            {approvedDocuments.map((doc) => (
+              <DocumentRow 
+                key={doc.id} 
+                doc={doc} 
+                documentTypeLabels={documentTypeLabels} 
+                statusConfig={statusConfig} 
+                formatDate={formatDate} 
+                downloading={downloading} 
+                handleDownload={handleDownload} 
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Documentos Pendentes */}
+      {pendingDocuments.length > 0 && (
+        <div>
+          <div className="px-6 py-3 bg-yellow-50 border-b border-yellow-200">
+            <h4 className="font-semibold text-yellow-900 flex items-center gap-2">
+              🕐 Documentos Pendentes ({pendingDocuments.length})
+            </h4>
+          </div>
+          <div className="divide-y divide-gray-200">
+            {pendingDocuments.map((doc) => (
+              <DocumentRow 
+                key={doc.id} 
+                doc={doc} 
+                documentTypeLabels={documentTypeLabels} 
+                statusConfig={statusConfig} 
+                formatDate={formatDate} 
+                downloading={downloading} 
+                handleDownload={handleDownload} 
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Documentos Rejeitados */}
+      {rejectedDocuments.length > 0 && (
+        <div>
+          <div className="px-6 py-3 bg-red-50 border-b border-red-200">
+            <h4 className="font-semibold text-red-900 flex items-center gap-2">
+              ❌ Documentos Rejeitados ({rejectedDocuments.length})
+            </h4>
+          </div>
+          <div className="divide-y divide-gray-200">
+            {rejectedDocuments.map((doc) => (
+              <DocumentRow 
+                key={doc.id} 
+                doc={doc} 
+                documentTypeLabels={documentTypeLabels} 
+                statusConfig={statusConfig} 
+                formatDate={formatDate} 
+                downloading={downloading} 
+                handleDownload={handleDownload}
+                showUploadButton={showUploadButton}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Legenda de status */}
       <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">

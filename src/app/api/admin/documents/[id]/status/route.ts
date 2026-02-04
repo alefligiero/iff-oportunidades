@@ -19,10 +19,10 @@ const updateDocumentStatusSchema = z.object({
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const documentId = params.id;
+    const { id: documentId } = await params;
 
     // Autenticação e verificação de admin
     const userPayload = await getUserFromToken(request);

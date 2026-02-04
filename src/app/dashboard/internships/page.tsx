@@ -18,7 +18,7 @@ async function getStudentInternships() {
   const token = (await cookieStore).get('auth_token')?.value;
 
   if (!token) {
-    return { data: [], error: 'Token não encontrado.' };
+    return { data: [], hasActiveInternship: false, error: 'Token não encontrado.' };
   }
 
   try {
@@ -31,7 +31,7 @@ async function getStudentInternships() {
     });
 
     if (!studentProfile) {
-      return { data: [], error: 'Perfil de aluno não encontrado.' };
+      return { data: [], hasActiveInternship: false, error: 'Perfil de aluno não encontrado.' };
     }
 
     const internships = await prisma.internship.findMany({
@@ -39,11 +39,13 @@ async function getStudentInternships() {
       orderBy: { createdAt: 'desc' },
     });
 
-    return { data: internships, error: null };
+    const hasActiveInternship = internships.some(i => i.status === InternshipStatus.IN_PROGRESS);
+
+    return { data: internships, hasActiveInternship, error: null };
 
   } catch (error) {
     console.error("Erro ao buscar estágios no servidor:", error);
-    return { data: [], error: 'Não foi possível carregar os seus estágios.' };
+    return { data: [], hasActiveInternship: false, error: 'Não foi possível carregar os seus estágios.' };
   }
 }
 
@@ -52,15 +54,23 @@ const formatDate = (dateString: Date) => {
 };
 
 export default async function MyInternshipsPage() {
-  const { data: internships, error } = await getStudentInternships();
+  const { data: internships, hasActiveInternship, error } = await getStudentInternships();
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Meus Estágios</h1>
-        <Link href="/dashboard/internships/new" className="bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition-colors text-sm font-medium">
-          Solicitar Novo Estágio
-        </Link>
+        {hasActiveInternship ? (
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-600 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2">
+              ⚠️ Você já possui um estágio em andamento
+            </span>
+          </div>
+        ) : (
+          <Link href="/dashboard/internships/new" className="bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition-colors text-sm font-medium">
+            Solicitar Novo Estágio
+          </Link>
+        )}
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-md">

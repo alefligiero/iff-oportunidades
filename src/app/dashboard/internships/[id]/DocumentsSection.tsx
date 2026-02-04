@@ -65,8 +65,16 @@ export default function DocumentsSection({ internshipId, status, initialDocument
       types.add(DocumentType.RFE);
     }
 
-    return Array.from(types);
+    const approvedTypes = new Set(
+      documents
+        .filter((doc) => doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED)
+        .map((doc) => doc.type)
+    );
+
+    return Array.from(types).filter((type) => !approvedTypes.has(type));
   }, [status, documents]);
+
+  const isUploadDisabled = status === InternshipStatus.CANCELED || allowedTypes.length === 0;
 
   const refreshDocuments = async () => {
     setLoading(true);
@@ -112,7 +120,7 @@ export default function DocumentsSection({ internshipId, status, initialDocument
         internshipId={internshipId}
         allowedTypes={allowedTypes}
         onUploadSuccess={refreshDocuments}
-        disabled={status === InternshipStatus.CANCELED}
+        disabled={isUploadDisabled}
       />
 
       <DocumentList

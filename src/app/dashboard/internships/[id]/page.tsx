@@ -5,6 +5,8 @@ import { PrismaClient, InternshipStatus, InternshipType, InternshipModality, Gen
 import { redirect } from 'next/navigation';
 import RequestEarlyTermination from './RequestEarlyTermination';
 import DocumentsSection from './DocumentsSection';
+import NextStepsGuide from './NextStepsGuide';
+import StatusProgress from './StatusProgress';
 
 const prisma = new PrismaClient();
 
@@ -183,6 +185,10 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
           earlyTerminationHandledAt={internship.earlyTerminationHandledAt ? internship.earlyTerminationHandledAt.toISOString() : null}
           earlyTerminationRejectionReason={internship.earlyTerminationRejectionReason}
         />
+
+        <StatusProgress status={internship.status} />
+
+        <NextStepsGuide status={internship.status} documents={initialDocuments} />
 
         <DocumentsSection
           internshipId={internship.id}

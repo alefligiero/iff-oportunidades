@@ -22,6 +22,18 @@ async function createInternship(request: NextRequest) {
     return createErrorResponse('Perfil de aluno não encontrado.', 404);
   }
 
+  // Verificar se aluno já possui estágio em andamento
+  const activeInternship = await prisma.internship.findFirst({
+    where: {
+      studentId: studentProfile.id,
+      status: 'IN_PROGRESS',
+    },
+  });
+
+  if (activeInternship) {
+    return createErrorResponse('Você já possui um estágio em andamento. Finalize o atual antes de solicitar um novo.', 409);
+  }
+
   // Processar FormData
   const formData = await request.formData();
   const type = formData.get('type') as InternshipType;

@@ -2,13 +2,24 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { jwtVerify } from 'jose';
-import { PrismaClient, Role, Course, Gender } from '@prisma/client';
+import { PrismaClient, Role, Course, Gender, InternshipStatus } from '@prisma/client';
 import ActionButtons from './ActionButtons';
 import DocumentsModeration from './DocumentsModeration';
+import AdminStatusProgress from './AdminStatusProgress';
+import AdminActionGuide from './AdminActionGuide';
+import AdminDocumentAlerts from './AdminDocumentAlerts';
 
 const prisma = new PrismaClient();
 
 export const dynamic = 'force-dynamic';
+
+const statusMap = {
+  [InternshipStatus.IN_ANALYSIS]: { text: 'Em Análise', color: 'bg-yellow-100 text-yellow-800' },
+  [InternshipStatus.APPROVED]: { text: 'Aprovado', color: 'bg-blue-100 text-blue-800' },
+  [InternshipStatus.IN_PROGRESS]: { text: 'Em Andamento', color: 'bg-green-100 text-green-800' },
+  [InternshipStatus.FINISHED]: { text: 'Finalizado', color: 'bg-gray-100 text-gray-800' },
+  [InternshipStatus.CANCELED]: { text: 'Recusado', color: 'bg-red-100 text-red-800' },
+};
 
 const courseLabels: { [key in Course]: string } = {
   [Course.BSI]: 'Bacharelado em Sistemas de Informação',
@@ -81,6 +92,16 @@ export default async function InternshipDetailPage({ params }: { params: Promise
   const { id } = await params;
   const internship = await getInternshipDetails(id);
 
+  const initialDocuments = internship?.documents.map((doc) => ({
+    id: doc.id,
+    type: doc.type,
+    status: doc.status,
+    fileUrl: doc.fileUrl,
+    rejectionComments: doc.rejectionComments,
+    createdAt: doc.createdAt.toISOString(),
+    updatedAt: doc.updatedAt.toISOString(),
+  })) || [];
+
   if (!internship) {
     return (
       <div>
@@ -94,9 +115,18 @@ export default async function InternshipDetailPage({ params }: { params: Promise
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Detalhes da Formalização</h1>
+        <div className="flex items-center space-x-4">
+          <span className={`px-4 py-2 text-sm font-medium rounded-full ${statusMap[internship.status]?.color}`}>
+            {statusMap[internship.status]?.text}
+          </span>
+        </div>
       </div>
 
       <div className="bg-white p-8 rounded-lg shadow-md space-y-8">
+        <AdminStatusProgress status={internship.status} />
+        <AdminActionGuide status={internship.status} />
+        <AdminDocumentAlerts status={internship.status} documents={initialDocuments} />
+
         <div className="p-4 bg-gray-50 rounded-lg">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Ações de Moderação</h3>
             <p className="text-sm text-gray-600 mb-4">Reveja as informações abaixo e aprove ou recuse a solicitação de estágio.</p>
@@ -112,15 +142,7 @@ export default async function InternshipDetailPage({ params }: { params: Promise
         <DocumentsModeration
           internshipId={internship.id}
           internshipStatus={internship.status}
-          initialDocuments={internship.documents.map((doc) => ({
-            id: doc.id,
-            type: doc.type,
-            status: doc.status,
-            fileUrl: doc.fileUrl,
-            rejectionComments: doc.rejectionComments,
-            createdAt: doc.createdAt.toISOString(),
-            updatedAt: doc.updatedAt.toISOString(),
-          }))}
+          initialDocuments={initialDocuments}
         />
 
         <div className="border-t border-gray-200 pt-6">

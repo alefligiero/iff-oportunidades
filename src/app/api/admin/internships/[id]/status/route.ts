@@ -47,10 +47,6 @@ export async function PATCH(
         return NextResponse.json({ error: 'Estágio não encontrado.' }, { status: 404 });
       }
 
-      if (internship.status !== InternshipStatus.APPROVED) {
-        return NextResponse.json({ error: 'O estágio precisa estar aprovado para iniciar.' }, { status: 400 });
-      }
-
       const hasSignedContract = internship.documents.some(
         (doc) => doc.type === 'SIGNED_CONTRACT' && doc.status === 'APPROVED'
       );
