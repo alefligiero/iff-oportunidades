@@ -19,6 +19,7 @@ const statusBadgeMap: { [key in VacancyStatus]: { text: string; color: string } 
   APPROVED: { text: 'Aprovada', color: 'bg-green-100 text-green-800' },
   REJECTED: { text: 'Rejeitada', color: 'bg-red-100 text-red-800' },
   CLOSED_BY_COMPANY: { text: 'Fechada', color: 'bg-gray-100 text-gray-800' },
+  CLOSED_BY_ADMIN: { text: 'Fechada', color: 'bg-gray-100 text-gray-800' },
 };
 
 interface Vacancy {
@@ -31,6 +32,7 @@ interface Vacancy {
   workload: number;
   createdAt: string;
   updatedAt: string;
+  closureReason?: string | null;
   company: { name: string };
   eligibleCourses: Course[];
 }
@@ -102,13 +104,20 @@ export default function VacancyTable({ vacancies, loading = false }: VacancyTabl
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{formatCurrency(vacancy.remuneration)}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{vacancy.workload}h/semana</td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      statusBadgeMap[vacancy.status].color
-                    }`}
-                  >
-                    {statusBadgeMap[vacancy.status].text}
-                  </span>
+                  <div className="flex flex-col gap-1">
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        statusBadgeMap[vacancy.status].color
+                      }`}
+                    >
+                      {statusBadgeMap[vacancy.status].text}
+                    </span>
+                    {(vacancy.status === VacancyStatus.CLOSED_BY_ADMIN || vacancy.status === VacancyStatus.CLOSED_BY_COMPANY) && vacancy.closureReason && (
+                      <span className="text-xs text-gray-600 whitespace-pre-line">
+                        {vacancy.closureReason}
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <Link

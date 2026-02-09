@@ -4,6 +4,7 @@ import { InternshipStatus, Role } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
 const DAYS_TO_CANCEL = 7;
+const CANCELED_NOTE = 'Cancelado automaticamente apos 7 dias em recusado sem correcoes.';
 
 export async function POST(request: NextRequest) {
   const headersList = headers();
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
   try {
     const cutoffDate = new Date(Date.now() - DAYS_TO_CANCEL * 24 * 60 * 60 * 1000);
 
-    const result = await prisma.internship.updateMany({
+    const toCancel = await prisma.internship.findMany({
       where: {
         status: InternshipStatus.REJECTED,
         rejectedAt: {
@@ -25,13 +26,30 @@ export async function POST(request: NextRequest) {
           lte: cutoffDate,
         },
       },
-      data: {
-        status: InternshipStatus.CANCELED,
+      select: {
+        id: true,
+        rejectionReason: true,
       },
     });
 
+    const updates = toCancel.map((internship) => {
+      const reason = internship.rejectionReason
+        ? `${internship.rejectionReason}\n\n${CANCELED_NOTE}`
+        : CANCELED_NOTE;
+
+      return prisma.internship.update({
+        where: { id: internship.id },
+        data: {
+          status: InternshipStatus.CANCELED,
+          rejectionReason: reason,
+        },
+      });
+    });
+
+    await prisma.$transaction(updates);
+
     return NextResponse.json({
-      updated: result.count,
+      updated: toCancel.length,
       cutoffDate: cutoffDate.toISOString(),
       daysToCancel: DAYS_TO_CANCEL,
     });

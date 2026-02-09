@@ -170,6 +170,20 @@ export default async function VacancyDetailAdminPage({ params }: { params: Promi
 
       {/* Card Principal */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        {vacancy.status === 'REJECTED' && vacancy.rejectionReason && (
+          <div className="p-6 border-b border-gray-200 bg-red-50">
+            <h2 className="text-lg font-semibold text-red-900 mb-2">Motivo da Rejeicao</h2>
+            <p className="text-red-800 whitespace-pre-line">{vacancy.rejectionReason}</p>
+          </div>
+        )}
+
+        {(vacancy.status === 'CLOSED_BY_ADMIN' || vacancy.status === 'CLOSED_BY_COMPANY') && vacancy.closureReason && (
+          <div className="p-6 border-b border-gray-200 bg-gray-50">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Observacao de Fechamento</h2>
+            <p className="text-gray-700 whitespace-pre-line">{vacancy.closureReason}</p>
+          </div>
+        )}
+
         {/* Informações Principais */}
         <div className="p-6 border-b border-gray-200">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

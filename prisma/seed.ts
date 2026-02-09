@@ -1,10 +1,13 @@
-import { PrismaClient, Role, VacancyType, VacancyStatus } from '@prisma/client';
+import { PrismaClient, Role, VacancyType, VacancyStatus, VacancyModality, Course } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Iniciando o seed...');
+
+  const autoCancelNote = 'Cancelado automaticamente apos 7 dias em recusado sem correcoes.';
+  const autoCloseNote = 'Fechada automaticamente apos 7 dias em rejeitada sem correcoes.';
 
   // Limpar dados existentes
   await prisma.document.deleteMany({});
@@ -135,9 +138,207 @@ async function main() {
         },
       },
     },
+    include: { companyProfile: true },
   });
 
-  console.log('🏢 Empresa criada:', company1.email);
+  const company2 = await prisma.user.create({
+    data: {
+      email: 'contato@agrosul.com.br',
+      password: defaultPassword,
+      role: Role.COMPANY,
+      companyProfile: {
+        create: {
+          name: 'AgroSul Tecnologia Agrícola',
+          cnpj: '98.765.432/0001-10',
+          location: 'Itaperuna, RJ',
+          description: 'Soluções digitais para o agronegócio e gestão de produção.',
+        },
+      },
+    },
+    include: { companyProfile: true },
+  });
+
+  const company3 = await prisma.user.create({
+    data: {
+      email: 'recrutamento@medicore.com.br',
+      password: defaultPassword,
+      role: Role.COMPANY,
+      companyProfile: {
+        create: {
+          name: 'MediCore Sistemas de Saude',
+          cnpj: '45.123.987/0001-55',
+          location: 'Niteroi, RJ',
+          description: 'Plataformas para gestao hospitalar e prontuarios eletrônicos.',
+        },
+      },
+    },
+    include: { companyProfile: true },
+  });
+
+  const company4 = await prisma.user.create({
+    data: {
+      email: 'jobs@brisklog.com.br',
+      password: defaultPassword,
+      role: Role.COMPANY,
+      companyProfile: {
+        create: {
+          name: 'BriskLog Logistica Inteligente',
+          cnpj: '27.654.321/0001-88',
+          location: 'Rio de Janeiro, RJ',
+          description: 'Operacao logística com foco em automacao e dados.',
+        },
+      },
+    },
+    include: { companyProfile: true },
+  });
+
+  console.log('🏢 Empresas criadas:', company1.email, company2.email, company3.email, company4.email);
+
+  if (company1.companyProfile && company2.companyProfile && company3.companyProfile && company4.companyProfile) {
+    await prisma.jobVacancy.createMany({
+      data: [
+        {
+          title: 'Estagio em Front-end React',
+          description: 'Atue no desenvolvimento de interfaces web modernas e acessiveis.',
+          type: VacancyType.INTERNSHIP,
+          status: VacancyStatus.APPROVED,
+          companyId: company1.companyProfile.id,
+          remuneration: 900,
+          workload: 20,
+          benefits: 'Auxilio transporte e refeicao',
+          contactInfo: 'rh@techcorp.com.br',
+          eligibleCourses: [Course.BSI],
+          minPeriod: 3,
+          modality: VacancyModality.REMOTO,
+          responsibilities: 'Criar componentes, revisar UI e colaborar com design.',
+          softSkills: 'Comunicacao, trabalho em equipe',
+          technicalSkills: 'React, TypeScript, CSS',
+        },
+        {
+          title: 'Estagio em Suporte de Sistemas',
+          description: 'Apoio ao time interno na manutencao de sistemas corporativos.',
+          type: VacancyType.INTERNSHIP,
+          status: VacancyStatus.PENDING_APPROVAL,
+          companyId: company1.companyProfile.id,
+          remuneration: 700,
+          workload: 20,
+          benefits: 'Vale transporte',
+          contactInfo: 'rh@techcorp.com.br',
+          eligibleCourses: [Course.TEC_INFO_INTEGRADO],
+          minPeriod: 2,
+          modality: VacancyModality.PRESENCIAL,
+          responsibilities: 'Atender chamados, documentar e apoiar melhorias.',
+          softSkills: 'Organizacao, empatia',
+          technicalSkills: 'Windows, suporte usuario, redes basicas',
+        },
+        {
+          title: 'Estagio em Dados Agricolas',
+          description: 'Apoio em analises e dashboards para producao agricola.',
+          type: VacancyType.INTERNSHIP,
+          status: VacancyStatus.REJECTED,
+          companyId: company2.companyProfile.id,
+          remuneration: 850,
+          workload: 25,
+          benefits: 'Auxilio alimentacao',
+          contactInfo: 'contato@agrosul.com.br',
+          eligibleCourses: [Course.BSI, Course.ENG_MECANICA],
+          minPeriod: 4,
+          modality: VacancyModality.HIBRIDO,
+          responsibilities: 'Gerar relatorios, validar dados e apoiar squads.',
+          softSkills: 'Pensamento analitico, colaboracao',
+          technicalSkills: 'SQL, Power BI, Excel',
+          rejectionReason: 'Descricao incompleta e carga horaria acima do permitido.',
+        },
+        {
+          title: 'Estagio em QA e Testes',
+          description: 'Execucao de testes manuais e apoio em automacao basica.',
+          type: VacancyType.INTERNSHIP,
+          status: VacancyStatus.APPROVED,
+          companyId: company2.companyProfile.id,
+          remuneration: 780,
+          workload: 20,
+          benefits: 'Auxilio transporte',
+          contactInfo: 'contato@agrosul.com.br',
+          eligibleCourses: [Course.TEC_INFO_INTEGRADO],
+          minPeriod: 2,
+          modality: VacancyModality.REMOTO,
+          responsibilities: 'Registrar bugs, executar roteiros e validar releases.',
+          softSkills: 'Atencao a detalhes, comunicacao',
+          technicalSkills: 'Testes manuais, Jira, Git basico',
+        },
+        {
+          title: 'Estagio em Suporte Hospitalar',
+          description: 'Apoio na operacao de sistemas hospitalares.',
+          type: VacancyType.INTERNSHIP,
+          status: VacancyStatus.CLOSED_BY_COMPANY,
+          companyId: company3.companyProfile.id,
+          remuneration: 820,
+          workload: 20,
+          benefits: 'Auxilio alimentacao',
+          contactInfo: 'recrutamento@medicore.com.br',
+          eligibleCourses: [Course.TEC_INFO_INTEGRADO, Course.BSI],
+          minPeriod: 2,
+          modality: VacancyModality.PRESENCIAL,
+          responsibilities: 'Suporte ao usuario e treinamento basico.',
+          softSkills: 'Paciencia, resolucao de problemas',
+          technicalSkills: 'Windows, suporte usuario, redes',
+          closureReason: 'Vaga preenchida internamente.',
+        },
+        {
+          title: 'Estagio em Desenvolvimento Backend',
+          description: 'Apoio na construcao de APIs e integracoes.',
+          type: VacancyType.INTERNSHIP,
+          status: VacancyStatus.PENDING_APPROVAL,
+          companyId: company3.companyProfile.id,
+          remuneration: 1000,
+          workload: 30,
+          benefits: 'Auxilio transporte',
+          contactInfo: 'recrutamento@medicore.com.br',
+          eligibleCourses: [Course.BSI],
+          minPeriod: 5,
+          modality: VacancyModality.HIBRIDO,
+          responsibilities: 'Implementar endpoints e testes basicos.',
+          softSkills: 'Proatividade, colaboracao',
+          technicalSkills: 'Node.js, TypeScript, SQL',
+        },
+        {
+          title: 'Estagio em Operacoes de Logistica',
+          description: 'Apoio na analise de rotas e indicadores.',
+          type: VacancyType.INTERNSHIP,
+          status: VacancyStatus.CLOSED_BY_ADMIN,
+          companyId: company4.companyProfile.id,
+          remuneration: 750,
+          workload: 20,
+          benefits: 'Auxilio transporte',
+          contactInfo: 'jobs@brisklog.com.br',
+          eligibleCourses: [Course.ENG_MECANICA, Course.BSI],
+          minPeriod: 3,
+          modality: VacancyModality.PRESENCIAL,
+          responsibilities: 'Acompanhar indicadores e sugerir melhorias.',
+          softSkills: 'Organizacao, comunicacao',
+          technicalSkills: 'Excel, Power BI basico',
+          closureReason: autoCloseNote,
+        },
+        {
+          title: 'Estagio em Automacao e Dados',
+          description: 'Apoio em scripts e automacoes internas.',
+          type: VacancyType.INTERNSHIP,
+          status: VacancyStatus.APPROVED,
+          companyId: company4.companyProfile.id,
+          remuneration: 950,
+          workload: 25,
+          benefits: 'Auxilio refeicao',
+          contactInfo: 'jobs@brisklog.com.br',
+          eligibleCourses: [Course.BSI, Course.TEC_INFO_INTEGRADO],
+          minPeriod: 4,
+          modality: VacancyModality.REMOTO,
+          responsibilities: 'Criar automacoes e documentar processos.',
+          softSkills: 'Foco em resultados, autonomia',
+          technicalSkills: 'Python, Git, APIs',
+        },
+      ],
+    });
+  }
 
   // Buscar perfis
   const profiles = await Promise.all([
@@ -387,7 +588,7 @@ async function main() {
     });
   }
 
-  // Estágio 5: RECUSADO (Lucas)
+  // Estágio 5: CANCELADO (Lucas)
   if (profile5) {
     await prisma.internship.create({
       data: {
@@ -434,7 +635,8 @@ async function main() {
         insuranceCompanyCnpj: '99988877766655',
         insuranceStartDate: new Date('2024-01-15'),
         insuranceEndDate: new Date('2024-07-15'),
-        rejectionReason: 'Carga horária semanal incompatível com o curso. O estágio requer 20 horas semanais, mas o curso permite apenas 15 horas.',
+        rejectionReason: `Carga horaria semanal incompatível com o curso. O estágio requer 20 horas semanais, mas o curso permite apenas 15 horas.\n\n${autoCancelNote}`,
+        rejectedAt: new Date('2024-01-20'),
       },
     });
   }
@@ -510,10 +712,15 @@ async function main() {
   console.log('   2️⃣  maria.oliveira@estudante.iff.edu.br - APROVADO');
   console.log('   3️⃣  pedro.santos@estudante.iff.edu.br - EM ANDAMENTO');
   console.log('   4️⃣  ana.costa@estudante.iff.edu.br - FINALIZADO');
-  console.log('   5️⃣  lucas.lima@estudante.iff.edu.br - RECUSADO');
+  console.log('   5️⃣  lucas.lima@estudante.iff.edu.br - CANCELADO');
   console.log('   6️⃣  carla.mendes@estudante.iff.edu.br - SEM DADOS DE SEGURO');
-  console.log('\n🏢 EMPRESA:');
+  console.log('\n🏢 EMPRESAS:');
   console.log('   📧 rh@techcorp.com.br');
+  console.log('   📧 contato@agrosul.com.br');
+  console.log('   📧 recrutamento@medicore.com.br');
+  console.log('   📧 jobs@brisklog.com.br');
+  console.log('\n📌 VAGAS CRIADAS:');
+  console.log('   ✅ 8 vagas (2 por empresa) com status variados');
   console.log('\n🔐 SENHA PADRÃO: 123456');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 }

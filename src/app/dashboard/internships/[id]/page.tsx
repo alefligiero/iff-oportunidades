@@ -233,11 +233,18 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
           </div>
         </div>
 
-        {/* Rejeição */}
+        {/* Rejeicao / Cancelamento */}
         {internship.status === InternshipStatus.REJECTED && internship.rejectionReason && (
           <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
             <h3 className="font-medium text-red-800 mb-2">Motivo da Recusa:</h3>
-            <p className="text-red-700">{internship.rejectionReason}</p>
+            <p className="text-red-700 whitespace-pre-line">{internship.rejectionReason}</p>
+          </div>
+        )}
+
+        {internship.status === InternshipStatus.CANCELED && internship.rejectionReason && (
+          <div className="bg-gray-50 border-l-4 border-gray-400 p-4 rounded-md">
+            <h3 className="font-medium text-gray-800 mb-2">Observacao:</h3>
+            <p className="text-gray-700 whitespace-pre-line">{internship.rejectionReason}</p>
           </div>
         )}
 

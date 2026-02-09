@@ -15,6 +15,7 @@ interface Vacancy {
   workload: number;
   createdAt: string;
   updatedAt: string;
+  closureReason?: string | null;
   company: {
     name: string;
   };

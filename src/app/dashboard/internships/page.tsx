@@ -112,6 +112,13 @@ export default async function MyInternshipsPage() {
                     </Link>
                   </div>
                 )}
+
+                {internship.status === InternshipStatus.CANCELED && internship.rejectionReason && (
+                  <div className="mt-4 p-3 bg-gray-50 border-l-4 border-gray-400">
+                    <p className="text-sm font-semibold text-gray-800">Observacao:</p>
+                    <p className="text-sm text-gray-700 mt-1 whitespace-pre-line">{internship.rejectionReason}</p>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
