@@ -4,6 +4,7 @@ interface Document {
   id: string;
   type: string; // DocumentType
   status: string; // DocumentStatus
+  fileUrl?: string | null;
 }
 
 interface NextStepsGuideProps {
@@ -59,12 +60,14 @@ export default function NextStepsGuide({ status, documents }: NextStepsGuideProp
         (doc) => doc.type === 'SIGNED_CONTRACT' && doc.status === 'APPROVED'
       );
       const lifeInsuranceApproved = documents.some(
-        (doc) => doc.type === 'LIFE_INSURANCE' && doc.status === 'APPROVED'
+        (doc) => doc.type === 'LIFE_INSURANCE' && doc.status === 'APPROVED' && Boolean(doc.fileUrl)
       );
       const lifecInsurancePending = documents.some(
-        (doc) => doc.type === 'LIFE_INSURANCE' && doc.status === 'PENDING_ANALYSIS'
+        (doc) => doc.type === 'LIFE_INSURANCE' && doc.status === 'PENDING_ANALYSIS' && Boolean(doc.fileUrl)
       );
-      const noLifeInsurance = !documents.some((doc) => doc.type === 'LIFE_INSURANCE');
+      const noLifeInsurance = !documents.some(
+        (doc) => doc.type === 'LIFE_INSURANCE' && Boolean(doc.fileUrl)
+      );
 
       // Se já tem TCE/PAE assinados aprovados
       if (signedContractApproved) {

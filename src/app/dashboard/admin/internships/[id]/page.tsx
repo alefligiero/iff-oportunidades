@@ -88,6 +88,14 @@ const DetailItem = ({ label, value }: { label: string; value: string | number | 
 
 const formatDate = (date: Date) => new Date(date).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 
+const formatInsuranceValidity = (startDate?: Date | null, endDate?: Date | null) => {
+  if (!startDate || !endDate) {
+    return 'Não informado';
+  }
+
+  return `${formatDate(startDate)} a ${formatDate(endDate)}`;
+};
+
 export default async function InternshipDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const internship = await getInternshipDetails(id);
@@ -136,6 +144,7 @@ export default async function InternshipDetailPage({ params }: { params: Promise
               earlyTerminationRequested={Boolean(internship.earlyTerminationRequested)}
               earlyTerminationApproved={internship.earlyTerminationApproved}
               earlyTerminationReason={internship.earlyTerminationReason}
+              documents={initialDocuments}
             />
         </div>
 
@@ -207,7 +216,10 @@ export default async function InternshipDetailPage({ params }: { params: Promise
                 <DetailItem label="Seguradora" value={internship.insuranceCompany} />
                 <DetailItem label="Nº da Apólice" value={internship.insurancePolicyNumber} />
                 <DetailItem label="CNPJ da Seguradora" value={internship.insuranceCompanyCnpj} />
-                <DetailItem label="Vigência do Seguro" value={`${formatDate(internship.insuranceStartDate)} a ${formatDate(internship.insuranceEndDate)}`} />
+                <DetailItem
+                  label="Vigência do Seguro"
+                  value={formatInsuranceValidity(internship.insuranceStartDate, internship.insuranceEndDate)}
+                />
             </dl>
         </div>
 

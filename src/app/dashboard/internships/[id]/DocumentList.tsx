@@ -163,21 +163,23 @@ export default function DocumentList({
     }
   };
 
+  const visibleDocuments = documents.filter((doc) => Boolean(doc.fileUrl));
+
   // Separar documentos por status
-  const approvedDocuments = documents.filter((doc) => doc.status === 'APPROVED');
-  const pendingDocuments = documents.filter((doc) => doc.status === 'PENDING_ANALYSIS');
-  const rejectedDocuments = documents.filter((doc) => doc.status === 'REJECTED');
+  const approvedDocuments = visibleDocuments.filter((doc) => doc.status === 'APPROVED');
+  const pendingDocuments = visibleDocuments.filter((doc) => doc.status === 'PENDING_ANALYSIS');
+  const rejectedDocuments = visibleDocuments.filter((doc) => doc.status === 'REJECTED');
 
   // Alertas importantes
-  const hasLifeInsurance = documents.some((doc) => doc.type === 'LIFE_INSURANCE');
-  const lifeInsuranceApproved = documents.some(
+  const hasLifeInsurance = visibleDocuments.some((doc) => doc.type === 'LIFE_INSURANCE');
+  const lifeInsuranceApproved = visibleDocuments.some(
     (doc) => doc.type === 'LIFE_INSURANCE' && doc.status === 'APPROVED'
   );
-  const tcePaeApproved = documents.some(
+  const tcePaeApproved = visibleDocuments.some(
     (doc) => doc.type === 'TCE' && doc.status === 'APPROVED'
-  ) && documents.some((doc) => doc.type === 'PAE' && doc.status === 'APPROVED');
+  ) && visibleDocuments.some((doc) => doc.type === 'PAE' && doc.status === 'APPROVED');
 
-  if (documents.length === 0) {
+  if (visibleDocuments.length === 0) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 text-center">
         <div className="text-gray-400 mb-2">

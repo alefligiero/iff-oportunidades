@@ -111,9 +111,9 @@ async function createInternship(request: NextRequest) {
         },
       });
 
-      // Criar documento de seguro (sempre, mesmo se não enviado)
+      // Criar documento de seguro somente se houver arquivo enviado
       const insuranceFile = formData.get('insurance') as File | null;
-      
+
       if (insuranceFile) {
         const insuranceResult = await processUploadedFile(insuranceFile, internship.id, 'LIFE_INSURANCE');
         if (!('error' in insuranceResult)) {
@@ -126,14 +126,6 @@ async function createInternship(request: NextRequest) {
             },
           });
         }
-      } else {
-        await tx.document.create({
-          data: {
-            type: 'LIFE_INSURANCE',
-            status: 'PENDING_ANALYSIS',
-            internshipId: internship.id,
-          },
-        });
       }
 
       return internship;
@@ -153,9 +145,9 @@ async function createInternship(request: NextRequest) {
         },
       });
 
-      // Criar documento de seguro (sempre, mesmo se não enviado)
+      // Criar documento de seguro somente se houver arquivo enviado
       const insuranceFile = formData.get('insurance') as File | null;
-      
+
       if (insuranceFile) {
         // Se enviado, fazer upload e criar com arquivo
         const insuranceResult = await processUploadedFile(insuranceFile, internship.id, 'LIFE_INSURANCE');
@@ -169,15 +161,6 @@ async function createInternship(request: NextRequest) {
             },
           });
         }
-      } else {
-        // Se não enviado, criar documento pendente sem arquivo
-        await tx.document.create({
-          data: {
-            type: 'LIFE_INSURANCE',
-            status: 'PENDING_ANALYSIS',
-            internshipId: internship.id,
-          },
-        });
       }
 
       return internship;

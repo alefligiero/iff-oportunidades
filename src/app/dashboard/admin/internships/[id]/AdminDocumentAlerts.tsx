@@ -4,6 +4,7 @@ interface DocumentItem {
   id: string;
   type: string; // DocumentType
   status: string; // DocumentStatus
+  fileUrl?: string | null;
 }
 
 interface AdminDocumentAlertsProps {
@@ -22,13 +23,19 @@ const documentTypeLabels: Record<string, string> = {
 };
 
 export default function AdminDocumentAlerts({ status, documents }: AdminDocumentAlertsProps) {
-  const pendingDocuments = documents.filter((doc) => doc.status === 'PENDING_ANALYSIS');
+  const pendingDocuments = documents.filter(
+    (doc) => doc.status === 'PENDING_ANALYSIS' && Boolean(doc.fileUrl)
+  );
   const pendingLabels = pendingDocuments.map((doc) => documentTypeLabels[doc.type] || doc.type);
 
-  const hasLifeInsurance = documents.some((doc) => doc.type === 'LIFE_INSURANCE');
-  const signedContractExists = documents.some((doc) => doc.type === 'SIGNED_CONTRACT');
+  const hasLifeInsurance = documents.some(
+    (doc) => doc.type === 'LIFE_INSURANCE' && Boolean(doc.fileUrl)
+  );
+  const signedContractExists = documents.some(
+    (doc) => doc.type === 'SIGNED_CONTRACT' && Boolean(doc.fileUrl)
+  );
   const signedContractPending = documents.some(
-    (doc) => doc.type === 'SIGNED_CONTRACT' && doc.status === 'PENDING_ANALYSIS'
+    (doc) => doc.type === 'SIGNED_CONTRACT' && doc.status === 'PENDING_ANALYSIS' && Boolean(doc.fileUrl)
   );
 
   if (pendingDocuments.length === 0 && hasLifeInsurance && (status !== 'APPROVED' || signedContractExists)) {

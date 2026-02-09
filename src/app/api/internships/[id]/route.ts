@@ -172,7 +172,7 @@ export async function PUT(
           }
         });
 
-        if (existingInsurance && existingInsurance.fileUrl) {
+        if (existingInsurance) {
           // Aqui você poderia adicionar lógica para deletar o arquivo do storage
           // Por enquanto, apenas vamos recriar o documento
           await tx.document.delete({

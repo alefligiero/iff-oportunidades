@@ -92,7 +92,7 @@ async function getInternshipDetails(id: string) {
 }
 
 const formatDate = (date: Date) => {
-  return new Date(date).toLocaleDateString('pt-BR');
+  return new Date(date).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 };
 
 const formatCurrency = (value: number) => {

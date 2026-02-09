@@ -107,6 +107,7 @@ export default function InternshipForm({
 
   useEffect(() => {
     if (isEditing && internshipData) {
+      setInternshipType(internshipData.type);
       setFormData({
         studentGender: internshipData.studentGender,
         studentAddressStreet: internshipData.studentAddressStreet,
@@ -462,8 +463,6 @@ export default function InternshipForm({
       )}
 
       {/* --- FORMULÁRIO COMPLETO (ambos os tipos) --- */}
-      {!isEditing && (
-        <>
       {/* --- DADOS DO ALUNO (EXTENDED) --- */}
       <fieldset className="space-y-4">
         <legend className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Dados do Aluno</legend>
@@ -800,8 +799,6 @@ export default function InternshipForm({
           </p>
         </div>
       </fieldset>
-        </>
-      )}
       
       <div className="pt-4 flex justify-end">
         <button type="submit" disabled={isLoading} className="button-primary px-6 py-2">

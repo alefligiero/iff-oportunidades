@@ -5,12 +5,19 @@ import { useRouter } from 'next/navigation';
 import { InternshipStatus } from '@prisma/client';
 import { useNotification } from '@/contexts/NotificationContext';
 
+interface Document {
+  type: string;
+  status: string;
+  fileUrl?: string | null;
+}
+
 interface Props {
   internshipId: string;
   internshipStatus: InternshipStatus;
   earlyTerminationRequested: boolean;
   earlyTerminationApproved: boolean | null;
   earlyTerminationReason: string | null;
+  documents?: Document[];
 }
 
 export default function ActionButtons({
@@ -19,6 +26,7 @@ export default function ActionButtons({
   earlyTerminationRequested,
   earlyTerminationApproved,
   earlyTerminationReason,
+  documents = [],
 }: Props) {
   const router = useRouter();
   const { addNotification } = useNotification();
@@ -31,6 +39,12 @@ export default function ActionButtons({
   const [earlyRejectionReason, setEarlyRejectionReason] = useState('');
 
   const canModerateFormalization = internshipStatus === InternshipStatus.IN_ANALYSIS;
+  
+  // Bloqueia apenas quando TCE/PAE assinados estiverem pendentes de análise
+  const hasSignedContractPending = documents.some(
+    (doc) => doc.type === 'SIGNED_CONTRACT' && doc.status === 'PENDING_ANALYSIS' && Boolean(doc.fileUrl)
+  );
+  const isReadyForApproval = canModerateFormalization && !hasSignedContractPending;
 
   const handleUpdateStatus = async (status: InternshipStatus, reason?: string) => {
     setIsLoading(true);
@@ -110,21 +124,37 @@ export default function ActionButtons({
   return (
     <>
       {canModerateFormalization ? (
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => handleUpdateStatus(InternshipStatus.APPROVED)}
-            disabled={isLoading}
-            className="button-primary px-4 py-2 text-sm bg-green-600 hover:bg-green-700 disabled:bg-green-300"
-          >
-            {isLoading ? 'A processar...' : 'Aprovar formalização'}
-          </button>
-          <button
-            onClick={handleRejectClick}
-            disabled={isLoading}
-            className="button-primary px-4 py-2 text-sm bg-red-600 hover:bg-red-700 disabled:bg-red-300"
-          >
-            {isLoading ? 'A processar...' : 'Recusar formalização'}
-          </button>
+        <div className="space-y-4">
+          {!isReadyForApproval ? (
+            <div className="border border-red-200 bg-red-50 rounded-lg p-4">
+              <p className="text-sm text-red-800">
+                <strong>⚠️ Documentos pendentes de análise:</strong>
+              </p>
+              <ul className="text-sm text-red-700 mt-2 ml-4 list-disc">
+                <li>TCE + PAE assinados (PDF único)</li>
+              </ul>
+              <p className="text-sm text-red-700 mt-2">
+                As ações de aprovação/recusa ficarão disponíveis após a análise dos documentos assinados.
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => handleUpdateStatus(InternshipStatus.APPROVED)}
+                disabled={isLoading}
+                className="button-primary px-4 py-2 text-sm bg-green-600 hover:bg-green-700 disabled:bg-green-300"
+              >
+                {isLoading ? 'A processar...' : 'Aprovar formalização'}
+              </button>
+              <button
+                onClick={handleRejectClick}
+                disabled={isLoading}
+                className="button-primary px-4 py-2 text-sm bg-red-600 hover:bg-red-700 disabled:bg-red-300"
+              >
+                {isLoading ? 'A processar...' : 'Recusar formalização'}
+              </button>
+            </div>
+          )}
           {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
         </div>
       ) : (

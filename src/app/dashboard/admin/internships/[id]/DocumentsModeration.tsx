@@ -49,6 +49,7 @@ export default function DocumentsModeration({
   const [modalOpen, setModalOpen] = useState(false);
   const [modalDocId, setModalDocId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const visibleDocuments = documents.filter((doc) => Boolean(doc.fileUrl));
 
   const refreshDocuments = async () => {
     setLoading(true);
@@ -184,11 +185,11 @@ export default function DocumentsModeration({
         </div>
       )}
 
-      {documents.length === 0 ? (
+      {visibleDocuments.length === 0 ? (
         <p className="text-sm text-gray-600">Nenhum documento enviado ainda.</p>
       ) : (
         <div className="divide-y divide-gray-200">
-          {documents.map((doc) => (
+          {visibleDocuments.map((doc) => (
             <div key={doc.id} className="py-4 flex items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
