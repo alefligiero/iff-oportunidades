@@ -23,6 +23,8 @@ export default function AdminStatusProgress({ status }: AdminStatusProgressProps
         return 3;
       case 'FINISHED':
         return 4;
+      case 'REJECTED':
+        return -1;
       case 'CANCELED':
         return -1;
       default:
@@ -32,10 +34,18 @@ export default function AdminStatusProgress({ status }: AdminStatusProgressProps
 
   const currentStepIndex = getCurrentStepIndex();
 
-  if (status === 'CANCELED') {
+  if (status === 'REJECTED') {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <p className="text-red-800 font-medium">❌ Este estágio foi recusado na análise</p>
+      </div>
+    );
+  }
+
+  if (status === 'CANCELED') {
+    return (
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <p className="text-gray-800 font-medium">🚫 Este estágio foi cancelado por expiração do prazo</p>
       </div>
     );
   }

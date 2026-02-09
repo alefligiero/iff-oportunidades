@@ -41,7 +41,7 @@ export default function NextStepsGuide({ status, documents }: NextStepsGuideProp
     }
 
     // Estágio recusado
-    if (status === 'CANCELED') {
+    if (status === 'REJECTED') {
       return {
         title: '❌ Estágio Recusado',
         steps: [
@@ -51,6 +51,19 @@ export default function NextStepsGuide({ status, documents }: NextStepsGuideProp
         ],
         color: 'bg-red-50 border-red-200',
         textColor: 'text-red-900',
+      };
+    }
+
+    // Estágio cancelado por prazo
+    if (status === 'CANCELED') {
+      return {
+        title: '🚫 Estágio Cancelado',
+        steps: [
+          'O prazo para correção expirou',
+          'Você pode abrir uma nova solicitação de estágio',
+        ],
+        color: 'bg-gray-50 border-gray-200',
+        textColor: 'text-gray-800',
       };
     }
 

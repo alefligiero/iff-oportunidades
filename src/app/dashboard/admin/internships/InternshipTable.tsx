@@ -32,7 +32,8 @@ const statusBadgeMap: { [key in InternshipStatus]: { text: string; color: string
   APPROVED: { text: 'Aprovado', color: 'bg-blue-100 text-blue-800' },
   IN_PROGRESS: { text: 'Em Andamento', color: 'bg-green-100 text-green-800' },
   FINISHED: { text: 'Finalizado', color: 'bg-gray-100 text-gray-800' },
-  CANCELED: { text: 'Cancelado', color: 'bg-red-100 text-red-800' },
+  REJECTED: { text: 'Recusado', color: 'bg-red-100 text-red-800' },
+  CANCELED: { text: 'Cancelado', color: 'bg-gray-100 text-gray-800' },
 };
 
 interface Internship {

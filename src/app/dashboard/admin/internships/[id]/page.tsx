@@ -18,7 +18,8 @@ const statusMap = {
   [InternshipStatus.APPROVED]: { text: 'Aprovado', color: 'bg-blue-100 text-blue-800' },
   [InternshipStatus.IN_PROGRESS]: { text: 'Em Andamento', color: 'bg-green-100 text-green-800' },
   [InternshipStatus.FINISHED]: { text: 'Finalizado', color: 'bg-gray-100 text-gray-800' },
-  [InternshipStatus.CANCELED]: { text: 'Recusado', color: 'bg-red-100 text-red-800' },
+  [InternshipStatus.REJECTED]: { text: 'Recusado', color: 'bg-red-100 text-red-800' },
+  [InternshipStatus.CANCELED]: { text: 'Cancelado', color: 'bg-gray-100 text-gray-800' },
 };
 
 const courseLabels: { [key in Course]: string } = {

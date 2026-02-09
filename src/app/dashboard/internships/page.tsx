@@ -10,7 +10,8 @@ const statusMap = {
   [InternshipStatus.APPROVED]: { text: 'Aprovado', color: 'bg-blue-100 text-blue-800' },
   [InternshipStatus.IN_PROGRESS]: { text: 'Em Andamento', color: 'bg-green-100 text-green-800' },
   [InternshipStatus.FINISHED]: { text: 'Finalizado', color: 'bg-gray-100 text-gray-800' },
-  [InternshipStatus.CANCELED]: { text: 'Recusado', color: 'bg-red-100 text-red-800' },
+  [InternshipStatus.REJECTED]: { text: 'Recusado', color: 'bg-red-100 text-red-800' },
+  [InternshipStatus.CANCELED]: { text: 'Cancelado', color: 'bg-gray-100 text-gray-800' },
 };
 
 async function getStudentInternships() {
@@ -102,7 +103,7 @@ export default async function MyInternshipsPage() {
                   </div>
                 </div>
 
-                {internship.status === InternshipStatus.CANCELED && internship.rejectionReason && (
+                {internship.status === InternshipStatus.REJECTED && internship.rejectionReason && (
                   <div className="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400">
                     <p className="text-sm font-semibold text-yellow-800">Observações da Agência:</p>
                     <p className="text-sm text-yellow-700 mt-1">&ldquo;{internship.rejectionReason}&rdquo;</p>

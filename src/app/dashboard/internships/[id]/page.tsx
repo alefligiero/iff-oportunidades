@@ -16,7 +16,8 @@ const statusMap = {
   [InternshipStatus.APPROVED]: { text: 'Aprovado', color: 'bg-blue-100 text-blue-800' },
   [InternshipStatus.IN_PROGRESS]: { text: 'Em Andamento', color: 'bg-green-100 text-green-800' },
   [InternshipStatus.FINISHED]: { text: 'Finalizado', color: 'bg-gray-100 text-gray-800' },
-  [InternshipStatus.CANCELED]: { text: 'Recusado', color: 'bg-red-100 text-red-800' },
+  [InternshipStatus.REJECTED]: { text: 'Recusado', color: 'bg-red-100 text-red-800' },
+  [InternshipStatus.CANCELED]: { text: 'Cancelado', color: 'bg-gray-100 text-gray-800' },
 };
 
 const typeMap = {
@@ -165,7 +166,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
           <span className={`px-3 py-1 text-sm font-medium rounded-full ${statusMap[internship.status]?.color}`}>
             {statusMap[internship.status]?.text}
           </span>
-          {internship.status === InternshipStatus.CANCELED && (
+          {internship.status === InternshipStatus.REJECTED && (
             <Link 
               href={`/dashboard/internships/edit/${internship.id}`}
               className="bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 text-sm"
@@ -233,7 +234,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
         </div>
 
         {/* Rejeição */}
-        {internship.status === InternshipStatus.CANCELED && internship.rejectionReason && (
+        {internship.status === InternshipStatus.REJECTED && internship.rejectionReason && (
           <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
             <h3 className="font-medium text-red-800 mb-2">Motivo da Recusa:</h3>
             <p className="text-red-700">{internship.rejectionReason}</p>

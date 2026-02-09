@@ -24,6 +24,8 @@ export default function StatusProgress({ status }: StatusProgressProps) {
         return 4;
       case 'FINISHED':
         return 5;
+      case 'REJECTED':
+        return -1;
       case 'CANCELED':
         return -1;
       default:
@@ -33,10 +35,18 @@ export default function StatusProgress({ status }: StatusProgressProps) {
 
   const currentStepIndex = getCurrentStepIndex();
 
-  if (status === 'CANCELED') {
+  if (status === 'REJECTED') {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <p className="text-red-800 font-medium">❌ Este estágio foi recusado</p>
+      </div>
+    );
+  }
+
+  if (status === 'CANCELED') {
+    return (
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <p className="text-gray-700 font-medium">🚫 Este estágio foi cancelado por falta de correção no prazo</p>
       </div>
     );
   }

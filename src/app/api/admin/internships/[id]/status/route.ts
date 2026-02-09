@@ -5,7 +5,7 @@ import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 
 const updateStatusSchema = z.object({
-  status: z.enum([InternshipStatus.APPROVED, InternshipStatus.CANCELED, InternshipStatus.IN_PROGRESS]),
+  status: z.enum([InternshipStatus.APPROVED, InternshipStatus.REJECTED, InternshipStatus.IN_PROGRESS]),
   rejectionReason: z.string().optional(),
 });
 
@@ -33,7 +33,7 @@ export async function PATCH(
 
     const { status, rejectionReason } = validation.data;
 
-    if (status === InternshipStatus.CANCELED && !rejectionReason) {
+    if (status === InternshipStatus.REJECTED && !rejectionReason) {
       return NextResponse.json({ error: 'É obrigatório fornecer um motivo para a recusa.' }, { status: 400 });
     }
 
@@ -68,7 +68,8 @@ export async function PATCH(
       },
       data: {
         status,
-        rejectionReason: status === InternshipStatus.CANCELED ? rejectionReason : null,
+        rejectionReason: status === InternshipStatus.REJECTED ? rejectionReason : null,
+        rejectedAt: status === InternshipStatus.REJECTED ? new Date() : null,
       },
     });
 

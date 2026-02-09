@@ -52,7 +52,7 @@ export default function ActionButtons({
 
     try {
       const body: { status: InternshipStatus; rejectionReason?: string } = { status };
-      if (status === InternshipStatus.CANCELED && reason) {
+      if (status === InternshipStatus.REJECTED && reason) {
         body.rejectionReason = reason;
       }
 
@@ -118,7 +118,7 @@ export default function ActionButtons({
       addNotification('warning', 'Por favor, insira um motivo para a recusa.');
       return;
     }
-    handleUpdateStatus(InternshipStatus.CANCELED, rejectionReason);
+    handleUpdateStatus(InternshipStatus.REJECTED, rejectionReason);
   };
 
   return (

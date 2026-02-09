@@ -5,12 +5,23 @@ interface AdminActionGuideProps {
 }
 
 export default function AdminActionGuide({ status }: AdminActionGuideProps) {
-  if (status === 'CANCELED') {
+  if (status === 'REJECTED') {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-5">
         <h3 className="text-sm font-semibold text-red-800 mb-2">Solicitação recusada</h3>
         <p className="text-sm text-red-700">
           Nenhuma ação pendente no momento. Aguarde nova submissão do aluno.
+        </p>
+      </div>
+    );
+  }
+
+  if (status === 'CANCELED') {
+    return (
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
+        <h3 className="text-sm font-semibold text-gray-800 mb-2">Solicitação cancelada</h3>
+        <p className="text-sm text-gray-700">
+          O prazo de correção expirou e o estágio foi cancelado automaticamente.
         </p>
       </div>
     );

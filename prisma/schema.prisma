@@ -87,6 +87,7 @@ model Internship {
   insuranceEndDate          DateTime?
   insuranceStartDate        DateTime?
   rejectionReason           String?
+  rejectedAt                DateTime?
   earlyTerminationApproved  Boolean?
   earlyTerminationHandledAt DateTime?
   earlyTerminationReason    String?
@@ -166,6 +167,7 @@ enum InternshipModality {
 enum InternshipStatus {
   IN_ANALYSIS
   APPROVED
+  REJECTED
   IN_PROGRESS
   FINISHED
   CANCELED

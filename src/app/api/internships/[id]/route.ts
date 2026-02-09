@@ -159,6 +159,7 @@ export async function PUT(
           ...updatedData,
           status: 'IN_ANALYSIS',
           rejectionReason: null,
+          rejectedAt: null,
         },
       });
 

@@ -7,10 +7,11 @@ const statusConfig = {
   APPROVED: { label: 'Aprovados', color: 'border-b-blue-400 text-blue-700' },
   IN_PROGRESS: { label: 'Em Andamento', color: 'border-b-green-400 text-green-700' },
   FINISHED: { label: 'Concluídos', color: 'border-b-gray-400 text-gray-700' },
-  CANCELED: { label: 'Cancelados', color: 'border-b-red-400 text-red-700' },
+  REJECTED: { label: 'Recusados', color: 'border-b-red-400 text-red-700' },
+  CANCELED: { label: 'Cancelados', color: 'border-b-gray-400 text-gray-700' },
 };
 
-const statusOrder: InternshipStatus[] = ['IN_ANALYSIS', 'APPROVED', 'IN_PROGRESS', 'FINISHED', 'CANCELED'];
+const statusOrder: InternshipStatus[] = ['IN_ANALYSIS', 'APPROVED', 'IN_PROGRESS', 'FINISHED', 'REJECTED', 'CANCELED'];
 
 interface InternshipTabsProps {
   activeStatus: InternshipStatus;

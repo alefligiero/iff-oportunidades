@@ -40,6 +40,7 @@ export default function InternshipsPageContent({ allInternships }: InternshipsPa
       APPROVED: 0,
       IN_PROGRESS: 0,
       FINISHED: 0,
+      REJECTED: 0,
       CANCELED: 0,
     };
 
