@@ -37,6 +37,7 @@ async function createInternship(request: NextRequest) {
   // Processar FormData
   const formData = await request.formData();
   const type = formData.get('type') as InternshipType;
+  const insuranceFile = formData.get('insurance') as File | null;
 
   if (!type || !Object.values(InternshipType).includes(type)) {
     return createErrorResponse('Tipo de estágio inválido', 400);
@@ -59,6 +60,33 @@ async function createInternship(request: NextRequest) {
   const validation = validateRequestBody(createInternshipSchema, internshipData);
   if (!validation.success) {
     return validation.error;
+  }
+
+  const insuranceCompany = (validation.data.insuranceCompany ?? '').toString().trim();
+  const insurancePolicyNumber = (validation.data.insurancePolicyNumber ?? '').toString().trim();
+  const insuranceCompanyCnpj = (validation.data.insuranceCompanyCnpj ?? '').toString().trim();
+  const insuranceStartDate = validation.data.insuranceStartDate ?? null;
+  const insuranceEndDate = validation.data.insuranceEndDate ?? null;
+
+  const hasInsuranceData = Boolean(
+    insuranceCompany ||
+    insurancePolicyNumber ||
+    insuranceCompanyCnpj ||
+    insuranceStartDate ||
+    insuranceEndDate
+  );
+  const hasAllInsuranceFields = Boolean(
+    insuranceCompany &&
+    insurancePolicyNumber &&
+    insuranceCompanyCnpj &&
+    insuranceStartDate &&
+    insuranceEndDate
+  );
+
+  if (hasInsuranceData || insuranceFile) {
+    if (!insuranceFile || !hasAllInsuranceFields) {
+      return createErrorResponse('Envie os dados do seguro e o comprovante no mesmo envio.', 400);
+    }
   }
 
   if (type === InternshipType.INTEGRATOR) {
@@ -112,8 +140,6 @@ async function createInternship(request: NextRequest) {
       });
 
       // Criar documento de seguro somente se houver arquivo enviado
-      const insuranceFile = formData.get('insurance') as File | null;
-
       if (insuranceFile) {
         const insuranceResult = await processUploadedFile(insuranceFile, internship.id, 'LIFE_INSURANCE');
         if (!('error' in insuranceResult)) {
@@ -146,8 +172,6 @@ async function createInternship(request: NextRequest) {
       });
 
       // Criar documento de seguro somente se houver arquivo enviado
-      const insuranceFile = formData.get('insurance') as File | null;
-
       if (insuranceFile) {
         // Se enviado, fazer upload e criar com arquivo
         const insuranceResult = await processUploadedFile(insuranceFile, internship.id, 'LIFE_INSURANCE');

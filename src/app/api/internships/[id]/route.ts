@@ -151,6 +151,52 @@ export async function PUT(
     // Verificar se há novo seguro para upload
     const insuranceFile = formData.get('insurance') as File | null;
 
+    const insuranceCompany = (updatedData.insuranceCompany ?? '').toString().trim();
+    const insurancePolicyNumber = (updatedData.insurancePolicyNumber ?? '').toString().trim();
+    const insuranceCompanyCnpj = (updatedData.insuranceCompanyCnpj ?? '').toString().trim();
+    const insuranceStartDate = updatedData.insuranceStartDate ?? null;
+    const insuranceEndDate = updatedData.insuranceEndDate ?? null;
+
+    const hasInsuranceData = Boolean(
+      insuranceCompany ||
+      insurancePolicyNumber ||
+      insuranceCompanyCnpj ||
+      insuranceStartDate ||
+      insuranceEndDate
+    );
+    const hasAllInsuranceFields = Boolean(
+      insuranceCompany &&
+      insurancePolicyNumber &&
+      insuranceCompanyCnpj &&
+      insuranceStartDate &&
+      insuranceEndDate
+    );
+
+    const existingInsuranceProof = await prisma.document.findFirst({
+      where: {
+        internshipId: internshipId,
+        type: 'LIFE_INSURANCE',
+        fileUrl: { not: null },
+      },
+      select: { id: true },
+    });
+
+    if (!existingInsuranceProof && (hasInsuranceData || insuranceFile)) {
+      if (!insuranceFile || !hasAllInsuranceFields) {
+        return NextResponse.json(
+          { error: 'Envie os dados do seguro e o comprovante no mesmo envio.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (insuranceFile && !hasAllInsuranceFields) {
+      return NextResponse.json(
+        { error: 'Preencha todos os dados do seguro antes de enviar o comprovante.' },
+        { status: 400 }
+      );
+    }
+
     const updatedInternship = await prisma.$transaction(async (tx) => {
       // Atualizar estágio
       const internship = await tx.internship.update({

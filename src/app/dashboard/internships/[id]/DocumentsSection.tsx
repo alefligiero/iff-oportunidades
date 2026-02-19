@@ -41,9 +41,6 @@ export default function DocumentsSection({ internshipId, status, initialDocument
   const allowedTypes = useMemo<DocumentType[]>(() => {
     const types = new Set<DocumentType>();
     
-    // Seguro de vida sempre disponível (opcional desde o início para estágios diretos)
-    types.add(DocumentType.LIFE_INSURANCE);
-
     // TCE e PAE apenas se foram enviados via Agente Integrador
     // (se existem nos documentos, significa que o estágio é via integrador)
     const hasTceOrPae = documents.some(doc => doc.type === DocumentType.TCE || doc.type === DocumentType.PAE);

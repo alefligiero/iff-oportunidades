@@ -394,21 +394,8 @@ async function main() {
         supervisorRole: 'Supervisor Técnico',
         internshipSector: 'Desenvolvimento de Software',
         technicalActivities: 'Desenvolvimento de aplicações web, manutenção de sistemas.',
-        insuranceCompany: 'Seguradora Proteção Total',
-        insurancePolicyNumber: 'APL-2024-001234',
-        insuranceCompanyCnpj: '55666777000188',
-        insuranceStartDate: new Date('2024-02-15'),
-        insuranceEndDate: new Date('2024-12-15'),
       },
-    });
-
-    await prisma.document.create({
-      data: {
-        type: 'LIFE_INSURANCE',
-        status: 'PENDING_ANALYSIS',
-        internshipId: internship.id,
-      },
-    });
+    );
   }
 
   // Estágio 2: APROVADO (Maria)

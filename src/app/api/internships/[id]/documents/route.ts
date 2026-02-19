@@ -59,6 +59,23 @@ export async function POST(
       return createErrorResponse('Tipo de documento inválido', 400);
     }
 
+    if (documentType === DocumentType.LIFE_INSURANCE) {
+      const hasAllInsuranceData = Boolean(
+        internship.insuranceCompany &&
+        internship.insurancePolicyNumber &&
+        internship.insuranceCompanyCnpj &&
+        internship.insuranceStartDate &&
+        internship.insuranceEndDate
+      );
+
+      if (!hasAllInsuranceData) {
+        return createErrorResponse(
+          'Preencha os dados do seguro antes de enviar o comprovante.',
+          400
+        );
+      }
+    }
+
     // Verificar se já existe documento deste tipo (para substituir)
     const existingDocument = await prisma.document.findFirst({
       where: {

@@ -219,6 +219,36 @@ export default function InternshipForm({
       }
     });
 
+    const hasInsuranceData = Boolean(
+      String(formData.insuranceCompany || '').trim() ||
+      String(formData.insurancePolicyNumber || '').trim() ||
+      String(formData.insuranceCompanyCnpj || '').trim() ||
+      String(formData.insuranceStartDate || '').trim() ||
+      String(formData.insuranceEndDate || '').trim()
+    );
+
+    const hadInsuranceDataInitially = Boolean(
+      internshipData?.insuranceCompany ||
+      internshipData?.insurancePolicyNumber ||
+      internshipData?.insuranceCompanyCnpj ||
+      internshipData?.insuranceStartDate ||
+      internshipData?.insuranceEndDate
+    );
+
+    if (insuranceFile && !hasInsuranceData) {
+      newErrors.insuranceCompany = 'Preencha os dados do seguro junto com o comprovante.';
+      newErrors.insurancePolicyNumber = 'Preencha os dados do seguro junto com o comprovante.';
+      newErrors.insuranceCompanyCnpj = 'Preencha os dados do seguro junto com o comprovante.';
+      newErrors.insuranceStartDate = 'Preencha os dados do seguro junto com o comprovante.';
+      newErrors.insuranceEndDate = 'Preencha os dados do seguro junto com o comprovante.';
+      formIsValid = false;
+    }
+
+    if (!insuranceFile && hasInsuranceData && !hadInsuranceDataInitially) {
+      newErrors.insuranceFile = 'Envie o comprovante do seguro junto com os dados.';
+      formIsValid = false;
+    }
+
     setErrors(newErrors);
     if (!formIsValid) return;
 
@@ -734,7 +764,7 @@ export default function InternshipForm({
         <legend className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Dados do Seguro de Vida</legend>
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
           <p className="text-sm text-blue-800">
-            ℹ️ <strong>Opcional:</strong> Preencha os dados do seguro quando obtiver o comprovante. Você pode enviar agora ou depois na seção de documentos.
+            ℹ️ <strong>Importante:</strong> Caso opte por enviar o seguro agora, preencha os dados e anexe o comprovante nesta mesma secao.
           </p>
         </div>
         
@@ -771,7 +801,7 @@ export default function InternshipForm({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Comprovante do Seguro (Opcional)
+            Comprovante do Seguro
           </label>
           <input
             ref={insuranceInputRef}
@@ -794,8 +824,11 @@ export default function InternshipForm({
               </span>
             )}
           </div>
+          {errors.insuranceFile && (
+            <p className="mt-1 text-xs text-red-600">{errors.insuranceFile}</p>
+          )}
           <p className="mt-1 text-xs text-gray-500">
-            Você pode enviar agora ou depois na seção de documentos. Formatos aceitos: PDF, JPEG, PNG
+            O comprovante deve ser enviado junto com os dados. Formatos aceitos: PDF, JPEG, PNG
           </p>
         </div>
       </fieldset>

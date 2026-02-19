@@ -20,6 +20,8 @@ export default function InsuranceDataForm({ internshipId, currentData }: Insuran
   const { addNotification } = useNotification();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [insuranceFile, setInsuranceFile] = useState<File | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     insuranceCompany: currentData.insuranceCompany || '',
     insurancePolicyNumber: currentData.insurancePolicyNumber || '',
@@ -48,20 +50,45 @@ export default function InsuranceDataForm({ internshipId, currentData }: Insuran
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const hasInsuranceData = Boolean(
+      formData.insuranceCompany.trim() ||
+      formData.insurancePolicyNumber.trim() ||
+      formData.insuranceCompanyCnpj.trim() ||
+      formData.insuranceStartDate ||
+      formData.insuranceEndDate
+    );
+
+    const newErrors: Record<string, string> = {};
+    if (!formData.insuranceCompany.trim()) newErrors.insuranceCompany = 'Informe a seguradora.';
+    if (!formData.insurancePolicyNumber.trim()) newErrors.insurancePolicyNumber = 'Informe o numero da apolice.';
+    if (!formData.insuranceCompanyCnpj.trim()) newErrors.insuranceCompanyCnpj = 'Informe o CNPJ da seguradora.';
+    if (!formData.insuranceStartDate) newErrors.insuranceStartDate = 'Informe o inicio da vigencia.';
+    if (!formData.insuranceEndDate) newErrors.insuranceEndDate = 'Informe o fim da vigencia.';
+    if (!insuranceFile) newErrors.insuranceFile = 'Envie o comprovante do seguro.';
+
+    if (Object.keys(newErrors).length > 0 || !hasInsuranceData || !insuranceFile) {
+      setErrors(newErrors);
+      addNotification('warning', 'Preencha todos os dados e envie o comprovante.');
+      return;
+    }
+
+    setErrors({});
+
     setIsLoading(true);
 
     try {
+      const payload = new FormData();
+      payload.append('insuranceCompany', formData.insuranceCompany.trim());
+      payload.append('insurancePolicyNumber', formData.insurancePolicyNumber.trim());
+      payload.append('insuranceCompanyCnpj', formData.insuranceCompanyCnpj.replace(/\D/g, ''));
+      payload.append('insuranceStartDate', formData.insuranceStartDate);
+      payload.append('insuranceEndDate', formData.insuranceEndDate);
+      payload.append('insurance', insuranceFile);
+
       const response = await fetch(`/api/internships/${internshipId}/insurance`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({
-          insuranceCompany: formData.insuranceCompany,
-          insurancePolicyNumber: formData.insurancePolicyNumber,
-          insuranceCompanyCnpj: formData.insuranceCompanyCnpj.replace(/\D/g, ''),
-          insuranceStartDate: formData.insuranceStartDate || null,
-          insuranceEndDate: formData.insuranceEndDate || null,
-        }),
+        body: payload,
       });
 
       const data = await response.json();
@@ -72,6 +99,7 @@ export default function InsuranceDataForm({ internshipId, currentData }: Insuran
 
       addNotification('success', 'Dados do seguro atualizados com sucesso!');
       setIsEditing(false);
+      setInsuranceFile(null);
       router.refresh();
     } catch (error) {
       addNotification('error', error instanceof Error ? error.message : 'Erro ao atualizar');
@@ -93,7 +121,7 @@ export default function InsuranceDataForm({ internshipId, currentData }: Insuran
           ⚠️ Dados do seguro não preenchidos
         </p>
         <p className="text-sm text-amber-700 mb-3">
-          Preencha os dados do seguro de vida quando obtiver o comprovante.
+          Envie os dados do seguro junto com o comprovante nesta secao.
         </p>
         <button
           onClick={() => setIsEditing(true)}
@@ -120,9 +148,11 @@ export default function InsuranceDataForm({ internshipId, currentData }: Insuran
               name="insuranceCompany"
               value={formData.insuranceCompany}
               onChange={handleChange}
-              required
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
             />
+            {errors.insuranceCompany && (
+              <p className="mt-1 text-xs text-red-600">{errors.insuranceCompany}</p>
+            )}
           </div>
           <div>
             <label htmlFor="insurancePolicyNumber" className="block text-sm font-medium text-gray-700 mb-1">
@@ -134,9 +164,11 @@ export default function InsuranceDataForm({ internshipId, currentData }: Insuran
               name="insurancePolicyNumber"
               value={formData.insurancePolicyNumber}
               onChange={handleChange}
-              required
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
             />
+            {errors.insurancePolicyNumber && (
+              <p className="mt-1 text-xs text-red-600">{errors.insurancePolicyNumber}</p>
+            )}
           </div>
           <div>
             <label htmlFor="insuranceCompanyCnpj" className="block text-sm font-medium text-gray-700 mb-1">
@@ -149,9 +181,11 @@ export default function InsuranceDataForm({ internshipId, currentData }: Insuran
               value={formData.insuranceCompanyCnpj}
               onChange={handleChange}
               placeholder="00.000.000/0000-00"
-              required
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
             />
+            {errors.insuranceCompanyCnpj && (
+              <p className="mt-1 text-xs text-red-600">{errors.insuranceCompanyCnpj}</p>
+            )}
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -165,9 +199,11 @@ export default function InsuranceDataForm({ internshipId, currentData }: Insuran
               name="insuranceStartDate"
               value={formData.insuranceStartDate}
               onChange={handleChange}
-              required
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900"
             />
+            {errors.insuranceStartDate && (
+              <p className="mt-1 text-xs text-red-600">{errors.insuranceStartDate}</p>
+            )}
           </div>
           <div>
             <label htmlFor="insuranceEndDate" className="block text-sm font-medium text-gray-700 mb-1">
@@ -179,9 +215,11 @@ export default function InsuranceDataForm({ internshipId, currentData }: Insuran
               name="insuranceEndDate"
               value={formData.insuranceEndDate}
               onChange={handleChange}
-              required
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900"
             />
+            {errors.insuranceEndDate && (
+              <p className="mt-1 text-xs text-red-600">{errors.insuranceEndDate}</p>
+            )}
           </div>
         </div>
         <div className="flex gap-3 pt-2">
@@ -200,6 +238,36 @@ export default function InsuranceDataForm({ internshipId, currentData }: Insuran
           >
             Cancelar
           </button>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Comprovante do Seguro *
+          </label>
+          <input
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            onChange={(e) => setInsuranceFile(e.target.files?.[0] || null)}
+            className="hidden"
+            id="insurance-proof"
+          />
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => document.getElementById('insurance-proof')?.click()}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm"
+            >
+              {insuranceFile ? 'Alterar arquivo' : 'Selecionar arquivo'}
+            </button>
+            {insuranceFile && (
+              <span className="text-sm text-gray-700">✓ {insuranceFile.name}</span>
+            )}
+          </div>
+          {errors.insuranceFile && (
+            <p className="mt-1 text-xs text-red-600">{errors.insuranceFile}</p>
+          )}
+          <p className="mt-1 text-xs text-gray-500">
+            Envie o comprovante junto com os dados do seguro. Formatos aceitos: PDF, JPEG, PNG.
+          </p>
         </div>
       </form>
     </div>

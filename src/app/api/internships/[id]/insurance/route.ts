@@ -1,15 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/get-user-from-token';
-
-const updateInsuranceSchema = z.object({
-  insuranceCompany: z.string().min(1, 'Nome da seguradora obrigatório'),
-  insurancePolicyNumber: z.string().min(1, 'Número da apólice obrigatório'),
-  insuranceCompanyCnpj: z.string().min(14, 'CNPJ inválido'),
-  insuranceStartDate: z.string().transform(val => val ? new Date(val) : null).nullable(),
-  insuranceEndDate: z.string().transform(val => val ? new Date(val) : null).nullable(),
-});
+import { processUploadedFile } from '@/lib/file-upload';
 
 export async function PATCH(
   request: NextRequest,
@@ -35,25 +27,69 @@ export async function PATCH(
       return NextResponse.json({ error: 'Estágio não encontrado.' }, { status: 404 });
     }
 
-    const body = await request.json();
-    const validation = updateInsuranceSchema.safeParse(body);
+    const formData = await request.formData();
+    const insuranceFile = formData.get('insurance') as File | null;
+    const insuranceCompany = (formData.get('insuranceCompany') as string | null)?.trim() || '';
+    const insurancePolicyNumber = (formData.get('insurancePolicyNumber') as string | null)?.trim() || '';
+    const insuranceCompanyCnpj = (formData.get('insuranceCompanyCnpj') as string | null)?.trim() || '';
+    const insuranceStartDate = (formData.get('insuranceStartDate') as string | null) || '';
+    const insuranceEndDate = (formData.get('insuranceEndDate') as string | null) || '';
 
-    if (!validation.success) {
+    const hasAllInsuranceFields = Boolean(
+      insuranceCompany &&
+      insurancePolicyNumber &&
+      insuranceCompanyCnpj &&
+      insuranceStartDate &&
+      insuranceEndDate
+    );
+
+    if (!insuranceFile || !hasAllInsuranceFields) {
       return NextResponse.json(
-        { error: 'Dados inválidos', details: validation.error.flatten().fieldErrors },
+        { error: 'Envie os dados do seguro e o comprovante no mesmo envio.' },
         { status: 400 }
       );
     }
 
-    const updatedInternship = await prisma.internship.update({
-      where: { id: internshipId },
-      data: {
-        insuranceCompany: validation.data.insuranceCompany,
-        insurancePolicyNumber: validation.data.insurancePolicyNumber,
-        insuranceCompanyCnpj: validation.data.insuranceCompanyCnpj,
-        insuranceStartDate: validation.data.insuranceStartDate,
-        insuranceEndDate: validation.data.insuranceEndDate,
-      },
+    const updatedInternship = await prisma.$transaction(async (tx) => {
+      const internshipUpdated = await tx.internship.update({
+        where: { id: internshipId },
+        data: {
+          insuranceCompany,
+          insurancePolicyNumber,
+          insuranceCompanyCnpj,
+          insuranceStartDate: new Date(insuranceStartDate),
+          insuranceEndDate: new Date(insuranceEndDate),
+        },
+      });
+
+      const existingInsurance = await tx.document.findFirst({
+        where: {
+          internshipId,
+          type: 'LIFE_INSURANCE',
+        },
+      });
+
+      if (existingInsurance) {
+        await tx.document.delete({
+          where: { id: existingInsurance.id },
+        });
+      }
+
+      const insuranceResult = await processUploadedFile(insuranceFile, internshipId, 'LIFE_INSURANCE');
+      if ('error' in insuranceResult) {
+        throw new Error(insuranceResult.error);
+      }
+
+      await tx.document.create({
+        data: {
+          type: 'LIFE_INSURANCE',
+          fileUrl: insuranceResult.file.url,
+          status: 'PENDING_ANALYSIS',
+          internshipId,
+        },
+      });
+
+      return internshipUpdated;
     });
 
     return NextResponse.json({ 
