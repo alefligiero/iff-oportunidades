@@ -245,7 +245,7 @@ export default function DocumentsModeration({
               disabled={loading}
               className="px-4 py-2 text-sm font-medium text-white bg-green-700 rounded hover:bg-green-800 disabled:bg-green-300"
             >
-              Iniciar estágio (mudar para Em andamento)
+              Iniciar estágio
             </button>
           ) : (
             <div className="text-sm text-gray-700">

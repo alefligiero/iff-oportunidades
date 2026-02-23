@@ -1,6 +1,56 @@
 import { z } from 'zod';
 import { Gender, Course, InternshipModality, VacancyType, InternshipStatus, DocumentType, DocumentStatus } from '@prisma/client';
 
+// ===== FUNÇÕES AUXILIARES DE VALIDAÇÃO =====
+
+const validateInternshipDates = (data: any, ctx: any) => {
+  // Skip if dates are not provided
+  if (!data.startDate || !data.endDate) return;
+
+  // Validação: Data de início não pode ser anterior ao dia atual
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const startDateAtMidnight = new Date(data.startDate);
+  startDateAtMidnight.setHours(0, 0, 0, 0);
+  
+  if (startDateAtMidnight < today) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'A data de início não pode ser anterior ao dia atual.',
+      path: ['startDate']
+    });
+  }
+
+  // Validação: Duração mínima de 6 meses
+  const startDate = new Date(data.startDate);
+  const endDate = new Date(data.endDate);
+  
+  // Usar uma abordagem mais precisa: calcular diferença em meses
+  let months = endDate.getMonth() - startDate.getMonth();
+  if (endDate.getDate() < startDate.getDate()) {
+    months--;
+  }
+  months += (endDate.getFullYear() - startDate.getFullYear()) * 12;
+  
+  if (months < 6) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'O estágio deve ter uma duração mínima de 6 meses.',
+      path: ['endDate']
+    });
+  }
+
+  // Validação adicional: endDate deve ser depois de startDate
+  if (endDate <= startDate) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'A data de término deve ser posterior à data de início.',
+      path: ['endDate']
+    });
+  }
+};
+
 // ===== SCHEMAS DE AUTENTICAÇÃO =====
 
 export const loginSchema = z.object({
@@ -45,7 +95,7 @@ export const changePasswordSchema = z.object({
 
 // ===== SCHEMAS DE ESTÁGIO =====
 
-export const createInternshipSchema = z.object({
+const internshipBaseSchema = z.object({
   studentGender: z.nativeEnum(Gender, { message: 'Gênero inválido' }),
   studentAddressStreet: z.string().min(1, 'O endereço é obrigatório.'),
   studentAddressNumber: z.string().min(1, 'O número é obrigatório.'),
@@ -94,6 +144,8 @@ export const createInternshipSchema = z.object({
   ),
 });
 
+export const createInternshipSchema = internshipBaseSchema.superRefine(validateInternshipDates);
+
 export const updateInternshipStatusSchema = z.object({
   status: z.nativeEnum(InternshipStatus, { message: 'Status inválido' }),
   rejectionReason: z.string().optional(),
@@ -116,7 +168,7 @@ export const decideEarlyTerminationSchema = z.object({
   }
 });
 
-export const updateInternshipSchema = createInternshipSchema.partial();
+export const updateInternshipSchema = internshipBaseSchema.partial().superRefine(validateInternshipDates);
 
 // ===== SCHEMAS DE VAGA =====
 

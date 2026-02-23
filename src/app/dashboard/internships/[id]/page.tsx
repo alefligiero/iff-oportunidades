@@ -8,6 +8,7 @@ import DocumentsSection from './DocumentsSection';
 import NextStepsGuide from './NextStepsGuide';
 import StatusProgress from './StatusProgress';
 import InsuranceDataForm from './InsuranceDataForm';
+import PeriodicReportsSection from './PeriodicReportsSection';
 
 const prisma = new PrismaClient();
 
@@ -207,6 +208,11 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
           internshipId={internship.id}
           status={internship.status}
           initialDocuments={initialDocuments}
+        />
+
+        <PeriodicReportsSection
+          internshipId={internship.id}
+          internshipStatus={internship.status}
         />
 
         {/* Cabeçalho */}

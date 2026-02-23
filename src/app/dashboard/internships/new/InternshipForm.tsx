@@ -183,7 +183,40 @@ export default function InternshipForm({
     if (typeof value === 'string' && !value.trim()) {
         return 'Este campo é obrigatório.';
     }
-    // Adicionar outras validações específicas aqui se necessário
+
+    // Validação específica para data de início
+    if (name === 'startDate' && value) {
+      const startDate = new Date(String(value));
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (startDate < today) {
+        return 'A data de início não pode ser anterior ao dia atual.';
+      }
+    }
+
+    // Validação específica para data de término (duração mínima)
+    if (name === 'endDate' && value && formData.startDate) {
+      const startDate = new Date(String(formData.startDate));
+      const endDate = new Date(String(value));
+
+      // Validar se endDate é posterior a startDate
+      if (endDate <= startDate) {
+        return 'A data de término deve ser posterior à data de início.';
+      }
+
+      // Validar duração mínima de 6 meses
+      let months = endDate.getMonth() - startDate.getMonth();
+      if (endDate.getDate() < startDate.getDate()) {
+        months--;
+      }
+      months += (endDate.getFullYear() - startDate.getFullYear()) * 12;
+
+      if (months < 6) {
+        return 'O estágio deve ter uma duração mínima de 6 meses.';
+      }
+    }
+
     return '';
   };
 
@@ -329,7 +362,7 @@ export default function InternshipForm({
       if (!response.ok) {
         console.error('Erro na resposta:', data);
         const errorData = data as Record<string, unknown>;
-        setErrors(errorData.details as Record<string, unknown> || { form: errorData.error || 'Ocorreu um erro.' });
+        setErrors((errorData.details as Record<string, string>) || { form: (errorData.error as string) || 'Ocorreu um erro.' });
         addNotification('error', (errorData.error as string) || 'Erro ao enviar formulário');
         throw new Error('Falha na submissão do formulário');
       }

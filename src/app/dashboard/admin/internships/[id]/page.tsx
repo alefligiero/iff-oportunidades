@@ -5,6 +5,7 @@ import { jwtVerify } from 'jose';
 import { PrismaClient, Role, Course, Gender, InternshipStatus } from '@prisma/client';
 import ActionButtons from './ActionButtons';
 import DocumentsModeration from './DocumentsModeration';
+import PeriodicReportsModeration from './PeriodicReportsModeration';
 import AdminStatusProgress from './AdminStatusProgress';
 import AdminActionGuide from './AdminActionGuide';
 import AdminDocumentAlerts from './AdminDocumentAlerts';
@@ -153,6 +154,14 @@ export default async function InternshipDetailPage({ params }: { params: Promise
           internshipId={internship.id}
           internshipStatus={internship.status}
           initialDocuments={initialDocuments}
+        />
+
+        <PeriodicReportsModeration
+          internshipId={internship.id}
+          internshipStatus={internship.status}
+          initialDocuments={initialDocuments}
+          internshipStartDate={internship.startDate}
+          internshipEndDate={internship.endDate}
         />
 
         <div className="border-t border-gray-200 pt-6">
