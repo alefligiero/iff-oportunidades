@@ -114,23 +114,23 @@ export default function InternshipForm({
         studentAddressNumber: internshipData.studentAddressNumber,
         studentAddressDistrict: internshipData.studentAddressDistrict,
         studentAddressCityState: internshipData.studentAddressCityState,
-        studentAddressCep: maskCEP(internshipData.studentAddressCep),
-        studentPhone: maskPhone(internshipData.studentPhone),
-        studentCpf: maskCPF(internshipData.studentCpf),
+        studentAddressCep: internshipData.studentAddressCep ? maskCEP(internshipData.studentAddressCep) : '',
+        studentPhone: internshipData.studentPhone ? maskPhone(internshipData.studentPhone) : '',
+        studentCpf: internshipData.studentCpf ? maskCPF(internshipData.studentCpf) : '',
         studentCourse: internshipData.studentCourse,
         studentCoursePeriod: internshipData.studentCoursePeriod,
         studentSchoolYear: internshipData.studentSchoolYear,
         companyName: internshipData.companyName,
-        companyCnpj: maskCNPJ(internshipData.companyCnpj),
+        companyCnpj: internshipData.companyCnpj ? maskCNPJ(internshipData.companyCnpj) : '',
         companyRepresentativeName: internshipData.companyRepresentativeName,
         companyRepresentativeRole: internshipData.companyRepresentativeRole,
         companyAddressStreet: internshipData.companyAddressStreet,
         companyAddressNumber: internshipData.companyAddressNumber,
         companyAddressDistrict: internshipData.companyAddressDistrict,
         companyAddressCityState: internshipData.companyAddressCityState,
-        companyAddressCep: maskCEP(internshipData.companyAddressCep),
+        companyAddressCep: internshipData.companyAddressCep ? maskCEP(internshipData.companyAddressCep) : '',
         companyEmail: internshipData.companyEmail,
-        companyPhone: maskPhone(internshipData.companyPhone),
+        companyPhone: internshipData.companyPhone ? maskPhone(internshipData.companyPhone) : '',
         modality: internshipData.modality,
         startDate: formatDateForInput(internshipData.startDate),
         endDate: formatDateForInput(internshipData.endDate),
@@ -144,9 +144,9 @@ export default function InternshipForm({
         supervisorRole: internshipData.supervisorRole,
         internshipSector: internshipData.internshipSector,
         technicalActivities: internshipData.technicalActivities,
-        insuranceCompany: internshipData.insuranceCompany,
-        insurancePolicyNumber: internshipData.insurancePolicyNumber,
-        insuranceCompanyCnpj: maskCNPJ(internshipData.insuranceCompanyCnpj),
+        insuranceCompany: internshipData.insuranceCompany || '',
+        insurancePolicyNumber: internshipData.insurancePolicyNumber || '',
+        insuranceCompanyCnpj: internshipData.insuranceCompanyCnpj ? maskCNPJ(internshipData.insuranceCompanyCnpj) : '',
         insuranceStartDate: formatDateForInput(internshipData.insuranceStartDate),
         insuranceEndDate: formatDateForInput(internshipData.insuranceEndDate),
       });
@@ -318,12 +318,19 @@ export default function InternshipForm({
         credentials: 'include',
       });
 
-      const data = await response.json();
+      let data: unknown;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('Erro ao fazer parse da resposta:', parseError);
+        data = {};
+      }
 
       if (!response.ok) {
         console.error('Erro na resposta:', data);
-        setErrors(data.details || { form: data.error || 'Ocorreu um erro.' });
-        addNotification('error', data.error || 'Erro ao enviar formulário');
+        const errorData = data as Record<string, unknown>;
+        setErrors(errorData.details as Record<string, unknown> || { form: errorData.error || 'Ocorreu um erro.' });
+        addNotification('error', (errorData.error as string) || 'Erro ao enviar formulário');
         throw new Error('Falha na submissão do formulário');
       }
 

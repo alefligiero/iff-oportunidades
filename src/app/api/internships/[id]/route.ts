@@ -198,11 +198,21 @@ export async function PUT(
     }
 
     const updatedInternship = await prisma.$transaction(async (tx) => {
+      // Limpar dados de seguro se todos estiverem vazios
+      const cleanedData = {
+        ...updatedData,
+        insuranceCompany: insuranceCompany || null,
+        insurancePolicyNumber: insurancePolicyNumber || null,
+        insuranceCompanyCnpj: insuranceCompanyCnpj || null,
+        insuranceStartDate: insuranceStartDate,
+        insuranceEndDate: insuranceEndDate,
+      };
+
       // Atualizar estágio
       const internship = await tx.internship.update({
         where: { id: internshipId },
         data: {
-          ...updatedData,
+          ...cleanedData,
           status: 'IN_ANALYSIS',
           rejectionReason: null,
           rejectedAt: null,
