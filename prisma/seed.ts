@@ -395,7 +395,7 @@ async function main() {
         internshipSector: 'Desenvolvimento de Software',
         technicalActivities: 'Desenvolvimento de aplicações web, manutenção de sistemas.',
       },
-    );
+    });
   }
 
   // Estágio 2: APROVADO (Maria)
