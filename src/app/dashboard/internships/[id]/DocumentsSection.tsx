@@ -38,40 +38,52 @@ export default function DocumentsSection({ internshipId, status, initialDocument
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const allowedTypes = useMemo<DocumentType[]>(() => {
-    const types = new Set<DocumentType>();
-    
-    // TCE e PAE apenas se foram enviados via Agente Integrador
-    // (se existem nos documentos, significa que o estágio é via integrador)
-    const hasTceOrPae = documents.some(doc => doc.type === DocumentType.TCE || doc.type === DocumentType.PAE);
-    if (hasTceOrPae) {
-      types.add(DocumentType.TCE);
-      types.add(DocumentType.PAE);
-    }
+  // Documentos "TCE + PAE assinados"
+  const signedContractDocs = useMemo(
+    () => documents.filter((doc) => doc.type === DocumentType.SIGNED_CONTRACT),
+    [documents]
+  );
+  const signedContractApproved = signedContractDocs.some(
+    (doc) => doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED
+  );
+  const signedContractPending = signedContractDocs.some(
+    (doc) => doc.status === DocumentStatus.PENDING_ANALYSIS
+  );
+  const canUploadSignedContract =
+    status !== InternshipStatus.CANCELED &&
+    (status === InternshipStatus.APPROVED || status === InternshipStatus.IN_PROGRESS || status === InternshipStatus.FINISHED) &&
+    !signedContractApproved &&
+    !signedContractPending;
 
-    if (status === InternshipStatus.APPROVED || status === InternshipStatus.IN_PROGRESS || status === InternshipStatus.FINISHED) {
-      types.add(DocumentType.SIGNED_CONTRACT);
-    }
+  // TRE (apenas se internship está finalizado)
+  const treDocs = useMemo(
+    () => documents.filter((doc) => doc.type === DocumentType.TRE),
+    [documents]
+  );
+  const treApproved = treDocs.some(
+    (doc) => doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED
+  );
+  const trePending = treDocs.some((doc) => doc.status === DocumentStatus.PENDING_ANALYSIS);
+  const canUploadTre =
+    status === InternshipStatus.FINISHED && !treApproved && !trePending;
 
-    if (status === InternshipStatus.IN_PROGRESS || status === InternshipStatus.FINISHED) {
-      types.add(DocumentType.PERIODIC_REPORT);
-    }
+  // RFE (apenas se internship está finalizado)
+  const rfeDocs = useMemo(
+    () => documents.filter((doc) => doc.type === DocumentType.RFE),
+    [documents]
+  );
+  const rfeApproved = rfeDocs.some(
+    (doc) => doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED
+  );
+  const rfePending = rfeDocs.some((doc) => doc.status === DocumentStatus.PENDING_ANALYSIS);
+  const canUploadRfe =
+    status === InternshipStatus.FINISHED && !rfeApproved && !rfePending;
 
-    if (status === InternshipStatus.FINISHED) {
-      types.add(DocumentType.TRE);
-      types.add(DocumentType.RFE);
-    }
-
-    const approvedTypes = new Set(
-      documents
-        .filter((doc) => doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED)
-        .map((doc) => doc.type)
-    );
-
-    return Array.from(types).filter((type) => !approvedTypes.has(type));
-  }, [status, documents]);
-
-  const isUploadDisabled = status === InternshipStatus.CANCELED || allowedTypes.length === 0;
+  // LIFE_INSURANCE (Comprovante de Seguro de Vida)
+  const lifeInsuranceDocs = useMemo(
+    () => documents.filter((doc) => doc.type === DocumentType.LIFE_INSURANCE),
+    [documents]
+  );
 
   const refreshDocuments = async () => {
     setLoading(true);
@@ -98,10 +110,10 @@ export default function DocumentsSection({ internshipId, status, initialDocument
   }, [initialDocuments]);
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md space-y-4 border border-gray-200">
+    <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Documentos do Estágio</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Documentos</h2>
           <p className="text-sm text-gray-600">Envie e acompanhe o status dos documentos obrigatórios.</p>
         </div>
         {loading && <span className="text-xs text-gray-500">Atualizando...</span>}
@@ -113,19 +125,112 @@ export default function DocumentsSection({ internshipId, status, initialDocument
         </div>
       )}
 
-      <DocumentUpload
-        internshipId={internshipId}
-        allowedTypes={allowedTypes}
-        onUploadSuccess={refreshDocuments}
-        disabled={isUploadDisabled}
-      />
+      {(status === InternshipStatus.APPROVED || status === InternshipStatus.IN_PROGRESS || status === InternshipStatus.FINISHED) && (
+        <div className="bg-white p-6 rounded-lg shadow-md space-y-4 border border-gray-200">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">TCE + PAE assinados</h3>
+            <p className="text-sm text-gray-600">
+              Envie o PDF unico com as assinaturas do aluno, supervisor e professor orientador.
+            </p>
+          </div>
 
-      <DocumentList
-        internshipId={internshipId}
-        documents={documents}
-        onRefresh={refreshDocuments}
-        showUploadButton
-      />
+          {canUploadSignedContract && (
+            <DocumentUpload
+              internshipId={internshipId}
+              documentType={DocumentType.SIGNED_CONTRACT}
+              onUploadSuccess={refreshDocuments}
+              disabled={false}
+            />
+          )}
+
+          <DocumentList
+            internshipId={internshipId}
+            documents={signedContractDocs}
+            onRefresh={refreshDocuments}
+            showUploadButton
+            title="Envios de TCE + PAE assinados"
+            showAlerts={false}
+          />
+        </div>
+      )}
+
+      {lifeInsuranceDocs.length > 0 && (
+        <div className="bg-white p-6 rounded-lg shadow-md space-y-4 border border-gray-200">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">Comprovante de Seguro de Vida</h3>
+            <p className="text-sm text-gray-600">
+              Acompanhe o status de análise do comprovante de seguro de vida enviado.
+            </p>
+          </div>
+
+          <DocumentList
+            internshipId={internshipId}
+            documents={lifeInsuranceDocs}
+            onRefresh={refreshDocuments}
+            showUploadButton
+            title="Comprovantes de Seguro de Vida enviados"
+            showAlerts={false}
+          />
+        </div>
+      )}
+
+      {status === InternshipStatus.FINISHED && (
+        <>
+          <div className="bg-white p-6 rounded-lg shadow-md space-y-4 border border-gray-200">
+            <div>
+              <h3 className="text-base font-semibold text-gray-900">Termo de Realização de Estágio (TRE)</h3>
+              <p className="text-sm text-gray-600">
+                Documento final comprovando a realização do estágio.
+              </p>
+            </div>
+
+            {canUploadTre && (
+              <DocumentUpload
+                internshipId={internshipId}
+                documentType={DocumentType.TRE}
+                onUploadSuccess={refreshDocuments}
+                disabled={false}
+              />
+            )}
+
+            <DocumentList
+              internshipId={internshipId}
+              documents={treDocs}
+              onRefresh={refreshDocuments}
+              showUploadButton
+              title="TRE enviados"
+              showAlerts={false}
+            />
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-md space-y-4 border border-gray-200">
+            <div>
+              <h3 className="text-base font-semibold text-gray-900">Relatório Final de Estágio (RFE)</h3>
+              <p className="text-sm text-gray-600">
+                Relatório detalhado das atividades realizadas durante o estágio.
+              </p>
+            </div>
+
+            {canUploadRfe && (
+              <DocumentUpload
+                internshipId={internshipId}
+                documentType={DocumentType.RFE}
+                onUploadSuccess={refreshDocuments}
+                disabled={false}
+              />
+            )}
+
+            <DocumentList
+              internshipId={internshipId}
+              documents={rfeDocs}
+              onRefresh={refreshDocuments}
+              showUploadButton
+              title="RFE enviados"
+              showAlerts={false}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

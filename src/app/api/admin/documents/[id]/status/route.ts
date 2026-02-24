@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { DocumentStatus } from '@prisma/client';
+import { DocumentStatus, DocumentType, InternshipStatus } from '@prisma/client';
 import { getUserFromToken } from '@/lib/get-user-from-token';
 import { createSuccessResponse, createErrorResponse, createValidationErrorResponse } from '@/lib/api-response';
 import { z } from 'zod';
@@ -12,6 +12,58 @@ const updateDocumentStatusSchema = z.object({
   }),
   rejectionComments: z.string().optional(),
 });
+
+/**
+ * Verifica se todos os documentos necessários foram aprovados e inicia o estágio automaticamente
+ * Documentos necessários: SIGNED_CONTRACT (TCE + PAE assinados) e LIFE_INSURANCE (Comprovante de Seguro)
+ */
+async function checkAndStartInternshipIfReady(internshipId: string): Promise<void> {
+  // Buscar todos os documentos do estágio
+  const documents = await prisma.document.findMany({
+    where: { internshipId },
+  });
+
+  // Verificar se SIGNED_CONTRACT está aprovado
+  const hasSignedContractApproved = documents.some(
+    (doc) => doc.type === DocumentType.SIGNED_CONTRACT && doc.status === DocumentStatus.APPROVED
+  );
+
+  // Verificar se LIFE_INSURANCE está aprovado
+  const hasLifeInsuranceApproved = documents.some(
+    (doc) => doc.type === DocumentType.LIFE_INSURANCE && doc.status === DocumentStatus.APPROVED
+  );
+
+  // Se ambos estão aprovados, verificar o status do estágio
+  if (hasSignedContractApproved && hasLifeInsuranceApproved) {
+    const internship = await prisma.internship.findUnique({
+      where: { id: internshipId },
+      select: { status: true, startDate: true },
+    });
+
+    // Se estágio está aprovado (aguardando documentos), verificar data de início
+    if (internship?.status === InternshipStatus.APPROVED) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const startDate = new Date(internship.startDate);
+      startDate.setHours(0, 0, 0, 0);
+
+      // Verificar se a data de início já chegou
+      if (startDate <= today) {
+        // Data de início já chegou ou é hoje - iniciar estágio
+        await prisma.internship.update({
+          where: { id: internshipId },
+          data: {
+            status: InternshipStatus.IN_PROGRESS,
+            updatedAt: new Date(),
+          },
+        });
+
+        console.log(`✅ Estágio ${internshipId} iniciado automaticamente`);
+      }
+    }
+  }
+}
 
 /**
  * PATCH /api/admin/documents/[id]/status
@@ -79,6 +131,11 @@ export async function PATCH(
         updatedAt: new Date(),
       },
     });
+
+    // Se documento foi aprovado, verificar se estágio pode iniciar automaticamente
+    if (status === 'APPROVED') {
+      await checkAndStartInternshipIfReady(document.internshipId);
+    }
 
     // TODO: Implementar notificação ao aluno
     // await createNotification({

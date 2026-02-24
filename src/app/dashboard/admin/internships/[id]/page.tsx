@@ -31,16 +31,43 @@ interface DocumentSummary {
   fileUrl: string | null;
 }
 
-const getApprovedSubstatus = (documents: DocumentSummary[]) => {
-  const hasSignedContractApproved = documents.some(
-    (doc) => doc.type === DocumentType.SIGNED_CONTRACT && doc.status === DocumentStatus.APPROVED
-  );
-  const hasLifeInsuranceApproved = documents.some(
-    (doc) => doc.type === DocumentType.LIFE_INSURANCE && doc.status === DocumentStatus.APPROVED && Boolean(doc.fileUrl)
-  );
+const getApprovedSubstatus = (documents: DocumentSummary[], startDate: Date) => {
+  // Verificar status do SIGNED_CONTRACT
+  const signedContract = documents.find((doc) => doc.type === DocumentType.SIGNED_CONTRACT);
+  const hasSignedContractApproved = signedContract?.status === DocumentStatus.APPROVED;
+  const hasSignedContractPending = signedContract?.status === DocumentStatus.PENDING_ANALYSIS;
+  
+  // Verificar status do LIFE_INSURANCE
+  const lifeInsurance = documents.find((doc) => doc.type === DocumentType.LIFE_INSURANCE);
+  const hasLifeInsuranceApproved = lifeInsurance?.status === DocumentStatus.APPROVED && Boolean(lifeInsurance.fileUrl);
+  const hasLifeInsurancePending = lifeInsurance?.status === DocumentStatus.PENDING_ANALYSIS;
 
+  // Prioridade 1: Documentos pendentes de aprovação
+  if (hasSignedContractPending && hasLifeInsurancePending) {
+    return 'Documentos em análise';
+  }
+  if (hasSignedContractPending) {
+    return 'TCE/PAE em análise';
+  }
+  if (hasLifeInsurancePending) {
+    return 'Seguro em análise';
+  }
+  
+  // Prioridade 2: Documentos não enviados ou rejeitados
   if (!hasSignedContractApproved) return 'Aguardando TCE/PAE assinados';
   if (!hasLifeInsuranceApproved) return 'Aguardando Seguro';
+  
+  // Prioridade 3: Verificar se a data de início já chegou
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+  
+  if (start > today) {
+    return 'Aguardando data de início';
+  }
+  
   return 'Pronto para iniciar';
 };
 
@@ -135,7 +162,7 @@ export default async function InternshipDetailPage({ params }: { params: Promise
 
   const approvedSubstatus =
     internship?.status === InternshipStatus.APPROVED
-      ? getApprovedSubstatus(internship.documents)
+      ? getApprovedSubstatus(internship.documents, internship.startDate)
       : null;
 
   if (!internship) {

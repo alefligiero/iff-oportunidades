@@ -5,7 +5,7 @@ import { DocumentType } from '@prisma/client';
 
 interface DocumentUploadProps {
   internshipId: string;
-  allowedTypes?: DocumentType[];
+  documentType: DocumentType;
   onUploadSuccess?: () => void;
   disabled?: boolean;
 }
@@ -22,11 +22,10 @@ const documentTypeLabels: Record<DocumentType, string> = {
 
 export default function DocumentUpload({
   internshipId,
-  allowedTypes,
+  documentType,
   onUploadSuccess,
   disabled = false,
 }: DocumentUploadProps) {
-  const [selectedType, setSelectedType] = useState<DocumentType | ''>('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -34,9 +33,6 @@ export default function DocumentUpload({
   const [dragActive, setDragActive] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Tipos permitidos (todos por padrão ou apenas os especificados)
-  const availableTypes = allowedTypes || Object.keys(documentTypeLabels) as DocumentType[];
 
   // Validar arquivo selecionado
   const validateFile = (file: File): string | null => {
@@ -104,11 +100,6 @@ export default function DocumentUpload({
 
   // Handle upload
   const handleUpload = async () => {
-    if (!selectedType) {
-      setError('Selecione o tipo de documento');
-      return;
-    }
-
     if (!selectedFile) {
       setError('Selecione um arquivo para enviar');
       return;
@@ -121,7 +112,7 @@ export default function DocumentUpload({
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
-      formData.append('type', selectedType);
+      formData.append('type', documentType);
 
       const response = await fetch(`/api/internships/${internshipId}/documents`, {
         method: 'POST',
@@ -137,7 +128,6 @@ export default function DocumentUpload({
 
       setSuccess(data.message || 'Documento enviado com sucesso!');
       setSelectedFile(null);
-      setSelectedType('');
       
       // Reset file input
       if (fileInputRef.current) {
@@ -158,7 +148,6 @@ export default function DocumentUpload({
   // Reset form
   const handleReset = () => {
     setSelectedFile(null);
-    setSelectedType('');
     setError('');
     setSuccess('');
     if (fileInputRef.current) {
@@ -168,7 +157,7 @@ export default function DocumentUpload({
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4">Enviar Documento</h3>
+      <h3 className="text-lg font-semibold text-gray-800 mb-4">Enviar {documentTypeLabels[documentType]}</h3>
 
       {/* Mensagens de erro e sucesso */}
       {error && (
@@ -183,27 +172,6 @@ export default function DocumentUpload({
         </div>
       )}
 
-      {/* Seleção de tipo de documento */}
-      <div className="mb-4">
-        <label htmlFor="documentType" className="block text-sm font-medium text-gray-700 mb-2">
-          Tipo de Documento *
-        </label>
-        <select
-          id="documentType"
-          value={selectedType}
-          onChange={(e) => setSelectedType(e.target.value as DocumentType)}
-          disabled={disabled || uploading}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-        >
-          <option value="" className="text-gray-500">Selecione o tipo de documento</option>
-          {availableTypes.map((type) => (
-            <option key={type} value={type}>
-              {documentTypeLabels[type]}
-            </option>
-          ))}
-        </select>
-      </div>
-
       {/* Área de upload */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -214,7 +182,7 @@ export default function DocumentUpload({
             dragActive
               ? 'border-green-500 bg-green-50'
               : 'border-gray-300 bg-gray-50'
-          } ${disabled || uploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-green-400'}`}
+          } ${disabled || uploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-green-400 hover:bg-green-50'}`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
@@ -279,13 +247,13 @@ export default function DocumentUpload({
       <div className="flex gap-3">
         <button
           onClick={handleUpload}
-          disabled={!selectedType || !selectedFile || uploading || disabled}
+          disabled={!selectedFile || uploading || disabled}
           className="flex-1 bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
         >
           {uploading ? 'Enviando...' : 'Enviar Documento'}
         </button>
         
-        {(selectedFile || selectedType) && !uploading && (
+        {selectedFile && !uploading && (
           <button
             onClick={handleReset}
             disabled={uploading || disabled}

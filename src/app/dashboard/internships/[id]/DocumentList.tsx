@@ -18,6 +18,8 @@ interface DocumentListProps {
   documents: Document[];
   onRefresh?: () => void;
   showUploadButton?: boolean;
+  title?: string;
+  showAlerts?: boolean;
 }
 
 const documentTypeLabels: Record<string, string> = {
@@ -122,6 +124,8 @@ export default function DocumentList({
   documents,
   onRefresh,
   showUploadButton = false,
+  title = 'Documentos Enviados',
+  showAlerts = true,
 }: DocumentListProps) {
   const [downloading, setDownloading] = useState<string | null>(null);
   const { addNotification } = useNotification();
@@ -210,7 +214,7 @@ export default function DocumentList({
   return (
     <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
       <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-800">Documentos Enviados</h3>
+        <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
         {onRefresh && (
           <button
             onClick={onRefresh}
@@ -222,32 +226,34 @@ export default function DocumentList({
       </div>
 
       {/* Alertas importantes */}
-      <div className="px-6 py-4 space-y-3 border-b border-gray-200">
-        {!hasLifeInsurance && showUploadButton && (
-          <div className="p-3 bg-orange-50 border border-orange-200 rounded">
-            <p className="text-orange-800 text-sm">
-              ⚠️ <strong>Seguro de Vida:</strong> Você ainda não enviou o comprovante de seguro de vida. 
-              Você pode enviar agora na seção de upload acima ou depois antes de iniciar o estágio.
-            </p>
-          </div>
-        )}
+      {showAlerts && (
+        <div className="px-6 py-4 space-y-3 border-b border-gray-200">
+          {!hasLifeInsurance && showUploadButton && (
+            <div className="p-3 bg-orange-50 border border-orange-200 rounded">
+              <p className="text-orange-800 text-sm">
+                ⚠️ <strong>Seguro de Vida:</strong> Você ainda não enviou o comprovante de seguro de vida. 
+                Você pode enviar agora na seção de upload acima ou depois antes de iniciar o estágio.
+              </p>
+            </div>
+          )}
 
-        {hasLifeInsurance && !lifeInsuranceApproved && showUploadButton && (
-          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
-            <p className="text-yellow-800 text-sm">
-              ⏳ <strong>Seguro de Vida:</strong> Seu comprovante de seguro de vida está pendente de análise.
-            </p>
-          </div>
-        )}
+          {hasLifeInsurance && !lifeInsuranceApproved && showUploadButton && (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
+              <p className="text-yellow-800 text-sm">
+                ⏳ <strong>Seguro de Vida:</strong> Seu comprovante de seguro de vida está pendente de análise.
+              </p>
+            </div>
+          )}
 
-        {tcePaeApproved && !pendingDocuments.some((d) => d.type === 'SIGNED_CONTRACT') && showUploadButton && (
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded">
-            <p className="text-blue-800 text-sm">
-              📋 <strong>Próximo passo:</strong> Baixe os TCE e PAE abaixo, colete as assinaturas e reenvie como um PDF único.
-            </p>
-          </div>
-        )}
-      </div>
+          {tcePaeApproved && !pendingDocuments.some((d) => d.type === 'SIGNED_CONTRACT') && showUploadButton && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+              <p className="text-blue-800 text-sm">
+                📋 <strong>Próximo passo:</strong> Baixe os TCE e PAE abaixo, colete as assinaturas e reenvie como um PDF único.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Documentos Aprovados */}
       {approvedDocuments.length > 0 && (

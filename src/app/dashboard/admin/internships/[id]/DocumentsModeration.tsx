@@ -49,7 +49,11 @@ export default function DocumentsModeration({
   const [modalOpen, setModalOpen] = useState(false);
   const [modalDocId, setModalDocId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [pendingApprovalDocId, setPendingApprovalDocId] = useState<string | null>(null);
   const visibleDocuments = documents.filter((doc) => Boolean(doc.fileUrl));
+  const signedContractDocs = visibleDocuments.filter((doc) => doc.type === DocumentType.SIGNED_CONTRACT);
+  const otherDocs = visibleDocuments.filter((doc) => doc.type !== DocumentType.SIGNED_CONTRACT);
 
   const refreshDocuments = async () => {
     setLoading(true);
@@ -92,6 +96,9 @@ export default function DocumentsModeration({
       }
 
       await refreshDocuments();
+      
+      // Atualizar a página completa para refletir mudanças no status do estágio
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao atualizar documento');
     } finally {
@@ -99,6 +106,8 @@ export default function DocumentsModeration({
       setModalOpen(false);
       setModalDocId(null);
       setRejectionReason('');
+      setConfirmModalOpen(false);
+      setPendingApprovalDocId(null);
     }
   };
 
@@ -106,6 +115,29 @@ export default function DocumentsModeration({
     setModalDocId(documentId);
     setRejectionReason('');
     setModalOpen(true);
+  };
+
+  const handleApproveClick = (documentId: string) => {
+    // Verificar se ao aprovar este documento, o estágio irá iniciar
+    const documentToApprove = documents.find(d => d.id === documentId);
+    if (!documentToApprove) return;
+
+    const otherRequiredDocType = documentToApprove.type === DocumentType.SIGNED_CONTRACT 
+      ? DocumentType.LIFE_INSURANCE 
+      : DocumentType.SIGNED_CONTRACT;
+
+    const otherDocApproved = documents.some(
+      d => d.type === otherRequiredDocType && d.status === DocumentStatus.APPROVED
+    );
+
+    // Se o outro documento já está aprovado E estágio está APPROVED, mostrar modal de confirmação
+    if (otherDocApproved && internshipStatus === InternshipStatus.APPROVED) {
+      setPendingApprovalDocId(documentId);
+      setConfirmModalOpen(true);
+    } else {
+      // Aprovar diretamente
+      handleUpdateStatus(documentId, DocumentStatus.APPROVED);
+    }
   };
 
   const canStartInternship = useMemo(() => {
@@ -138,31 +170,6 @@ export default function DocumentsModeration({
     return missing;
   }, [documents]);
 
-  const handleStartInternship = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/admin/internships/${internshipId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ status: InternshipStatus.IN_PROGRESS }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao iniciar o estágio');
-      }
-
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao iniciar o estágio');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 space-y-4">
       <div className="flex items-center justify-between">
@@ -188,82 +195,144 @@ export default function DocumentsModeration({
       {visibleDocuments.length === 0 ? (
         <p className="text-sm text-gray-600">Nenhum documento enviado ainda.</p>
       ) : (
-        <div className="divide-y divide-gray-200">
-          {visibleDocuments.map((doc) => (
-            <div key={doc.id} className="py-4 flex items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="font-medium text-gray-900">{documentTypeLabels[doc.type]}</h4>
-                  <span className={`px-2 py-0.5 text-xs font-semibold rounded-full border ${statusConfig[doc.status].color}`}>
-                    {statusConfig[doc.status].text}
-                  </span>
-                </div>
-                {doc.rejectionComments && doc.status === DocumentStatus.REJECTED && (
-                  <p className="text-xs text-red-700 mt-1">Motivo: {doc.rejectionComments}</p>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                {doc.fileUrl && (
-                  <a
-                    href={`/api/documents/${doc.id}/download`}
-                    className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
-                  >
-                    📥 Download
-                  </a>
-                )}
-
-                {doc.status === DocumentStatus.PENDING_ANALYSIS && (
-                  <>
-                    <button
-                      onClick={() => handleUpdateStatus(doc.id, DocumentStatus.APPROVED)}
-                      disabled={loading}
-                      className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 disabled:bg-green-300"
-                    >
-                      Aprovar
-                    </button>
-                    <button
-                      onClick={() => openRejectModal(doc.id)}
-                      disabled={loading}
-                      className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700 disabled:bg-red-300"
-                    >
-                      Recusar
-                    </button>
-                  </>
-                )}
-              </div>
+        <div className="space-y-4">
+          <div className="border border-gray-200 rounded-lg">
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+              <h4 className="text-sm font-semibold text-gray-800">TCE + PAE assinados</h4>
             </div>
-          ))}
+            {signedContractDocs.length === 0 ? (
+              <div className="p-4 text-sm text-gray-600">Nenhum envio de TCE/PAE assinado.</div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {signedContractDocs.map((doc) => (
+                  <div key={doc.id} className="py-4 px-4 flex items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-gray-900">{documentTypeLabels[doc.type]}</h4>
+                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-full border ${statusConfig[doc.status].color}`}>
+                          {statusConfig[doc.status].text}
+                        </span>
+                      </div>
+                      {doc.rejectionComments && doc.status === DocumentStatus.REJECTED && (
+                        <p className="text-xs text-red-700 mt-1">Motivo: {doc.rejectionComments}</p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {doc.fileUrl && (
+                        <a
+                          href={`/api/documents/${doc.id}/download`}
+                          className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+                        >
+                          📥 Download
+                        </a>
+                      )}
+
+                      {doc.status === DocumentStatus.PENDING_ANALYSIS && (
+                        <>
+                          <button
+                            onClick={() => handleApproveClick(doc.id)}
+                            disabled={loading}
+                            className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 disabled:bg-green-300"
+                          >
+                            Aprovar
+                          </button>
+                          <button
+                            onClick={() => openRejectModal(doc.id)}
+                            disabled={loading}
+                            className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700 disabled:bg-red-300"
+                          >
+                            Recusar
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="border border-gray-200 rounded-lg">
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+              <h4 className="text-sm font-semibold text-gray-800">Outros documentos</h4>
+            </div>
+            {otherDocs.length === 0 ? (
+              <div className="p-4 text-sm text-gray-600">Nenhum outro documento enviado.</div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {otherDocs.map((doc) => (
+                  <div key={doc.id} className="py-4 px-4 flex items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-gray-900">{documentTypeLabels[doc.type]}</h4>
+                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-full border ${statusConfig[doc.status].color}`}>
+                          {statusConfig[doc.status].text}
+                        </span>
+                      </div>
+                      {doc.rejectionComments && doc.status === DocumentStatus.REJECTED && (
+                        <p className="text-xs text-red-700 mt-1">Motivo: {doc.rejectionComments}</p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {doc.fileUrl && (
+                        <a
+                          href={`/api/documents/${doc.id}/download`}
+                          className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+                        >
+                          📥 Download
+                        </a>
+                      )}
+
+                      {doc.status === DocumentStatus.PENDING_ANALYSIS && (
+                        <>
+                          <button
+                            onClick={() => handleApproveClick(doc.id)}
+                            disabled={loading}
+                            className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 disabled:bg-green-300"
+                          >
+                            Aprovar
+                          </button>
+                          <button
+                            onClick={() => openRejectModal(doc.id)}
+                            disabled={loading}
+                            className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700 disabled:bg-red-300"
+                          >
+                            Recusar
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       <div className="border-t border-gray-200 pt-4">
-        {internshipStatus === InternshipStatus.APPROVED ? (
-          canStartInternship ? (
-            <button
-              onClick={handleStartInternship}
-              disabled={loading}
-              className="px-4 py-2 text-sm font-medium text-white bg-green-700 rounded hover:bg-green-800 disabled:bg-green-300"
-            >
-              Iniciar estágio
-            </button>
-          ) : (
-            <div className="text-sm text-gray-700">
-              <p className="font-medium">Para iniciar o estágio, falta aprovar:</p>
-              <ul className="list-disc list-inside mt-1">
-                {missingRequirements.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </div>
-          )
+        {internshipStatus === InternshipStatus.APPROVED && !canStartInternship ? (
+          <div className="text-sm text-gray-700">
+            <p className="font-medium">Para que o estágio seja iniciado automaticamente, falta aprovar:</p>
+            <ul className="list-disc list-inside mt-1">
+              {missingRequirements.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        ) : internshipStatus === InternshipStatus.APPROVED && canStartInternship ? (
+          <p className="text-sm text-green-700 font-medium">
+            ✓ Documentos aprovados. O estágio será iniciado automaticamente na data prevista.
+          </p>
         ) : internshipStatus === InternshipStatus.IN_PROGRESS ? (
           <p className="text-sm text-green-700 font-medium">
-            ✓ Estágio já está em andamento.
+            ✓ Estágio em andamento.
           </p>
         ) : (
           <p className="text-sm text-gray-600">
-            Nenhuma ação disponível para este estágio.
+            Aguardando aprovação do formulário de estágio.
           </p>
         )}
       </div>
@@ -304,6 +373,42 @@ export default function DocumentsModeration({
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:bg-red-300"
               >
                 Confirmar recusa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmModalOpen && pendingApprovalDocId && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md">
+            <h3 className="text-lg font-bold text-gray-900">⚠️ Confirmação de aprovação</h3>
+            <p className="text-sm text-gray-700 mt-3 mb-4">
+              Ao aprovar este documento, <strong>o estágio será iniciado automaticamente</strong> (caso a data de início já tenha chegado).
+            </p>
+            <p className="text-sm text-gray-600 mb-4">
+              Tem certeza que deseja aprovar este documento?
+            </p>
+            <div className="mt-4 flex justify-end space-x-2">
+              <button
+                onClick={() => {
+                  setConfirmModalOpen(false);
+                  setPendingApprovalDocId(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (pendingApprovalDocId) {
+                    handleUpdateStatus(pendingApprovalDocId, DocumentStatus.APPROVED);
+                  }
+                }}
+                disabled={loading}
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg disabled:bg-green-300"
+              >
+                Confirmar aprovação
               </button>
             </div>
           </div>
