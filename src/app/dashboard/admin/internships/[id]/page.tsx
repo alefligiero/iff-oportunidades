@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { jwtVerify } from 'jose';
-import { PrismaClient, Role, Course, Gender, InternshipStatus } from '@prisma/client';
+import { PrismaClient, Role, Course, Gender, InternshipStatus, DocumentType, DocumentStatus } from '@prisma/client';
 import ActionButtons from './ActionButtons';
 import DocumentsModeration from './DocumentsModeration';
 import PeriodicReportsModeration from './PeriodicReportsModeration';
@@ -21,6 +21,27 @@ const statusMap = {
   [InternshipStatus.FINISHED]: { text: 'Finalizado', color: 'bg-gray-100 text-gray-800' },
   [InternshipStatus.REJECTED]: { text: 'Recusado', color: 'bg-red-100 text-red-800' },
   [InternshipStatus.CANCELED]: { text: 'Cancelado', color: 'bg-gray-100 text-gray-800' },
+};
+
+const AUTO_CANCEL_NOTE = 'Cancelado automaticamente apos 7 dias em recusado sem correcoes.';
+
+interface DocumentSummary {
+  type: DocumentType;
+  status: DocumentStatus;
+  fileUrl: string | null;
+}
+
+const getApprovedSubstatus = (documents: DocumentSummary[]) => {
+  const hasSignedContractApproved = documents.some(
+    (doc) => doc.type === DocumentType.SIGNED_CONTRACT && doc.status === DocumentStatus.APPROVED
+  );
+  const hasLifeInsuranceApproved = documents.some(
+    (doc) => doc.type === DocumentType.LIFE_INSURANCE && doc.status === DocumentStatus.APPROVED && Boolean(doc.fileUrl)
+  );
+
+  if (!hasSignedContractApproved) return 'Aguardando TCE/PAE assinados';
+  if (!hasLifeInsuranceApproved) return 'Aguardando Seguro';
+  return 'Pronto para iniciar';
 };
 
 const courseLabels: { [key in Course]: string } = {
@@ -112,6 +133,11 @@ export default async function InternshipDetailPage({ params }: { params: Promise
     updatedAt: doc.updatedAt.toISOString(),
   })) || [];
 
+  const approvedSubstatus =
+    internship?.status === InternshipStatus.APPROVED
+      ? getApprovedSubstatus(internship.documents)
+      : null;
+
   if (!internship) {
     return (
       <div>
@@ -129,13 +155,52 @@ export default async function InternshipDetailPage({ params }: { params: Promise
           <span className={`px-4 py-2 text-sm font-medium rounded-full ${statusMap[internship.status]?.color}`}>
             {statusMap[internship.status]?.text}
           </span>
+          {approvedSubstatus && (
+            <span className="text-xs text-gray-600">Aprovado - {approvedSubstatus}</span>
+          )}
         </div>
       </div>
 
       <div className="bg-white p-8 rounded-lg shadow-md space-y-8">
-        <AdminStatusProgress status={internship.status} />
+        <AdminStatusProgress
+          status={internship.status}
+          rejectionReason={internship.rejectionReason}
+          earlyTerminationReason={internship.earlyTerminationReason}
+          earlyTerminationRequested={internship.earlyTerminationRequested}
+        />
         <AdminActionGuide status={internship.status} />
         <AdminDocumentAlerts status={internship.status} documents={initialDocuments} />
+
+        {/* Admin-finished message */}
+        {internship.status === InternshipStatus.FINISHED &&
+         internship.earlyTerminationReason &&
+         !internship.earlyTerminationRequested && (
+          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md">
+            <h3 className="font-medium text-blue-800 mb-2">Estágio concluído pelo Admin:</h3>
+            <p className="text-blue-700 whitespace-pre-line">{internship.earlyTerminationReason}</p>
+          </div>
+        )}
+
+        {/* Admin-canceled or auto-canceled message */}
+        {internship.status === InternshipStatus.CANCELED && internship.rejectionReason && (
+          <div className="bg-gray-50 border-l-4 border-gray-400 p-4 rounded-md">
+            <h3 className="font-medium text-gray-800 mb-2">
+              {internship.rejectionReason.includes(AUTO_CANCEL_NOTE)
+                ? 'Estágio cancelado automaticamente'
+                : 'Estágio cancelado pelo Admin'}
+              :
+            </h3>
+            <p className="text-gray-700 whitespace-pre-line">{internship.rejectionReason}</p>
+          </div>
+        )}
+
+        {/* Rejection message */}
+        {internship.status === InternshipStatus.REJECTED && internship.rejectionReason && (
+          <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+            <h3 className="font-medium text-red-800 mb-2">Motivo da recusa:</h3>
+            <p className="text-red-700 whitespace-pre-line">{internship.rejectionReason}</p>
+          </div>
+        )}
 
         <div className="p-4 bg-gray-50 rounded-lg">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Ações de Moderação</h3>

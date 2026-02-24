@@ -17,6 +17,13 @@ export async function GET(request: NextRequest) {
             matricula: true,
           },
         },
+        documents: {
+          select: {
+            type: true,
+            status: true,
+            fileUrl: true,
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',

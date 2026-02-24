@@ -37,6 +37,9 @@ export default function ActionButtons({
   const [rejectionReason, setRejectionReason] = useState('');
   const [earlyModalOpen, setEarlyModalOpen] = useState(false);
   const [earlyRejectionReason, setEarlyRejectionReason] = useState('');
+  const [terminationModalOpen, setTerminationModalOpen] = useState(false);
+  const [terminationReason, setTerminationReason] = useState('');
+  const [terminationStatus, setTerminationStatus] = useState<InternshipStatus>(InternshipStatus.CANCELED);
 
   const canModerateFormalization = internshipStatus === InternshipStatus.IN_ANALYSIS;
   
@@ -45,6 +48,8 @@ export default function ActionButtons({
     (doc) => doc.type === 'SIGNED_CONTRACT' && doc.status === 'PENDING_ANALYSIS' && Boolean(doc.fileUrl)
   );
   const isReadyForApproval = canModerateFormalization && !hasSignedContractPending;
+  const canForceClose = ![InternshipStatus.FINISHED, InternshipStatus.CANCELED].includes(internshipStatus);
+  const canSelectFinishOrCancel = internshipStatus === InternshipStatus.IN_PROGRESS;
 
   const handleUpdateStatus = async (status: InternshipStatus, reason?: string) => {
     setIsLoading(true);
@@ -52,8 +57,8 @@ export default function ActionButtons({
 
     try {
       const body: { status: InternshipStatus; rejectionReason?: string } = { status };
-      if (status === InternshipStatus.REJECTED && reason) {
-        body.rejectionReason = reason;
+      if (reason?.trim()) {
+        body.rejectionReason = reason.trim();
       }
 
       const response = await fetch(`/api/admin/internships/${internshipId}/status`, {
@@ -68,7 +73,15 @@ export default function ActionButtons({
         throw new Error(data.error || 'Falha ao atualizar o estado.');
       }
 
-      addNotification('success', `Estágio ${status === 'APPROVED' ? 'aprovado' : 'recusado'} com sucesso!`);
+      const successMessage = {
+        [InternshipStatus.APPROVED]: 'Estágio aprovado com sucesso!',
+        [InternshipStatus.REJECTED]: 'Estágio recusado com sucesso!',
+        [InternshipStatus.IN_PROGRESS]: 'Estágio iniciado com sucesso!',
+        [InternshipStatus.FINISHED]: 'Estágio concluído com sucesso!',
+        [InternshipStatus.CANCELED]: 'Estágio cancelado com sucesso!',
+      }[status];
+
+      addNotification('success', successMessage || 'Status atualizado com sucesso!');
       router.push('/dashboard/admin/internships');
       router.refresh();
 
@@ -119,6 +132,24 @@ export default function ActionButtons({
       return;
     }
     handleUpdateStatus(InternshipStatus.REJECTED, rejectionReason);
+  };
+
+  const openTerminationModal = () => {
+    setTerminationReason('');
+    setTerminationStatus(
+      internshipStatus === InternshipStatus.IN_PROGRESS
+        ? InternshipStatus.FINISHED
+        : InternshipStatus.CANCELED
+    );
+    setTerminationModalOpen(true);
+  };
+
+  const confirmTermination = () => {
+    if (!terminationReason.trim()) {
+      addNotification('warning', 'Informe o motivo do encerramento.');
+      return;
+    }
+    handleUpdateStatus(terminationStatus, terminationReason);
   };
 
   return (
@@ -198,6 +229,30 @@ export default function ActionButtons({
         </div>
       )}
 
+      {canForceClose && (
+        <div className="mt-6 border border-gray-200 bg-gray-50 rounded-lg p-4 space-y-3">
+          <div className="text-sm text-gray-800">
+            <strong>Encerramento administrativo</strong>
+            <div className="mt-1 text-gray-700">
+              {canSelectFinishOrCancel
+                ? 'Selecione se o estágio será concluído ou cancelado.'
+                : 'Este estágio pode ser cancelado pelo administrador.'}
+            </div>
+          </div>
+          <button
+            onClick={openTerminationModal}
+            disabled={isLoading}
+            className="px-4 py-2 text-sm font-medium text-white bg-gray-800 hover:bg-gray-900 rounded-lg disabled:bg-gray-400"
+          >
+            {isLoading
+              ? 'A processar...'
+              : canSelectFinishOrCancel
+                ? 'Encerrar ou cancelar estágio'
+                : 'Cancelar estágio'}
+          </button>
+        </div>
+      )}
+
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity animate-fadeIn">
           <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md transform animate-scaleIn">
@@ -264,6 +319,54 @@ export default function ActionButtons({
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:bg-red-300"
               >
                 {isLoading ? 'A enviar...' : 'Confirmar recusa'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {terminationModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity animate-fadeIn">
+          <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md transform animate-scaleIn">
+            <h3 className="text-lg font-bold text-gray-900">Encerrar estágio</h3>
+            <p className="text-sm text-gray-600 mt-2 mb-4">
+              Informe o motivo. Esta informacao sera compartilhada com o aluno.
+            </p>
+
+            {canSelectFinishOrCancel && (
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tipo de encerramento
+                <select
+                  value={terminationStatus}
+                  onChange={(e) => setTerminationStatus(e.target.value as InternshipStatus)}
+                  className="mt-2 input-form w-full text-gray-800"
+                >
+                  <option value={InternshipStatus.FINISHED}>Concluido</option>
+                  <option value={InternshipStatus.CANCELED}>Cancelado</option>
+                </select>
+              </label>
+            )}
+
+            <textarea
+              value={terminationReason}
+              onChange={(e) => setTerminationReason(e.target.value)}
+              className="input-form w-full text-gray-800 placeholder-gray-500"
+              rows={4}
+              placeholder="Ex: Encerramento administrativo por descumprimento de prazos."
+            />
+            <div className="mt-4 flex justify-end space-x-2">
+              <button
+                onClick={() => setTerminationModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmTermination}
+                disabled={isLoading}
+                className="px-4 py-2 text-sm font-medium text-white bg-gray-800 hover:bg-gray-900 rounded-lg disabled:bg-gray-400"
+              >
+                {isLoading ? 'A enviar...' : 'Confirmar'}
               </button>
             </div>
           </div>

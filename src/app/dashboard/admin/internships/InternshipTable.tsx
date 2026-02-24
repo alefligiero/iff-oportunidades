@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { InternshipStatus, Course, InternshipType, InternshipModality } from '@prisma/client';
+import { InternshipStatus, Course, InternshipType, InternshipModality, DocumentType, DocumentStatus } from '@prisma/client';
 
 const courseMap: { [key in Course]: string } = {
   BSI: 'Bacharelado em Sistemas de Informação',
@@ -36,6 +36,31 @@ const statusBadgeMap: { [key in InternshipStatus]: { text: string; color: string
   CANCELED: { text: 'Cancelado', color: 'bg-gray-100 text-gray-800' },
 };
 
+interface DocumentSummary {
+  type: DocumentType;
+  status: DocumentStatus;
+  fileUrl: string | null;
+}
+
+const getApprovedSubstatus = (documents: DocumentSummary[]) => {
+  const hasSignedContractApproved = documents.some(
+    (doc) => doc.type === DocumentType.SIGNED_CONTRACT && doc.status === DocumentStatus.APPROVED
+  );
+  const hasLifeInsuranceApproved = documents.some(
+    (doc) => doc.type === DocumentType.LIFE_INSURANCE && doc.status === DocumentStatus.APPROVED && Boolean(doc.fileUrl)
+  );
+
+  if (!hasSignedContractApproved) return 'Aguardando TCE/PAE assinados';
+  if (!hasLifeInsuranceApproved) return 'Aguardando Seguro';
+  return 'Pronto para iniciar';
+};
+
+const getStatusLabel = (status: InternshipStatus, documents: DocumentSummary[]) => {
+  if (status !== InternshipStatus.APPROVED) return statusBadgeMap[status].text;
+  const substatus = getApprovedSubstatus(documents);
+  return `Aprovado - ${substatus}`;
+};
+
 interface Internship {
   id: string;
   status: InternshipStatus;
@@ -48,6 +73,7 @@ interface Internship {
   startDate: string;
   endDate: string;
   earlyTerminationRequested: boolean;
+  documents: DocumentSummary[];
 }
 
 interface InternshipTableProps {
@@ -129,7 +155,7 @@ export default function InternshipTable({ internships, loading = false }: Intern
                         statusBadgeMap[internship.status].color
                       }`}
                     >
-                      {statusBadgeMap[internship.status].text}
+                      {getStatusLabel(internship.status, internship.documents)}
                     </span>
                     {internship.earlyTerminationRequested && (
                       <span className="inline-flex items-center justify-center w-5 h-5 bg-yellow-200 text-yellow-800 rounded-full text-xs font-bold" title="Encerramento antecipado solicitado">

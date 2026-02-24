@@ -18,6 +18,11 @@ interface Internship {
   startDate: string;
   endDate: string;
   earlyTerminationRequested: boolean;
+  documents: {
+    type: string;
+    status: string;
+    fileUrl: string | null;
+  }[];
 }
 
 interface InternshipsPageContentProps {

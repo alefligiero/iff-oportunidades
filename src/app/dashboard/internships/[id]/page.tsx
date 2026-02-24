@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
-import { PrismaClient, InternshipStatus, InternshipType, InternshipModality, Gender, Course } from '@prisma/client';
+import { PrismaClient, InternshipStatus, InternshipType, InternshipModality, Gender, Course, DocumentType, DocumentStatus } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import RequestEarlyTermination from './RequestEarlyTermination';
 import DocumentsSection from './DocumentsSection';
@@ -20,6 +20,27 @@ const statusMap = {
   [InternshipStatus.REJECTED]: { text: 'Recusado', color: 'bg-red-100 text-red-800' },
   [InternshipStatus.CANCELED]: { text: 'Cancelado', color: 'bg-gray-100 text-gray-800' },
 };
+
+interface DocumentSummary {
+  type: DocumentType;
+  status: DocumentStatus;
+  fileUrl: string | null;
+}
+
+const getApprovedSubstatus = (documents: DocumentSummary[]) => {
+  const hasSignedContractApproved = documents.some(
+    (doc) => doc.type === DocumentType.SIGNED_CONTRACT && doc.status === DocumentStatus.APPROVED
+  );
+  const hasLifeInsuranceApproved = documents.some(
+    (doc) => doc.type === DocumentType.LIFE_INSURANCE && doc.status === DocumentStatus.APPROVED && Boolean(doc.fileUrl)
+  );
+
+  if (!hasSignedContractApproved) return 'Aguardando TCE/PAE assinados';
+  if (!hasLifeInsuranceApproved) return 'Aguardando Seguro';
+  return 'Pronto para iniciar';
+};
+
+const AUTO_CANCEL_NOTE = 'Cancelado automaticamente apos 7 dias em recusado sem correcoes.';
 
 const typeMap = {
   [InternshipType.DIRECT]: 'Estágio Direto',
@@ -126,6 +147,11 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
     updatedAt: doc.updatedAt.toISOString(),
   })) || [];
 
+  const approvedSubstatus =
+    internship?.status === InternshipStatus.APPROVED
+      ? getApprovedSubstatus(internship.documents)
+      : null;
+
   if (error) {
     return (
       <div className="text-center py-8">
@@ -167,6 +193,9 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
           <span className={`px-3 py-1 text-sm font-medium rounded-full ${statusMap[internship.status]?.color}`}>
             {statusMap[internship.status]?.text}
           </span>
+          {approvedSubstatus && (
+            <span className="text-xs text-gray-600">Aprovado - {approvedSubstatus}</span>
+          )}
           {internship.status === InternshipStatus.REJECTED && (
             <Link 
               href={`/dashboard/internships/edit/${internship.id}`}
@@ -239,7 +268,14 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
           </div>
         </div>
 
-        {/* Rejeicao / Cancelamento */}
+        {/* Conclusao / Rejeicao / Cancelamento */}
+        {internship.status === InternshipStatus.FINISHED && internship.earlyTerminationReason && !internship.earlyTerminationRequested && (
+          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md">
+            <h3 className="font-medium text-blue-800 mb-2">Estágio concluído pelo Admin:</h3>
+            <p className="text-blue-700 whitespace-pre-line">{internship.earlyTerminationReason}</p>
+          </div>
+        )}
+
         {internship.status === InternshipStatus.REJECTED && internship.rejectionReason && (
           <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
             <h3 className="font-medium text-red-800 mb-2">Motivo da Recusa:</h3>
@@ -249,7 +285,12 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
 
         {internship.status === InternshipStatus.CANCELED && internship.rejectionReason && (
           <div className="bg-gray-50 border-l-4 border-gray-400 p-4 rounded-md">
-            <h3 className="font-medium text-gray-800 mb-2">Observacao:</h3>
+            <h3 className="font-medium text-gray-800 mb-2">
+              {internship.rejectionReason.includes(AUTO_CANCEL_NOTE)
+                ? 'Estágio cancelado automaticamente'
+                : 'Estágio cancelado pelo Admin'}
+              :
+            </h3>
             <p className="text-gray-700 whitespace-pre-line">{internship.rejectionReason}</p>
           </div>
         )}

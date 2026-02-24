@@ -1,10 +1,20 @@
 'use client';
 
+const AUTO_CANCEL_NOTE = 'Cancelado automaticamente apos 7 dias em recusado sem correcoes.';
+
 interface AdminStatusProgressProps {
   status: string; // InternshipStatus
+  rejectionReason?: string | null;
+  earlyTerminationReason?: string | null;
+  earlyTerminationRequested?: boolean | null;
 }
 
-export default function AdminStatusProgress({ status }: AdminStatusProgressProps) {
+export default function AdminStatusProgress({
+  status,
+  rejectionReason,
+  earlyTerminationReason,
+  earlyTerminationRequested,
+}: AdminStatusProgressProps) {
   const steps = [
     { key: 'received', label: 'Recebido', icon: '📥' },
     { key: 'review', label: 'Revisão', icon: '🔍' },
@@ -43,9 +53,20 @@ export default function AdminStatusProgress({ status }: AdminStatusProgressProps
   }
 
   if (status === 'CANCELED') {
+    const isAutoCancel = rejectionReason?.includes(AUTO_CANCEL_NOTE);
     return (
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <p className="text-gray-800 font-medium">🚫 Este estágio foi cancelado por expiração do prazo</p>
+        <p className="text-gray-800 font-medium">
+          🚫 {isAutoCancel ? 'Este estágio foi cancelado automaticamente' : 'Este estágio foi cancelado pelo Admin'}
+        </p>
+      </div>
+    );
+  }
+
+  if (status === 'FINISHED' && earlyTerminationReason && !earlyTerminationRequested) {
+    return (
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p className="text-blue-800 font-medium">✅ Este estágio foi concluído pelo Admin</p>
       </div>
     );
   }

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
-import { PrismaClient, InternshipStatus } from '@prisma/client';
+import { PrismaClient, InternshipStatus, DocumentType, DocumentStatus } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -12,6 +12,31 @@ const statusMap = {
   [InternshipStatus.FINISHED]: { text: 'Finalizado', color: 'bg-gray-100 text-gray-800' },
   [InternshipStatus.REJECTED]: { text: 'Recusado', color: 'bg-red-100 text-red-800' },
   [InternshipStatus.CANCELED]: { text: 'Cancelado', color: 'bg-gray-100 text-gray-800' },
+};
+
+interface DocumentSummary {
+  type: DocumentType;
+  status: DocumentStatus;
+  fileUrl: string | null;
+}
+
+const getApprovedSubstatus = (documents: DocumentSummary[]) => {
+  const hasSignedContractApproved = documents.some(
+    (doc) => doc.type === DocumentType.SIGNED_CONTRACT && doc.status === DocumentStatus.APPROVED
+  );
+  const hasLifeInsuranceApproved = documents.some(
+    (doc) => doc.type === DocumentType.LIFE_INSURANCE && doc.status === DocumentStatus.APPROVED && Boolean(doc.fileUrl)
+  );
+
+  if (!hasSignedContractApproved) return 'Aguardando TCE/PAE assinados';
+  if (!hasLifeInsuranceApproved) return 'Aguardando Seguro';
+  return 'Pronto para iniciar';
+};
+
+const getStatusLabel = (status: InternshipStatus, documents: DocumentSummary[] = []) => {
+  if (status !== InternshipStatus.APPROVED) return statusMap[status]?.text ?? 'Desconhecido';
+  const substatus = getApprovedSubstatus(documents);
+  return `Aprovado - ${substatus}`;
 };
 
 async function getStudentInternships() {
@@ -37,6 +62,15 @@ async function getStudentInternships() {
 
     const internships = await prisma.internship.findMany({
       where: { studentId: studentProfile.id },
+      include: {
+        documents: {
+          select: {
+            type: true,
+            status: true,
+            fileUrl: true,
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -92,7 +126,7 @@ export default async function MyInternshipsPage() {
                   </div>
                   <div className="flex items-center space-x-2">
                     <span className={`px-3 py-1 text-xs font-medium rounded-full ${statusMap[internship.status]?.color ?? 'bg-gray-100'}`}>
-                      {statusMap[internship.status]?.text ?? 'Desconhecido'}
+                      {getStatusLabel(internship.status, internship.documents)}
                     </span>
                     <Link
                       href={`/dashboard/internships/${internship.id}`}

@@ -5,7 +5,13 @@ import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 
 const updateStatusSchema = z.object({
-  status: z.enum([InternshipStatus.APPROVED, InternshipStatus.REJECTED, InternshipStatus.IN_PROGRESS]),
+  status: z.enum([
+    InternshipStatus.APPROVED,
+    InternshipStatus.REJECTED,
+    InternshipStatus.IN_PROGRESS,
+    InternshipStatus.FINISHED,
+    InternshipStatus.CANCELED,
+  ]),
   rejectionReason: z.string().optional(),
 });
 
@@ -32,21 +38,43 @@ export async function PATCH(
     }
 
     const { status, rejectionReason } = validation.data;
+    const trimmedReason = rejectionReason?.trim();
 
-    if (status === InternshipStatus.REJECTED && !rejectionReason) {
-      return NextResponse.json({ error: 'É obrigatório fornecer um motivo para a recusa.' }, { status: 400 });
+    const internship = await prisma.internship.findUnique({
+      where: { id: internshipId },
+      include: { documents: true },
+    });
+
+    if (!internship) {
+      return NextResponse.json({ error: 'Estágio não encontrado.' }, { status: 404 });
+    }
+
+    const isReasonRequired = [
+      InternshipStatus.REJECTED,
+      InternshipStatus.FINISHED,
+      InternshipStatus.CANCELED,
+    ].includes(status);
+
+    if (isReasonRequired && !trimmedReason) {
+      return NextResponse.json({ error: 'É obrigatório fornecer um motivo.' }, { status: 400 });
+    }
+
+    if (status === InternshipStatus.FINISHED) {
+      if (internship.status !== InternshipStatus.IN_PROGRESS) {
+        return NextResponse.json(
+          { error: 'Só é possível concluir um estágio que esteja em andamento.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (status === InternshipStatus.CANCELED) {
+      if ([InternshipStatus.FINISHED, InternshipStatus.CANCELED].includes(internship.status)) {
+        return NextResponse.json({ error: 'Este estágio já está encerrado.' }, { status: 400 });
+      }
     }
 
     if (status === InternshipStatus.IN_PROGRESS) {
-      const internship = await prisma.internship.findUnique({
-        where: { id: internshipId },
-        include: { documents: true },
-      });
-
-      if (!internship) {
-        return NextResponse.json({ error: 'Estágio não encontrado.' }, { status: 404 });
-      }
-
       const hasSignedContract = internship.documents.some(
         (doc) => doc.type === 'SIGNED_CONTRACT' && doc.status === 'APPROVED'
       );
@@ -62,15 +90,33 @@ export async function PATCH(
       }
     }
 
+    const updateData: Record<string, unknown> = {
+      status,
+    };
+
+    if (status === InternshipStatus.REJECTED) {
+      updateData.rejectionReason = trimmedReason;
+      updateData.rejectedAt = new Date();
+    } else if (status === InternshipStatus.CANCELED) {
+      updateData.rejectionReason = trimmedReason;
+      updateData.rejectedAt = null;
+    } else {
+      updateData.rejectionReason = null;
+      updateData.rejectedAt = null;
+    }
+
+    if (status === InternshipStatus.FINISHED) {
+      updateData.earlyTerminationReason = trimmedReason;
+      updateData.earlyTerminationHandledAt = new Date();
+      updateData.earlyTerminationRequested = false;
+      updateData.earlyTerminationApproved = true;
+    }
+
     const updatedInternship = await prisma.internship.update({
       where: {
         id: internshipId,
       },
-      data: {
-        status,
-        rejectionReason: status === InternshipStatus.REJECTED ? rejectionReason : null,
-        rejectedAt: status === InternshipStatus.REJECTED ? new Date() : null,
-      },
+      data: updateData,
     });
 
     // TODO: Implementar a lógica para enviar uma notificação por email para o aluno.

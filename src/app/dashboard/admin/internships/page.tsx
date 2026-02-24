@@ -15,6 +15,11 @@ interface Internship {
     name: string;
     matricula: string;
   };
+  documents: {
+    type: string;
+    status: string;
+    fileUrl: string | null;
+  }[];
 }
 
 function InternshipsPageLoader() {
