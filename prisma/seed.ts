@@ -1,7 +1,42 @@
 import { PrismaClient, Role, VacancyType, VacancyStatus, VacancyModality, Course } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import fs from 'fs/promises';
+import path from 'path';
 
 const prisma = new PrismaClient();
+
+// Helper para copiar PDF de exemplo e gerar nome único
+async function copyExamplePdf(internshipId: string, documentType: string): Promise<string | null> {
+  try {
+    const samplePdfPath = path.join(process.cwd(), 'public/templates/sample-document.pdf');
+    const uploadsDir = path.join(process.cwd(), 'public/uploads/documents');
+
+    // Verificar se o arquivo de exemplo existe
+    try {
+      await fs.access(samplePdfPath);
+    } catch {
+      console.warn('⚠️  PDF de exemplo não encontrado em:', samplePdfPath);
+      return null;
+    }
+
+    // Garantir que o diretório de uploads existe
+    await fs.mkdir(uploadsDir, { recursive: true });
+
+    // Gerar nome único para o arquivo
+    const timestamp = Date.now();
+    const filename = `${internshipId}_${documentType}_${timestamp}.pdf`;
+    const destPath = path.join(uploadsDir, filename);
+
+    // Copiar arquivo
+    await fs.copyFile(samplePdfPath, destPath);
+
+    // Retornar caminho relativo para armazenar no banco
+    return `/uploads/documents/${filename}`;
+  } catch (error) {
+    console.error('❌ Erro ao copiar PDF de exemplo:', error);
+    return null;
+  }
+}
 
 async function main() {
   console.log('🌱 Iniciando o seed...');
@@ -448,11 +483,16 @@ async function main() {
       },
     });
 
+    // Copiar PDFs de exemplo para os documentos
+    const tcePdfPath = await copyExamplePdf(internship.id, 'TCE');
+    const paePdfPath = await copyExamplePdf(internship.id, 'PAE');
+    const insurancePdfPath = await copyExamplePdf(internship.id, 'LIFE_INSURANCE');
+
     await prisma.document.createMany({
       data: [
-        { type: 'TCE', status: 'APPROVED', internshipId: internship.id },
-        { type: 'PAE', status: 'APPROVED', internshipId: internship.id },
-        { type: 'LIFE_INSURANCE', status: 'APPROVED', internshipId: internship.id },
+        { type: 'TCE', status: 'APPROVED', internshipId: internship.id, fileUrl: tcePdfPath },
+        { type: 'PAE', status: 'APPROVED', internshipId: internship.id, fileUrl: paePdfPath },
+        { type: 'LIFE_INSURANCE', status: 'APPROVED', internshipId: internship.id, fileUrl: insurancePdfPath },
       ],
     });
   }
@@ -507,10 +547,14 @@ async function main() {
       },
     });
 
+    // Copiar PDFs de exemplo para os documentos
+    const insurancePdfPath3 = await copyExamplePdf(internship.id, 'LIFE_INSURANCE');
+    const contractPdfPath = await copyExamplePdf(internship.id, 'SIGNED_CONTRACT');
+
     await prisma.document.createMany({
       data: [
-        { type: 'LIFE_INSURANCE', status: 'SIGNED_VALIDATED', internshipId: internship.id },
-        { type: 'SIGNED_CONTRACT', status: 'SIGNED_VALIDATED', internshipId: internship.id },
+        { type: 'LIFE_INSURANCE', status: 'SIGNED_VALIDATED', internshipId: internship.id, fileUrl: insurancePdfPath3 },
+        { type: 'SIGNED_CONTRACT', status: 'SIGNED_VALIDATED', internshipId: internship.id, fileUrl: contractPdfPath },
       ],
     });
   }
@@ -565,12 +609,18 @@ async function main() {
       },
     });
 
+    // Copiar PDFs de exemplo para os documentos
+    const insurancePdfPath4 = await copyExamplePdf(internship.id, 'LIFE_INSURANCE');
+    const contractPdfPath4 = await copyExamplePdf(internship.id, 'SIGNED_CONTRACT');
+    const trePdfPath = await copyExamplePdf(internship.id, 'TRE');
+    const rfePdfPath = await copyExamplePdf(internship.id, 'RFE');
+
     await prisma.document.createMany({
       data: [
-        { type: 'LIFE_INSURANCE', status: 'SIGNED_VALIDATED', internshipId: internship.id },
-        { type: 'SIGNED_CONTRACT', status: 'SIGNED_VALIDATED', internshipId: internship.id },
-        { type: 'TRE', status: 'APPROVED', internshipId: internship.id },
-        { type: 'RFE', status: 'APPROVED', internshipId: internship.id },
+        { type: 'LIFE_INSURANCE', status: 'SIGNED_VALIDATED', internshipId: internship.id, fileUrl: insurancePdfPath4 },
+        { type: 'SIGNED_CONTRACT', status: 'SIGNED_VALIDATED', internshipId: internship.id, fileUrl: contractPdfPath4 },
+        { type: 'TRE', status: 'APPROVED', internshipId: internship.id, fileUrl: trePdfPath },
+        { type: 'RFE', status: 'APPROVED', internshipId: internship.id, fileUrl: rfePdfPath },
       ],
     });
   }
@@ -679,11 +729,15 @@ async function main() {
       },
     });
 
+    // Copiar PDF de exemplo para o documento
+    const insurancePdfPath6 = await copyExamplePdf(internship.id, 'LIFE_INSURANCE');
+
     await prisma.document.create({
       data: {
         type: 'LIFE_INSURANCE',
         status: 'PENDING_ANALYSIS',
         internshipId: internship.id,
+        fileUrl: insurancePdfPath6,
       },
     });
   }
