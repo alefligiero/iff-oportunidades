@@ -156,6 +156,21 @@ async function main() {
     },
   });
 
+  // 8. Estudante com estágio RECÉM FINALIZADO (para testar documentos finais)
+  const student7 = await prisma.user.create({
+    data: {
+      email: 'bruno.oliveira@estudante.iff.edu.br',
+      password: defaultPassword,
+      role: Role.STUDENT,
+      studentProfile: {
+        create: {
+          name: 'Bruno Oliveira Nascimento',
+          matricula: '20241007',
+        },
+      },
+    },
+  });
+
   console.log('🎓 Estudantes criados');
 
   // Empresas
@@ -383,9 +398,10 @@ async function main() {
     prisma.student.findUnique({ where: { userId: student4.id } }),
     prisma.student.findUnique({ where: { userId: student5.id } }),
     prisma.student.findUnique({ where: { userId: student6.id } }),
+    prisma.student.findUnique({ where: { userId: student7.id } }),
   ]);
 
-  const [profile1, profile2, profile3, profile4, profile5, profile6] = profiles;
+  const [profile1, profile2, profile3, profile4, profile5, profile6, profile7] = profiles;
 
   // Estágio 1: EM ANÁLISE (João)
   if (profile1) {
@@ -720,12 +736,12 @@ async function main() {
         supervisorRole: 'Product Manager',
         internshipSector: 'UX/UI Design',
         technicalActivities: 'Design de interfaces, prototipação, testes de usabilidade.',
-        // SEM DADOS DE SEGURO (todos null)
-        insuranceCompany: null,
-        insurancePolicyNumber: null,
-        insuranceCompanyCnpj: null,
-        insuranceStartDate: null,
-        insuranceEndDate: null,
+        // DADOS DE SEGURO
+        insuranceCompany: 'Seguradora Total Proteção',
+        insurancePolicyNumber: 'TP-2026-456789',
+        insuranceCompanyCnpj: '12345678901234',
+        insuranceStartDate: new Date('2026-05-01'),
+        insuranceEndDate: new Date('2026-11-01'),
       },
     });
 
@@ -742,6 +758,69 @@ async function main() {
     });
   }
 
+  // Estágio 7: RECÉM FINALIZADO - SEM DOCUMENTOS FINAIS (Bruno)
+  if (profile7) {
+    const internship = await prisma.internship.create({
+      data: {
+        studentId: profile7.id,
+        status: 'FINISHED',
+        type: 'DIRECT',
+        studentGender: 'MALE',
+        studentAddressStreet: 'Rua Silva Jardim',
+        studentAddressNumber: '567',
+        studentAddressDistrict: 'Centro',
+        studentAddressCityState: 'Itaperuna/RJ',
+        studentAddressCep: '28300-170',
+        studentPhone: '(22) 98765-4321',
+        studentCpf: '12398745600',
+        studentCourse: 'BSI',
+        studentCoursePeriod: '6º período',
+        studentSchoolYear: '2025',
+        companyName: 'SysTech Informática Ltda',
+        companyCnpj: '77888999000100',
+        companyRepresentativeName: 'Daniela Costa',
+        companyRepresentativeRole: 'Gerente de RH',
+        companyAddressStreet: 'Av. Cardoso Moreira',
+        companyAddressNumber: '890',
+        companyAddressDistrict: 'Centro',
+        companyAddressCityState: 'Itaperuna/RJ',
+        companyAddressCep: '28300-000',
+        companyEmail: 'rh@systech.com.br',
+        companyPhone: '(22) 3824-5555',
+        modality: 'PRESENCIAL',
+        startDate: new Date('2025-08-01'),
+        endDate: new Date('2026-02-20'), // Finalizado há poucos dias
+        weeklyHours: 25,
+        dailyHours: '08:00 às 13:00',
+        monthlyGrant: 1000.0,
+        transportationGrant: 180.0,
+        advisorProfessorName: 'Prof. Dra. Márcia Silva',
+        advisorProfessorId: 'SIAPE111222',
+        supervisorName: 'Roberto Santos',
+        supervisorRole: 'Coordenador de TI',
+        internshipSector: 'Infraestrutura e Redes',
+        technicalActivities: 'Manutenção de servidores, configuração de redes, suporte técnico.',
+        insuranceCompany: 'Seguradora Confiança',
+        insurancePolicyNumber: 'CNF-2025-456789',
+        insuranceCompanyCnpj: '12312312312312',
+        insuranceStartDate: new Date('2025-08-01'),
+        insuranceEndDate: new Date('2026-02-20'),
+      },
+    });
+
+    // Documentos iniciais aprovados (TCE/PAE e Seguro), mas SEM TRE e RFE
+    const insurancePdfPath7 = await copyExamplePdf(internship.id, 'LIFE_INSURANCE');
+    const contractPdfPath7 = await copyExamplePdf(internship.id, 'SIGNED_CONTRACT');
+
+    await prisma.document.createMany({
+      data: [
+        { type: 'LIFE_INSURANCE', status: 'APPROVED', internshipId: internship.id, fileUrl: insurancePdfPath7 },
+        { type: 'SIGNED_CONTRACT', status: 'APPROVED', internshipId: internship.id, fileUrl: contractPdfPath7 },
+        // TRE e RFE NÃO criados - permitindo testar o fluxo de upload
+      ],
+    });
+  }
+
   console.log('🎯 Estágios criados');
   console.log('\n✅ Seed concluído!');
   console.log('\n📋 USUÁRIOS CRIADOS:');
@@ -752,9 +831,10 @@ async function main() {
   console.log('   1️⃣  joao.silva@estudante.iff.edu.br - EM ANÁLISE');
   console.log('   2️⃣  maria.oliveira@estudante.iff.edu.br - APROVADO');
   console.log('   3️⃣  pedro.santos@estudante.iff.edu.br - EM ANDAMENTO');
-  console.log('   4️⃣  ana.costa@estudante.iff.edu.br - FINALIZADO');
+  console.log('   4️⃣  ana.costa@estudante.iff.edu.br - FINALIZADO (com TRE/RFE aprovados)');
   console.log('   5️⃣  lucas.lima@estudante.iff.edu.br - CANCELADO');
   console.log('   6️⃣  carla.mendes@estudante.iff.edu.br - SEM DADOS DE SEGURO');
+  console.log('   7️⃣  bruno.oliveira@estudante.iff.edu.br - FINALIZADO RECENTE (sem documentos finais) ⭐');
   console.log('\n🏢 EMPRESAS:');
   console.log('   📧 rh@techcorp.com.br');
   console.log('   📧 contato@agrosul.com.br');
@@ -762,6 +842,11 @@ async function main() {
   console.log('   📧 jobs@brisklog.com.br');
   console.log('\n📌 VAGAS CRIADAS:');
   console.log('   ✅ 8 vagas (2 por empresa) com status variados');
+  console.log('\n⭐ TESTE DE DOCUMENTOS FINAIS:');
+  console.log('   Use bruno.oliveira@estudante.iff.edu.br para testar:');
+  console.log('   - Download de templates TRE e RFE');
+  console.log('   - Upload de documentos finais');
+  console.log('   - Aprovação pelo admin');
   console.log('\n🔐 SENHA PADRÃO: 123456');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 }

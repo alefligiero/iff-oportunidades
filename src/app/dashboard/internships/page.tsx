@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
-import { PrismaClient, InternshipStatus, DocumentType, DocumentStatus } from '@prisma/client';
+import { PrismaClient, InternshipStatus } from '@prisma/client';
+import { getApprovedSubstatus, getInProgressSubstatus, getFinishedSubstatus, type DocumentSummary } from '@/lib/internship-substatus';
 
 const prisma = new PrismaClient();
 
@@ -14,57 +15,26 @@ const statusMap = {
   [InternshipStatus.CANCELED]: { text: 'Cancelado', color: 'bg-gray-100 text-gray-800' },
 };
 
-interface DocumentSummary {
-  type: DocumentType;
-  status: DocumentStatus;
-  fileUrl: string | null;
-}
-
-const getApprovedSubstatus = (documents: DocumentSummary[], startDate: string) => {
-  // Verificar status do SIGNED_CONTRACT
-  const signedContract = documents.find((doc) => doc.type === DocumentType.SIGNED_CONTRACT);
-  const hasSignedContractApproved = signedContract?.status === DocumentStatus.APPROVED;
-  const hasSignedContractPending = signedContract?.status === DocumentStatus.PENDING_ANALYSIS;
-  
-  // Verificar status do LIFE_INSURANCE
-  const lifeInsurance = documents.find((doc) => doc.type === DocumentType.LIFE_INSURANCE);
-  const hasLifeInsuranceApproved = lifeInsurance?.status === DocumentStatus.APPROVED && Boolean(lifeInsurance.fileUrl);
-  const hasLifeInsurancePending = lifeInsurance?.status === DocumentStatus.PENDING_ANALYSIS;
-
-  // Prioridade 1: Documentos pendentes de aprovação
-  if (hasSignedContractPending && hasLifeInsurancePending) {
-    return 'Documentos em análise';
-  }
-  if (hasSignedContractPending) {
-    return 'TCE/PAE em análise';
-  }
-  if (hasLifeInsurancePending) {
-    return 'Seguro em análise';
-  }
-  
-  // Prioridade 2: Documentos não enviados ou rejeitados
-  if (!hasSignedContractApproved) return 'Aguardando TCE/PAE assinados';
-  if (!hasLifeInsuranceApproved) return 'Aguardando Seguro';
-  
-  // Prioridade 3: Verificar se a data de início já chegou
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  const start = new Date(startDate);
-  start.setHours(0, 0, 0, 0);
-  
-  if (start > today) {
-    return 'Aguardando data de início';
-  }
-  
-  return 'Pronto para iniciar';
-};
-
 const getStatusLabel = (status: InternshipStatus, documents: DocumentSummary[] = [], startDate?: string | Date) => {
-  if (status !== InternshipStatus.APPROVED) return statusMap[status]?.text ?? 'Desconhecido';
-  const dateString = typeof startDate === 'string' ? startDate : (startDate?.toISOString() || new Date().toISOString());
-  const substatus = getApprovedSubstatus(documents, dateString);
-  return `Aprovado - ${substatus}`;
+  const baseStatus = statusMap[status]?.text ?? 'Desconhecido';
+  
+  if (status === InternshipStatus.APPROVED && startDate) {
+    const dateString = typeof startDate === 'string' ? startDate : startDate.toISOString();
+    const substatus = getApprovedSubstatus(documents, dateString);
+    return `${baseStatus} - ${substatus}`;
+  }
+  
+  if (status === InternshipStatus.IN_PROGRESS) {
+    const substatus = getInProgressSubstatus(documents);
+    return substatus ? `${baseStatus} - ${substatus}` : baseStatus;
+  }
+  
+  if (status === InternshipStatus.FINISHED) {
+    const substatus = getFinishedSubstatus(documents);
+    return `${baseStatus} - ${substatus}`;
+  }
+  
+  return baseStatus;
 };
 
 async function getStudentInternships() {

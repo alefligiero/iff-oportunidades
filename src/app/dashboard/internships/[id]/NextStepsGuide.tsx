@@ -30,10 +30,65 @@ export default function NextStepsGuide({ status, documents }: NextStepsGuideProp
 
     // Estágio finalizado
     if (status === 'FINISHED') {
+      const treApproved = documents.some(
+        (doc) => doc.type === 'TRE' && doc.status === 'APPROVED'
+      );
+      const rfeApproved = documents.some(
+        (doc) => doc.type === 'RFE' && doc.status === 'APPROVED'
+      );
+      const trePending = documents.some(
+        (doc) => doc.type === 'TRE' && doc.status === 'PENDING_ANALYSIS'
+      );
+      const rfePending = documents.some(
+        (doc) => doc.type === 'RFE' && doc.status === 'PENDING_ANALYSIS'
+      );
+
+      // Todos os documentos finais aprovados
+      if (treApproved && rfeApproved) {
+        return {
+          title: '🎉 Estágio Concluído com Sucesso!',
+          steps: [
+            '✅ Todos os documentos finais foram aprovados',
+            'Parabéns pela conclusão do seu estágio!',
+            'Em breve você receberá a Declaração de Realização de Estágio por e-mail',
+          ],
+          color: 'bg-green-50 border-green-200',
+          textColor: 'text-green-900',
+        };
+      }
+
+      // Documentos pendentes de análise
+      if (trePending || rfePending) {
+        const pendingDocs = [];
+        if (trePending) pendingDocs.push('TRE (Termo de Realização de Estágio)');
+        if (rfePending) pendingDocs.push('RFE (Relatório Final de Estágio)');
+
+        return {
+          title: '⏳ Aguardando Aprovação dos Documentos Finais',
+          steps: [
+            `Documentos em análise: ${pendingDocs.join(' e ')}`,
+            'A Agência de Oportunidades está analisando seus documentos',
+            'Você será notificado assim que a análise for concluída',
+          ],
+          color: 'bg-yellow-50 border-yellow-200',
+          textColor: 'text-yellow-900',
+        };
+      }
+
+      // Precisa enviar documentos finais
+      const missingDocs = [];
+      if (!treApproved && !trePending) missingDocs.push('TRE');
+      if (!rfeApproved && !rfePending) missingDocs.push('RFE');
+
       return {
-        title: '🎉 Estágio Finalizado',
+        title: '📋 Enviar Documentos Finais',
         steps: [
-          'Parabéns! Seu estágio foi concluído com sucesso',
+          'Seu estágio foi finalizado! Agora você precisa enviar os documentos finais:',
+          '1️⃣ Baixe os templates de TRE e RFE na seção "Documentos Finais" abaixo',
+          '2️⃣ TRE: Preencha e solicite assinatura do representante da Empresa',
+          '3️⃣ RFE: Produza o relatório com seu Supervisor e Professor-Orientador',
+          '4️⃣ Faça o upload dos documentos preenchidos e assinados',
+          '5️⃣ Aguarde a aprovação da Agência de Oportunidades',
         ],
         color: 'bg-blue-50 border-blue-200',
         textColor: 'text-blue-900',

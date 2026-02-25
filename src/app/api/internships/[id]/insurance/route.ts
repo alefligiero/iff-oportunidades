@@ -27,6 +27,14 @@ export async function PATCH(
       return NextResponse.json({ error: 'Estágio não encontrado.' }, { status: 404 });
     }
 
+    // Bloquear envio se estágio foi cancelado
+    if (internship.status === 'CANCELED') {
+      return NextResponse.json(
+        { error: 'Não é possível enviar documentos para um estágio cancelado.' },
+        { status: 400 }
+      );
+    }
+
     const formData = await request.formData();
     const insuranceFile = formData.get('insurance') as File | null;
     const insuranceCompany = (formData.get('insuranceCompany') as string | null)?.trim() || '';

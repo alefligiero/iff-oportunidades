@@ -13,9 +13,10 @@ interface InsuranceDataFormProps {
     insuranceStartDate: Date | null;
     insuranceEndDate: Date | null;
   };
+  status?: string;
 }
 
-export default function InsuranceDataForm({ internshipId, currentData }: InsuranceDataFormProps) {
+export default function InsuranceDataForm({ internshipId, currentData, status }: InsuranceDataFormProps) {
   const router = useRouter();
   const { addNotification } = useNotification();
   const [isEditing, setIsEditing] = useState(false);
@@ -109,8 +110,14 @@ export default function InsuranceDataForm({ internshipId, currentData }: Insuran
   };
 
   const hasData = currentData.insuranceCompany || currentData.insurancePolicyNumber;
+  const isCanceled = status === 'CANCELED';
 
   if (!isEditing && hasData) {
+    return null;
+  }
+
+  // Ocultar formulário se estágio foi cancelado
+  if (isCanceled) {
     return null;
   }
 

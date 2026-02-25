@@ -36,6 +36,11 @@ export async function POST(
       return createErrorResponse('Estágio não encontrado', 404);
     }
 
+    // Bloquear envio se estágio foi cancelado
+    if (internship.status === 'CANCELED') {
+      return createErrorResponse('Não é possível enviar documentos para um estágio cancelado', 400);
+    }
+
     // Apenas o aluno dono ou admin pode fazer upload
     if (userPayload.role !== 'ADMIN' && internship.student.userId !== userPayload.userId) {
       return createErrorResponse('Você não tem permissão para enviar documentos para este estágio', 403);

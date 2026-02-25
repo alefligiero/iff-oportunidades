@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { DocumentStatus, DocumentType, InternshipStatus } from "@prisma/client";
 import DocumentUpload from "./DocumentUpload";
 import DocumentList from "./DocumentList";
+import DownloadTemplates from "./DownloadTemplates";
 
 export type DocumentItem = {
   id: string;
@@ -65,6 +66,7 @@ export default function DocumentsSection({ internshipId, status, initialDocument
   );
   const trePending = treDocs.some((doc) => doc.status === DocumentStatus.PENDING_ANALYSIS);
   const canUploadTre =
+    status !== InternshipStatus.CANCELED &&
     status === InternshipStatus.FINISHED && !treApproved && !trePending;
 
   // RFE (apenas se internship está finalizado)
@@ -77,6 +79,7 @@ export default function DocumentsSection({ internshipId, status, initialDocument
   );
   const rfePending = rfeDocs.some((doc) => doc.status === DocumentStatus.PENDING_ANALYSIS);
   const canUploadRfe =
+    status !== InternshipStatus.CANCELED &&
     status === InternshipStatus.FINISHED && !rfeApproved && !rfePending;
 
   // LIFE_INSURANCE (Comprovante de Seguro de Vida)
@@ -125,7 +128,7 @@ export default function DocumentsSection({ internshipId, status, initialDocument
         </div>
       )}
 
-      {(status === InternshipStatus.APPROVED || status === InternshipStatus.IN_PROGRESS || status === InternshipStatus.FINISHED) && (
+      {(status === InternshipStatus.APPROVED || status === InternshipStatus.IN_PROGRESS || status === InternshipStatus.FINISHED) && status !== InternshipStatus.CANCELED && (
         <div className="bg-white p-6 rounded-lg shadow-md space-y-4 border border-gray-200">
           <div>
             <h3 className="text-base font-semibold text-gray-900">TCE + PAE assinados</h3>
@@ -147,7 +150,7 @@ export default function DocumentsSection({ internshipId, status, initialDocument
             internshipId={internshipId}
             documents={signedContractDocs}
             onRefresh={refreshDocuments}
-            showUploadButton
+            showUploadButton={status !== InternshipStatus.CANCELED}
             title="Envios de TCE + PAE assinados"
             showAlerts={false}
           />
@@ -167,20 +170,31 @@ export default function DocumentsSection({ internshipId, status, initialDocument
             internshipId={internshipId}
             documents={lifeInsuranceDocs}
             onRefresh={refreshDocuments}
-            showUploadButton
+            showUploadButton={status !== InternshipStatus.CANCELED}
             title="Comprovantes de Seguro de Vida enviados"
             showAlerts={false}
           />
         </div>
       )}
 
-      {status === InternshipStatus.FINISHED && (
-        <>
-          <div className="bg-white p-6 rounded-lg shadow-md space-y-4 border border-gray-200">
-            <div>
-              <h3 className="text-base font-semibold text-gray-900">Termo de Realização de Estágio (TRE)</h3>
-              <p className="text-sm text-gray-600">
-                Documento final comprovando a realização do estágio.
+      {status === InternshipStatus.FINISHED && status !== InternshipStatus.CANCELED && (
+        <div className="bg-white p-6 rounded-lg shadow-md space-y-6 border border-gray-200">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">📋 Documentos Finais de Estágio</h3>
+            <p className="text-sm text-gray-600">
+              Parabéns pela conclusão do estágio! Agora você precisa enviar os documentos finais para formalizar o encerramento.
+            </p>
+          </div>
+
+          {/* Templates para Download */}
+          <DownloadTemplates showTRE={true} showRFE={true} />
+
+          {/* Seção TRE */}
+          <div className="border-t pt-4">
+            <div className="mb-3">
+              <h4 className="text-sm font-semibold text-gray-900">Enviar TRE Preenchido</h4>
+              <p className="text-xs text-gray-600">
+                Após o representante da empresa assinar o TRE, faça o upload do documento completo.
               </p>
             </div>
 
@@ -197,17 +211,18 @@ export default function DocumentsSection({ internshipId, status, initialDocument
               internshipId={internshipId}
               documents={treDocs}
               onRefresh={refreshDocuments}
-              showUploadButton
+              showUploadButton={status !== InternshipStatus.CANCELED}
               title="TRE enviados"
               showAlerts={false}
             />
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md space-y-4 border border-gray-200">
-            <div>
-              <h3 className="text-base font-semibold text-gray-900">Relatório Final de Estágio (RFE)</h3>
-              <p className="text-sm text-gray-600">
-                Relatório detalhado das atividades realizadas durante o estágio.
+          {/* Seção RFE */}
+          <div className="border-t pt-4">
+            <div className="mb-3">
+              <h4 className="text-sm font-semibold text-gray-900">Enviar Relatório Final de Estágio</h4>
+              <p className="text-xs text-gray-600">
+                Após produzir o relatório com seu Supervisor e Professor-Orientador e coletar as assinaturas, faça o upload.
               </p>
             </div>
 
@@ -224,12 +239,12 @@ export default function DocumentsSection({ internshipId, status, initialDocument
               internshipId={internshipId}
               documents={rfeDocs}
               onRefresh={refreshDocuments}
-              showUploadButton
+              showUploadButton={status !== InternshipStatus.CANCELED}
               title="RFE enviados"
               showAlerts={false}
             />
           </div>
-        </>
+        </div>
       )}
     </div>
   );

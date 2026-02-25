@@ -122,6 +122,14 @@ export async function PUT(
       return NextResponse.json({ error: 'Estágio não encontrado ou não pertence a este utilizador.' }, { status: 404 });
     }
 
+    // Bloquear edição/envio de documentos se estágio foi cancelado
+    if (existingInternship.status === 'CANCELED') {
+      return NextResponse.json(
+        { error: 'Não é possível editar ou enviar documentos para um estágio cancelado.' },
+        { status: 400 }
+      );
+    }
+
     // Processar FormData (similar ao POST)
     const formData = await request.formData();
     const dataString = formData.get('data') as string | null;

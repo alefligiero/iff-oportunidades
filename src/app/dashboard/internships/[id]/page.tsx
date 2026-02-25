@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
-import { PrismaClient, InternshipStatus, InternshipType, InternshipModality, Gender, Course, DocumentType, DocumentStatus } from '@prisma/client';
+import { PrismaClient, InternshipStatus, InternshipType, InternshipModality, Gender, Course } from '@prisma/client';
 import { redirect } from 'next/navigation';
+import { getApprovedSubstatus, getInProgressSubstatus, getFinishedSubstatus, type DocumentSummary } from '@/lib/internship-substatus';
 import RequestEarlyTermination from './RequestEarlyTermination';
 import DocumentsSection from './DocumentsSection';
 import NextStepsGuide from './NextStepsGuide';
@@ -19,52 +20,6 @@ const statusMap = {
   [InternshipStatus.FINISHED]: { text: 'Finalizado', color: 'bg-gray-100 text-gray-800' },
   [InternshipStatus.REJECTED]: { text: 'Recusado', color: 'bg-red-100 text-red-800' },
   [InternshipStatus.CANCELED]: { text: 'Cancelado', color: 'bg-gray-100 text-gray-800' },
-};
-
-interface DocumentSummary {
-  type: DocumentType;
-  status: DocumentStatus;
-  fileUrl: string | null;
-}
-
-const getApprovedSubstatus = (documents: DocumentSummary[], startDate: Date) => {
-  // Verificar status do SIGNED_CONTRACT
-  const signedContract = documents.find((doc) => doc.type === DocumentType.SIGNED_CONTRACT);
-  const hasSignedContractApproved = signedContract?.status === DocumentStatus.APPROVED;
-  const hasSignedContractPending = signedContract?.status === DocumentStatus.PENDING_ANALYSIS;
-  
-  // Verificar status do LIFE_INSURANCE
-  const lifeInsurance = documents.find((doc) => doc.type === DocumentType.LIFE_INSURANCE);
-  const hasLifeInsuranceApproved = lifeInsurance?.status === DocumentStatus.APPROVED && Boolean(lifeInsurance.fileUrl);
-  const hasLifeInsurancePending = lifeInsurance?.status === DocumentStatus.PENDING_ANALYSIS;
-
-  // Prioridade 1: Documentos pendentes de aprovação
-  if (hasSignedContractPending && hasLifeInsurancePending) {
-    return 'Documentos em análise';
-  }
-  if (hasSignedContractPending) {
-    return 'TCE/PAE em análise';
-  }
-  if (hasLifeInsurancePending) {
-    return 'Seguro em análise';
-  }
-  
-  // Prioridade 2: Documentos não enviados ou rejeitados
-  if (!hasSignedContractApproved) return 'Aguardando TCE/PAE assinados';
-  if (!hasLifeInsuranceApproved) return 'Aguardando Seguro';
-  
-  // Prioridade 3: Verificar se a data de início já chegou
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  const start = new Date(startDate);
-  start.setHours(0, 0, 0, 0);
-  
-  if (start > today) {
-    return 'Aguardando data de início';
-  }
-  
-  return 'Pronto para iniciar';
 };
 
 const AUTO_CANCEL_NOTE = 'Cancelado automaticamente apos 7 dias em recusado sem correcoes.';
@@ -179,6 +134,16 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
       ? getApprovedSubstatus(internship.documents, internship.startDate)
       : null;
 
+  const inProgressSubstatus =
+    internship?.status === InternshipStatus.IN_PROGRESS
+      ? getInProgressSubstatus(internship.documents)
+      : null;
+
+  const finishedSubstatus =
+    internship?.status === InternshipStatus.FINISHED
+      ? getFinishedSubstatus(internship.documents)
+      : null;
+
   if (error) {
     return (
       <div className="text-center py-8">
@@ -223,6 +188,12 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
           {approvedSubstatus && (
             <span className="text-xs text-gray-600">Aprovado - {approvedSubstatus}</span>
           )}
+          {inProgressSubstatus && (
+            <span className="text-xs text-gray-600">Em Andamento - {inProgressSubstatus}</span>
+          )}
+          {finishedSubstatus && (
+            <span className="text-xs text-gray-600">Finalizado - {finishedSubstatus}</span>
+          )}
           {internship.status === InternshipStatus.REJECTED && (
             <Link 
               href={`/dashboard/internships/edit/${internship.id}`}
@@ -258,6 +229,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
             insuranceStartDate: internship.insuranceStartDate,
             insuranceEndDate: internship.insuranceEndDate,
           }}
+          status={internship.status}
         />
 
         <DocumentsSection
