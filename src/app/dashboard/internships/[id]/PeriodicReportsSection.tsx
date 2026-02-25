@@ -201,7 +201,7 @@ export default function PeriodicReportsSection({
 
   if (loading) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-md">
+      <div id="periodic-reports" className="bg-white p-6 rounded-lg shadow-md">
         <div className="animate-pulse">
           <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
           <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
@@ -217,7 +217,7 @@ export default function PeriodicReportsSection({
 
   if (!schedule.requiresReports) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
+      <div id="periodic-reports" className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
         <h2 className="text-lg font-semibold text-gray-900 mb-2">
           📊 Relatórios Periódicos
         </h2>
@@ -230,7 +230,7 @@ export default function PeriodicReportsSection({
 
   if (error) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-md">
+      <div id="periodic-reports" className="bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
           📊 Relatórios Periódicos
         </h2>
@@ -258,7 +258,7 @@ export default function PeriodicReportsSection({
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
+    <div id="periodic-reports" className="bg-white p-6 rounded-lg shadow-md">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-gray-900">
           📊 Relatórios Periódicos

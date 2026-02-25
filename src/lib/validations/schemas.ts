@@ -254,6 +254,17 @@ export const updateDocumentStatusSchema = z.object({
   rejectionComments: z.string().optional(),
 });
 
+// ===== SCHEMAS DE CONTATO =====
+
+export const createContactMessageSchema = z.object({
+  subject: z.string().min(5, 'O assunto deve ter pelo menos 5 caracteres').max(100, 'O assunto nao pode ter mais de 100 caracteres'),
+  message: z.string().min(10, 'A mensagem deve ter pelo menos 10 caracteres').max(2000, 'A mensagem nao pode ter mais de 2000 caracteres'),
+});
+
+export const replyContactMessageSchema = z.object({
+  reply: z.string().min(3, 'A resposta deve ter pelo menos 3 caracteres').max(2000, 'A resposta nao pode ter mais de 2000 caracteres'),
+});
+
 // ===== SCHEMAS DE PARÂMETROS =====
 
 export const idParamSchema = z.object({
@@ -329,6 +340,8 @@ export type UpdateVacancyInput = z.infer<typeof updateVacancySchema>;
 export type UpdateVacancyStatusInput = z.infer<typeof updateVacancyStatusSchema>;
 export type CreateDocumentInput = z.infer<typeof createDocumentSchema>;
 export type UpdateDocumentStatusInput = z.infer<typeof updateDocumentStatusSchema>;
+export type CreateContactMessageInput = z.infer<typeof createContactMessageSchema>;
+export type ReplyContactMessageInput = z.infer<typeof replyContactMessageSchema>;
 export type IdParam = z.infer<typeof idParamSchema>;
 export type PaginationInput = z.infer<typeof paginationSchema>;
 export type InternshipFilters = z.infer<typeof internshipFiltersSchema>;

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthGuard } from '@/components/AuthGuard';
+import PendingTasksMenu from '@/components/PendingTasksMenu';
 import LogoutButton from './LogoutButton';
 
 export default function DashboardLayout({
@@ -33,15 +34,24 @@ export default function DashboardLayout({
     
     switch (user?.role) {
       case 'STUDENT':
-        roleLinks = [{ name: 'Meus Estágios', href: '/dashboard/internships' }, { name: 'Vagas', href: '/dashboard/vacancies' }];
+        roleLinks = [
+          { name: 'Meus Estágios', href: '/dashboard/internships' },
+          { name: 'Vagas', href: '/dashboard/vacancies' },
+          { name: 'Contato com a Agência', href: '/dashboard/contact' }
+        ];
         break;
       case 'COMPANY':
-        roleLinks = [{ name: 'Publicar Vaga', href: '/dashboard/vacancies/new' }, { name: 'Minhas Vagas', href: '/dashboard/vacancies' }];
+        roleLinks = [
+          { name: 'Publicar Vaga', href: '/dashboard/vacancies/new' },
+          { name: 'Minhas Vagas', href: '/dashboard/vacancies' },
+          { name: 'Contato com a Agência', href: '/dashboard/contact' }
+        ];
         break;
       case 'ADMIN':
         roleLinks = [
           { name: 'Estágios', href: '/dashboard/admin/internships' },
-          { name: 'Vagas', href: '/dashboard/admin/vacancies' }
+          { name: 'Vagas', href: '/dashboard/admin/vacancies' },
+          { name: 'Mensagens', href: '/dashboard/admin/contact' }
         ];
         break;
       default:
@@ -97,10 +107,13 @@ export default function DashboardLayout({
         </aside>
 
         <div className="flex-1 flex flex-col">
-          <header className="bg-white border-b h-20 flex items-center px-8">
+          <header className="bg-white border-b h-20 flex items-center justify-between px-8">
             <h1 className="text-xl font-semibold text-gray-800">
               {`Olá, ${user?.name || user?.email}`}
             </h1>
+            <div className="flex items-center gap-3">
+              <PendingTasksMenu />
+            </div>
           </header>
           <main className="flex-1 p-8 overflow-y-auto">
             {children}

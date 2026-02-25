@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { getUserFromToken } from '@/lib/get-user-from-token';
+import { NotificationType, Role } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
 const updateVacancySchema = z.object({
@@ -41,6 +42,23 @@ export async function PATCH(
       where: { id: params.id },
       data: { ...validation.data, status: 'PENDING_APPROVAL' }, // Re-submete para aprovação
     });
+
+    const admins = await prisma.user.findMany({
+      where: { role: Role.ADMIN },
+      select: { id: true },
+    });
+
+    if (admins.length > 0) {
+      await prisma.notification.createMany({
+        data: admins.map((admin) => ({
+          userId: admin.id,
+          type: NotificationType.VACANCY_SUBMITTED,
+          title: 'Vaga reenviada para aprovacao',
+          message: `A empresa ${company.name} reenviou a vaga ${updatedVacancy.title} para aprovacao.`,
+          href: `/dashboard/admin/vacancies/${updatedVacancy.id}`,
+        })),
+      });
+    }
 
     return NextResponse.json(updatedVacancy);
 

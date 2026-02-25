@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { DocumentStatus, DocumentType, InternshipStatus } from '@prisma/client';
+import { DocumentStatus, DocumentType, InternshipStatus, NotificationType } from '@prisma/client';
 import { getUserFromToken } from '@/lib/get-user-from-token';
 import { createSuccessResponse, createErrorResponse, createValidationErrorResponse } from '@/lib/api-response';
 import { z } from 'zod';
@@ -12,6 +12,16 @@ const updateDocumentStatusSchema = z.object({
   }),
   rejectionComments: z.string().optional(),
 });
+
+const documentTypeLabels: Record<DocumentType, string> = {
+  TCE: 'TCE',
+  PAE: 'PAE',
+  PERIODIC_REPORT: 'Relatorio Periodico',
+  TRE: 'TRE',
+  RFE: 'RFE',
+  SIGNED_CONTRACT: 'TCE + PAE assinados',
+  LIFE_INSURANCE: 'Seguro de Vida',
+};
 
 /**
  * Verifica se todos os documentos necessários foram aprovados e inicia o estágio automaticamente
@@ -106,7 +116,8 @@ export async function PATCH(
       where: { id: documentId },
       include: {
         internship: {
-          include: {
+          select: {
+            companyName: true,
             student: {
               select: {
                 name: true,
@@ -137,12 +148,22 @@ export async function PATCH(
       await checkAndStartInternshipIfReady(document.internshipId);
     }
 
-    // TODO: Implementar notificação ao aluno
-    // await createNotification({
-    //   userId: document.internship.student.userId,
-    //   type: status === 'APPROVED' ? 'DOCUMENT_APPROVED' : 'DOCUMENT_REJECTED',
-    //   message: `Documento ${document.type} foi ${status === 'APPROVED' ? 'aprovado' : 'rejeitado'}`,
-    // });
+    const documentLabel = documentTypeLabels[document.type] ?? document.type;
+    const wasRejected = status === 'REJECTED';
+    const notificationMessage = wasRejected
+      ? `O admin rejeitou o documento ${documentLabel} do estagio na empresa ${document.internship.companyName}.` +
+        (rejectionComments ? ` Motivo: ${rejectionComments}.` : '')
+      : `O admin aprovou o documento ${documentLabel} do estagio na empresa ${document.internship.companyName}.`;
+
+    await prisma.notification.create({
+      data: {
+        userId: document.internship.student.userId,
+        type: NotificationType.DOCUMENT_STATUS,
+        title: wasRejected ? 'Documento rejeitado' : 'Documento aprovado',
+        message: notificationMessage,
+        href: `/dashboard/internships/${document.internshipId}`,
+      },
+    });
 
     return createSuccessResponse({
       message: `Documento ${status === 'APPROVED' ? 'aprovado' : 'rejeitado'} com sucesso`,

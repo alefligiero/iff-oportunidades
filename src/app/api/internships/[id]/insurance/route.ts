@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/get-user-from-token';
 import { processUploadedFile } from '@/lib/file-upload';
+import { NotificationType, Role } from '@prisma/client';
 
 export async function PATCH(
   request: NextRequest,
@@ -20,6 +21,11 @@ export async function PATCH(
       where: {
         id: internshipId,
         student: { userId: userPayload.userId },
+      },
+      include: {
+        student: {
+          select: { name: true },
+        },
       },
     });
 
@@ -99,6 +105,23 @@ export async function PATCH(
 
       return internshipUpdated;
     });
+
+    const admins = await prisma.user.findMany({
+      where: { role: Role.ADMIN },
+      select: { id: true },
+    });
+
+    if (admins.length > 0) {
+      await prisma.notification.createMany({
+        data: admins.map((admin) => ({
+          userId: admin.id,
+          type: NotificationType.DOCUMENT_SUBMITTED,
+          title: 'Documento enviado para analise',
+          message: `Aluno ${internship.student.name} enviou comprovante do Seguro de Vida para o estagio na empresa ${internship.companyName}.`,
+          href: `/dashboard/admin/internships/${internship.id}`,
+        })),
+      });
+    }
 
     return NextResponse.json({ 
       message: 'Dados do seguro atualizados com sucesso',

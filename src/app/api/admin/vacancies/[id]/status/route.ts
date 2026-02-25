@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { VacancyStatus } from '@prisma/client';
+import { VacancyStatus, NotificationType } from '@prisma/client';
 import { z } from 'zod';
 import { getUserFromToken } from '@/lib/get-user-from-token';
 import { prisma } from '@/lib/prisma';
@@ -40,9 +40,48 @@ export async function PATCH(
         ...(status === VacancyStatus.REJECTED && rejectionReason ? { rejectionReason } : {}),
         ...(status === VacancyStatus.CLOSED_BY_ADMIN && closureReason ? { closureReason } : {}),
       },
+      include: {
+        company: {
+          select: {
+            name: true,
+            userId: true,
+          },
+        },
+      },
     });
 
-    // TODO: Implementar logíca de uma notificação pode ser enviada à empresa informando a decisão.
+    const statusMessages: Record<VacancyStatus, { title: string; message: string }> = {
+      [VacancyStatus.PENDING_APPROVAL]: {
+        title: 'Vaga pendente de aprovacao',
+        message: `A vaga ${updatedVacancy.title} esta pendente de aprovacao.`,
+      },
+      [VacancyStatus.APPROVED]: {
+        title: 'Vaga aprovada',
+        message: `A vaga ${updatedVacancy.title} foi aprovada pelo admin.`,
+      },
+      [VacancyStatus.REJECTED]: {
+        title: 'Vaga rejeitada',
+        message: `A vaga ${updatedVacancy.title} foi rejeitada pelo admin.${rejectionReason ? ` Motivo: ${rejectionReason}.` : ''}`,
+      },
+      [VacancyStatus.CLOSED_BY_COMPANY]: {
+        title: 'Vaga fechada',
+        message: `A vaga ${updatedVacancy.title} foi fechada pela empresa.`,
+      },
+      [VacancyStatus.CLOSED_BY_ADMIN]: {
+        title: 'Vaga fechada pelo admin',
+        message: `A vaga ${updatedVacancy.title} foi fechada pelo admin.${closureReason ? ` Motivo: ${closureReason}.` : ''}`,
+      },
+    };
+
+    await prisma.notification.create({
+      data: {
+        userId: updatedVacancy.company.userId,
+        type: NotificationType.VACANCY_STATUS,
+        title: statusMessages[status].title,
+        message: statusMessages[status].message,
+        href: `/dashboard/vacancies/${updatedVacancy.id}`,
+      },
+    });
 
     return NextResponse.json(updatedVacancy);
 

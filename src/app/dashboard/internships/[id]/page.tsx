@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
-import { PrismaClient, InternshipStatus, InternshipType, InternshipModality, Gender, Course } from '@prisma/client';
+import { PrismaClient, InternshipStatus, InternshipType, InternshipModality, Gender, Course, DocumentType } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import { getApprovedSubstatus, getInProgressSubstatus, getFinishedSubstatus, type DocumentSummary } from '@/lib/internship-substatus';
 import RequestEarlyTermination from './RequestEarlyTermination';
@@ -134,6 +134,10 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
       ? getApprovedSubstatus(internship.documents, internship.startDate)
       : null;
 
+  const lifeInsuranceDocument = internship?.documents.find(
+    (doc) => doc.type === DocumentType.LIFE_INSURANCE
+  );
+
   const inProgressSubstatus =
     internship?.status === InternshipStatus.IN_PROGRESS
       ? getInProgressSubstatus(internship.documents)
@@ -230,6 +234,8 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
             insuranceEndDate: internship.insuranceEndDate,
           }}
           status={internship.status}
+          lifeInsuranceStatus={lifeInsuranceDocument?.status}
+          lifeInsuranceRejectionComments={lifeInsuranceDocument?.rejectionComments ?? null}
         />
 
         <DocumentsSection

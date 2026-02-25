@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { InternshipStatus, Role } from '@prisma/client';
+import { InternshipStatus, Role, NotificationType } from '@prisma/client';
 import { z } from 'zod';
 import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
@@ -42,7 +42,12 @@ export async function PATCH(
 
     const internship = await prisma.internship.findUnique({
       where: { id: internshipId },
-      include: { documents: true },
+      include: {
+        documents: true,
+        student: {
+          select: { userId: true },
+        },
+      },
     });
 
     if (!internship) {
@@ -119,7 +124,42 @@ export async function PATCH(
       data: updateData,
     });
 
-    // TODO: Implementar a lógica para enviar uma notificação por email para o aluno.
+    const statusMessages: Record<InternshipStatus, { title: string; message: string }> = {
+      [InternshipStatus.IN_ANALYSIS]: {
+        title: 'Estagio em analise',
+        message: `Sua formalizacao de estagio na empresa ${internship.companyName} esta em analise.`,
+      },
+      [InternshipStatus.APPROVED]: {
+        title: 'Estagio aprovado',
+        message: `O admin aprovou sua formalizacao de estagio na empresa ${internship.companyName}.`,
+      },
+      [InternshipStatus.REJECTED]: {
+        title: 'Estagio recusado',
+        message: `O admin recusou sua formalizacao de estagio na empresa ${internship.companyName}.${trimmedReason ? ` Motivo: ${trimmedReason}.` : ''}`,
+      },
+      [InternshipStatus.IN_PROGRESS]: {
+        title: 'Estagio iniciado',
+        message: `Seu estagio na empresa ${internship.companyName} foi iniciado.`,
+      },
+      [InternshipStatus.FINISHED]: {
+        title: 'Estagio finalizado',
+        message: `Seu estagio na empresa ${internship.companyName} foi finalizado.`,
+      },
+      [InternshipStatus.CANCELED]: {
+        title: 'Estagio cancelado',
+        message: `Seu estagio na empresa ${internship.companyName} foi cancelado.${trimmedReason ? ` Motivo: ${trimmedReason}.` : ''}`,
+      },
+    };
+
+    await prisma.notification.create({
+      data: {
+        userId: internship.student.userId,
+        type: NotificationType.INTERNSHIP_STATUS,
+        title: statusMessages[status].title,
+        message: statusMessages[status].message,
+        href: `/dashboard/internships/${internship.id}`,
+      },
+    });
 
     return NextResponse.json(updatedInternship);
 

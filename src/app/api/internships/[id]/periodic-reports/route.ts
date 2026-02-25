@@ -3,7 +3,7 @@ import { getUserFromToken } from '@/lib/get-user-from-token';
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/prisma';
 import { processUploadedFile } from '@/lib/file-upload';
-import { DocumentType, DocumentStatus } from '@prisma/client';
+import { DocumentType, DocumentStatus, NotificationType, Role } from '@prisma/client';
 
 /**
  * POST /api/internships/[id]/periodic-reports
@@ -27,7 +27,7 @@ export async function POST(
       where: { id: internshipId },
       include: {
         student: {
-          select: { userId: true },
+          select: { userId: true, name: true },
         },
       },
     });
@@ -74,6 +74,23 @@ export async function POST(
         internshipId,
       },
     });
+
+    const admins = await prisma.user.findMany({
+      where: { role: Role.ADMIN },
+      select: { id: true },
+    });
+
+    if (admins.length > 0) {
+      await prisma.notification.createMany({
+        data: admins.map((admin) => ({
+          userId: admin.id,
+          type: NotificationType.DOCUMENT_SUBMITTED,
+          title: 'Documento enviado para analise',
+          message: `Aluno ${internship.student.name} enviou Relatorio Periodico para o estagio na empresa ${internship.companyName}.`,
+          href: `/dashboard/admin/internships/${internship.id}`,
+        })),
+      });
+    }
 
     return createSuccessResponse({
       document: {

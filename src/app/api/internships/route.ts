@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { Role, InternshipType } from '@prisma/client';
+import { Role, InternshipType, NotificationType } from '@prisma/client';
 import { createInternshipSchema } from '@/lib/validations/schemas';
 import { validateRequestBody, createErrorResponse, createSuccessResponse } from '@/lib/validations/utils';
 import { withErrorHandling, withLogging } from '@/lib/validations/middleware';
@@ -157,6 +157,23 @@ async function createInternship(request: NextRequest) {
       return internship;
     });
 
+    const admins = await prisma.user.findMany({
+      where: { role: Role.ADMIN },
+      select: { id: true },
+    });
+
+    if (admins.length > 0) {
+      await prisma.notification.createMany({
+        data: admins.map((admin) => ({
+          userId: admin.id,
+          type: NotificationType.INTERNSHIP_SUBMITTED,
+          title: 'Nova formalizacao de estagio',
+          message: `Aluno ${studentProfile.name} enviou formalizacao de estagio para a empresa ${newInternship.companyName}.`,
+          href: `/dashboard/admin/internships/${newInternship.id}`,
+        })),
+      });
+    }
+
     return createSuccessResponse(newInternship, 201);
     
   } else {
@@ -189,6 +206,23 @@ async function createInternship(request: NextRequest) {
 
       return internship;
     });
+
+    const admins = await prisma.user.findMany({
+      where: { role: Role.ADMIN },
+      select: { id: true },
+    });
+
+    if (admins.length > 0) {
+      await prisma.notification.createMany({
+        data: admins.map((admin) => ({
+          userId: admin.id,
+          type: NotificationType.INTERNSHIP_SUBMITTED,
+          title: 'Nova formalizacao de estagio',
+          message: `Aluno ${studentProfile.name} enviou formalizacao de estagio para a empresa ${newInternship.companyName}.`,
+          href: `/dashboard/admin/internships/${newInternship.id}`,
+        })),
+      });
+    }
 
     return createSuccessResponse(newInternship, 201);
   }

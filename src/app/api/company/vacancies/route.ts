@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { Role } from '@prisma/client';
+import { Role, NotificationType } from '@prisma/client';
 import { createVacancySchema } from '@/lib/validations/schemas';
 import { prisma } from '@/lib/prisma';
 
@@ -106,7 +106,22 @@ export async function POST(request: NextRequest) {
 
     console.log(`Nova vaga criada: ${newVacancy.id} - ${newVacancy.title} por empresa ${companyProfile.name}`);
 
-    // TODO: Implementar notificação aos administradores sobre a nova vaga.
+    const admins = await prisma.user.findMany({
+      where: { role: Role.ADMIN },
+      select: { id: true },
+    });
+
+    if (admins.length > 0) {
+      await prisma.notification.createMany({
+        data: admins.map((admin) => ({
+          userId: admin.id,
+          type: NotificationType.VACANCY_SUBMITTED,
+          title: 'Nova vaga enviada',
+          message: `A empresa ${companyProfile.name} enviou a vaga ${newVacancy.title} para aprovacao.`,
+          href: `/dashboard/admin/vacancies/${newVacancy.id}`,
+        })),
+      });
+    }
 
     return NextResponse.json({
       success: true,

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { DocumentType } from '@prisma/client';
+import { DocumentType, NotificationType, Role } from '@prisma/client';
 import { getUserFromToken } from '@/lib/get-user-from-token';
 import { processUploadedFile, deleteFile } from '@/lib/file-upload';
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response';
@@ -27,7 +27,7 @@ export async function POST(
       where: { id: internshipId },
       include: {
         student: {
-          select: { userId: true },
+          select: { userId: true, name: true },
         },
       },
     });
@@ -81,6 +81,18 @@ export async function POST(
       }
     }
 
+    const documentLabels: Record<DocumentType, string> = {
+      TCE: 'TCE',
+      PAE: 'PAE',
+      PERIODIC_REPORT: 'Relatorio Periodico',
+      TRE: 'TRE',
+      RFE: 'RFE',
+      SIGNED_CONTRACT: 'TCE + PAE assinados',
+      LIFE_INSURANCE: 'comprovante do Seguro de Vida',
+    };
+
+    const documentLabel = documentLabels[documentType as DocumentType] ?? documentType;
+
     // Verificar se já existe documento deste tipo (para substituir)
     const existingDocument = await prisma.document.findFirst({
       where: {
@@ -123,6 +135,25 @@ export async function POST(
         },
       });
 
+      if (userPayload.role !== Role.ADMIN) {
+        const admins = await prisma.user.findMany({
+          where: { role: Role.ADMIN },
+          select: { id: true },
+        });
+
+        if (admins.length > 0) {
+          await prisma.notification.createMany({
+            data: admins.map((admin) => ({
+              userId: admin.id,
+              type: NotificationType.DOCUMENT_SUBMITTED,
+              title: 'Documento reenviado para analise',
+              message: `Aluno ${internship.student.name} reenviou ${documentLabel} para o estagio na empresa ${internship.companyName}.`,
+              href: `/dashboard/admin/internships/${internship.id}`,
+            })),
+          });
+        }
+      }
+
       return createSuccessResponse(
         {
           message: 'Documento reenviado com sucesso',
@@ -141,6 +172,25 @@ export async function POST(
         internshipId,
       },
     });
+
+    if (userPayload.role !== Role.ADMIN) {
+      const admins = await prisma.user.findMany({
+        where: { role: Role.ADMIN },
+        select: { id: true },
+      });
+
+      if (admins.length > 0) {
+        await prisma.notification.createMany({
+          data: admins.map((admin) => ({
+            userId: admin.id,
+            type: NotificationType.DOCUMENT_SUBMITTED,
+            title: 'Documento enviado para analise',
+            message: `Aluno ${internship.student.name} enviou ${documentLabel} para o estagio na empresa ${internship.companyName}.`,
+            href: `/dashboard/admin/internships/${internship.id}`,
+          })),
+        });
+      }
+    }
 
     return createSuccessResponse(
       {

@@ -14,9 +14,17 @@ interface InsuranceDataFormProps {
     insuranceEndDate: Date | null;
   };
   status?: string;
+  lifeInsuranceStatus?: 'PENDING_ANALYSIS' | 'APPROVED' | 'REJECTED' | 'SIGNED_VALIDATED';
+  lifeInsuranceRejectionComments?: string | null;
 }
 
-export default function InsuranceDataForm({ internshipId, currentData, status }: InsuranceDataFormProps) {
+export default function InsuranceDataForm({
+  internshipId,
+  currentData,
+  status,
+  lifeInsuranceStatus,
+  lifeInsuranceRejectionComments,
+}: InsuranceDataFormProps) {
   const router = useRouter();
   const { addNotification } = useNotification();
   const [isEditing, setIsEditing] = useState(false);
@@ -111,8 +119,9 @@ export default function InsuranceDataForm({ internshipId, currentData, status }:
 
   const hasData = currentData.insuranceCompany || currentData.insurancePolicyNumber;
   const isCanceled = status === 'CANCELED';
+  const showReuploadPrompt = lifeInsuranceStatus === 'REJECTED';
 
-  if (!isEditing && hasData) {
+  if (!isEditing && hasData && !showReuploadPrompt) {
     return null;
   }
 
@@ -121,11 +130,35 @@ export default function InsuranceDataForm({ internshipId, currentData, status }:
     return null;
   }
 
+  if (!isEditing && showReuploadPrompt) {
+    return (
+      <div id="insurance-data" className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+        <p className="text-sm text-orange-800 font-medium mb-2">
+          ⚠️ Comprovante do seguro rejeitado
+        </p>
+        <p className="text-sm text-orange-700 mb-3">
+          Atualize os dados do seguro e reenvie o comprovante.
+        </p>
+        {lifeInsuranceRejectionComments && (
+          <div className="mb-3 text-sm text-orange-700">
+            Motivo: {lifeInsuranceRejectionComments}
+          </div>
+        )}
+        <button
+          onClick={() => setIsEditing(true)}
+          className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium"
+        >
+          Reenviar comprovante
+        </button>
+      </div>
+    );
+  }
+
   if (!isEditing) {
     return (
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+      <div id="insurance-data" className="bg-amber-50 border border-amber-200 rounded-lg p-4">
         <p className="text-sm text-amber-800 font-medium mb-2">
-          ⚠️ Dados do seguro não preenchidos
+          ⚠️ Dados do seguro nao preenchidos
         </p>
         <p className="text-sm text-amber-700 mb-3">
           Envie os dados do seguro junto com o comprovante nesta secao.
@@ -141,7 +174,7 @@ export default function InsuranceDataForm({ internshipId, currentData, status }:
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6">
+    <div id="insurance-data" className="bg-white border border-gray-200 rounded-lg p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Dados do Seguro de Vida</h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

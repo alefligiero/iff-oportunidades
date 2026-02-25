@@ -113,7 +113,7 @@ export default function DocumentsSection({ internshipId, status, initialDocument
   }, [initialDocuments]);
 
   return (
-    <div className="space-y-4">
+    <div id="documents-section" className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Documentos</h2>
