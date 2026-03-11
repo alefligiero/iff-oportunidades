@@ -206,6 +206,15 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
               Corrigir e Reenviar
             </Link>
           )}
+          {internship.status === InternshipStatus.APPROVED && (
+            <Link 
+              href={`/dashboard/internships/${internship.id}/document`}
+              target="_blank"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm flex items-center gap-2"
+            >
+              <span>📄</span> Gerar Termo de Compromisso (PDF)
+            </Link>
+          )}
         </div>
       </div>
 
@@ -240,6 +249,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
 
         <DocumentsSection
           internshipId={internship.id}
+          internshipType={internship.type}
           status={internship.status}
           initialDocuments={initialDocuments}
         />
@@ -387,7 +397,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
           {internship.type === InternshipType.INTEGRATOR && (
             <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
               <p className="text-sm text-blue-800">
-                <span className="font-semibold">📎 Informações do TCE/PAE:</span> Os detalhes do estágio estão contidos nos arquivos TCE e PAE que você enviou.
+                <span className="font-semibold">📎 Informações do TCE:</span> Os detalhes do estágio estão contidos nos arquivos TCE que você enviou.
               </p>
             </div>
           )}
@@ -397,7 +407,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
               <span className="font-medium text-gray-700">Setor:</span>
               <p className="text-gray-900">
                 {internship.type === InternshipType.INTEGRATOR && isDefaultValue(internship.internshipSector) 
-                  ? '📎 Informações do TCE/PAE' 
+                  ? '📎 Informações do TCE' 
                   : internship.internshipSector}
               </p>
             </div>
@@ -405,7 +415,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
               <span className="font-medium text-gray-700">Supervisor:</span>
               <p className="text-gray-900">
                 {internship.type === InternshipType.INTEGRATOR && isDefaultValue(internship.supervisorName) 
-                  ? '📎 Informações do TCE/PAE' 
+                  ? '📎 Informações do TCE' 
                   : `${internship.supervisorName} (${internship.supervisorRole})`}
               </p>
             </div>
@@ -413,7 +423,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
               <span className="font-medium text-gray-700">Professor Orientador:</span>
               <p className="text-gray-900">
                 {internship.type === InternshipType.INTEGRATOR && isDefaultValue(internship.advisorProfessorName) 
-                  ? '📎 Informações do TCE/PAE' 
+                  ? '📎 Informações do TCE' 
                   : `${internship.advisorProfessorName} (SIAPE: ${internship.advisorProfessorId})`}
               </p>
             </div>
@@ -421,7 +431,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
               <span className="font-medium text-gray-700">Bolsa:</span>
               <p className="text-gray-900">
                 {internship.type === InternshipType.INTEGRATOR && internship.monthlyGrant === 0 
-                  ? '📎 Informações do TCE/PAE' 
+                  ? '📎 Informações do TCE' 
                   : formatCurrency(internship.monthlyGrant)}
               </p>
             </div>
@@ -429,7 +439,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
               <span className="font-medium text-gray-700">Auxílio Transporte:</span>
               <p className="text-gray-900">
                 {internship.type === InternshipType.INTEGRATOR && internship.transportationGrant === 0 
-                  ? '📎 Informações do TCE/PAE' 
+                  ? '📎 Informações do TCE' 
                   : formatCurrency(internship.transportationGrant)}
               </p>
             </div>
@@ -439,7 +449,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
             <span className="font-medium text-gray-700">Atividades Técnicas:</span>
             <p className="text-sm text-gray-900 mt-1">
               {internship.type === InternshipType.INTEGRATOR && isDefaultValue(internship.technicalActivities) 
-                ? '📎 Informações do TCE/PAE' 
+                ? '📎 Informações do TCE' 
                 : internship.technicalActivities}
             </p>
           </div>

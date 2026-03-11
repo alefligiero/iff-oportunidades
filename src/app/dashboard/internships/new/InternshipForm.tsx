@@ -286,53 +286,35 @@ export default function InternshipForm({
       
       // Tipo de estágio
       formDataToSend.append('type', internshipType);
-      
+
+      // Montar payload completo (igual para ambos os tipos — a API usa o mesmo schema)
+      const unmaskCurrency = (value: string) => parseFloat(value.replace('R$ ', '').replace(/\./g, '').replace(',', '.'));
+      const unmaskNumbers = (value: string) => value.replace(/\D/g, '');
+
+      const apiData = {
+        ...formData,
+        studentCpf: unmaskNumbers(formData.studentCpf as string),
+        studentAddressCep: unmaskNumbers(formData.studentAddressCep as string),
+        studentPhone: unmaskNumbers(formData.studentPhone as string),
+        companyCnpj: unmaskNumbers(formData.companyCnpj as string),
+        companyAddressCep: unmaskNumbers(formData.companyAddressCep as string),
+        companyPhone: unmaskNumbers(formData.companyPhone as string),
+        insuranceCompanyCnpj: unmaskNumbers(formData.insuranceCompanyCnpj as string),
+        monthlyGrant: unmaskCurrency(formData.monthlyGrant as string),
+        transportationGrant: unmaskCurrency(formData.transportationGrant as string),
+        weeklyHours: parseInt(formData.weeklyHours as string, 10),
+      };
+
+      formDataToSend.append('data', JSON.stringify(apiData));
+
       if (internshipType === InternshipType.INTEGRATOR) {
-        // Via Agente Integrador - apenas upload do TCE (PAE deve estar anexo ao TCE)
+        // Via Agente Integrador — TCE obrigatório
         formDataToSend.append('tce', tceFile!);
+      }
 
-        const unmaskCurrency = (value: string) => parseFloat(value.replace('R$ ', '').replace(/\./g, '').replace(',', '.'));
-
-        const integratorData = {
-          internshipSector: formData.internshipSector,
-          supervisorName: formData.supervisorName,
-          supervisorRole: formData.supervisorRole,
-          advisorProfessorName: formData.advisorProfessorName,
-          startDate: formData.startDate,
-          endDate: formData.endDate,
-          weeklyHours: parseInt(formData.weeklyHours as string, 10),
-          monthlyGrant: unmaskCurrency(formData.monthlyGrant as string),
-          transportationGrant: unmaskCurrency(formData.transportationGrant as string),
-        };
-
-        formDataToSend.append('data', JSON.stringify(integratorData));
-      } else {
-        // Estágio Direto - dados completos + seguro opcional
-        const unmaskCurrency = (value: string) => parseFloat(value.replace('R$ ', '').replace(/\./g, '').replace(',', '.'));
-        const unmaskNumbers = (value: string) => value.replace(/\D/g, '');
-
-        const apiData = {
-          ...formData,
-          type: InternshipType.DIRECT,
-          studentCpf: unmaskNumbers(formData.studentCpf as string),
-          studentAddressCep: unmaskNumbers(formData.studentAddressCep as string),
-          studentPhone: unmaskNumbers(formData.studentPhone as string),
-          companyCnpj: unmaskNumbers(formData.companyCnpj as string),
-          companyAddressCep: unmaskNumbers(formData.companyAddressCep as string),
-          companyPhone: unmaskNumbers(formData.companyPhone as string),
-          insuranceCompanyCnpj: unmaskNumbers(formData.insuranceCompanyCnpj as string),
-          monthlyGrant: unmaskCurrency(formData.monthlyGrant as string),
-          transportationGrant: unmaskCurrency(formData.transportationGrant as string),
-          weeklyHours: parseInt(formData.weeklyHours as string, 10),
-        };
-
-        // Adicionar dados do formulário
-        formDataToSend.append('data', JSON.stringify(apiData));
-        
-        // Upload opcional de seguro
-        if (insuranceFile) {
-          formDataToSend.append('insurance', insuranceFile);
-        }
+      // Upload opcional de seguro (ambos os tipos)
+      if (insuranceFile) {
+        formDataToSend.append('insurance', insuranceFile);
       }
 
       const url = isEditing ? `/api/internships/${internshipData?.id}` : '/api/internships';

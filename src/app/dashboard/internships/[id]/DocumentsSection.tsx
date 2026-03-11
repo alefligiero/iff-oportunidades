@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { DocumentStatus, DocumentType, InternshipStatus } from "@prisma/client";
+import { DocumentStatus, DocumentType, InternshipStatus, InternshipType } from "@prisma/client";
 import DocumentUpload from "./DocumentUpload";
 import DocumentList from "./DocumentList";
 import DownloadTemplates from "./DownloadTemplates";
@@ -18,6 +18,7 @@ export type DocumentItem = {
 
 interface DocumentsSectionProps {
   internshipId: string;
+  internshipType: InternshipType;
   status: InternshipStatus;
   initialDocuments: DocumentItem[];
 }
@@ -34,7 +35,7 @@ const normalizeDocuments = (docs: Array<DocumentItem | (Partial<DocumentItem> & 
   }));
 };
 
-export default function DocumentsSection({ internshipId, status, initialDocuments }: DocumentsSectionProps) {
+export default function DocumentsSection({ internshipId, internshipType, status, initialDocuments }: DocumentsSectionProps) {
   const [documents, setDocuments] = useState<DocumentItem[]>(normalizeDocuments(initialDocuments));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,6 +89,23 @@ export default function DocumentsSection({ internshipId, status, initialDocument
     [documents]
   );
 
+  const tceDocs = useMemo(
+    () => documents.filter((doc) => doc.type === DocumentType.TCE),
+    [documents]
+  );
+
+  const tceRejected = tceDocs.some((doc) => doc.status === DocumentStatus.REJECTED);
+  const tcePending = tceDocs.some((doc) => doc.status === DocumentStatus.PENDING_ANALYSIS);
+  const tceApproved = tceDocs.some(
+    (doc) => doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED
+  );
+  const canUploadTce =
+    internshipType === InternshipType.INTEGRATOR &&
+    status !== InternshipStatus.CANCELED &&
+    tceRejected &&
+    !tcePending &&
+    !tceApproved;
+
   const refreshDocuments = async () => {
     setLoading(true);
     setError(null);
@@ -128,7 +146,7 @@ export default function DocumentsSection({ internshipId, status, initialDocument
         </div>
       )}
 
-      {(status === InternshipStatus.APPROVED || status === InternshipStatus.IN_PROGRESS || status === InternshipStatus.FINISHED) && status !== InternshipStatus.CANCELED && (
+      {(status === InternshipStatus.APPROVED || status === InternshipStatus.IN_PROGRESS || status === InternshipStatus.FINISHED) && (
         <div className="bg-white p-6 rounded-lg shadow-md space-y-4 border border-gray-200">
           <div>
             <h3 className="text-base font-semibold text-gray-900">TCE + PAE assinados</h3>
@@ -150,7 +168,7 @@ export default function DocumentsSection({ internshipId, status, initialDocument
             internshipId={internshipId}
             documents={signedContractDocs}
             onRefresh={refreshDocuments}
-            showUploadButton={status !== InternshipStatus.CANCELED}
+            showUploadButton={true}
             title="Envios de TCE + PAE assinados"
             showAlerts={false}
           />
@@ -177,7 +195,36 @@ export default function DocumentsSection({ internshipId, status, initialDocument
         </div>
       )}
 
-      {status === InternshipStatus.FINISHED && status !== InternshipStatus.CANCELED && (
+      {internshipType === InternshipType.INTEGRATOR && tceDocs.length > 0 && (
+        <div className="bg-white p-6 rounded-lg shadow-md space-y-4 border border-gray-200">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">Termo de Compromisso (TCE)</h3>
+            <p className="text-sm text-gray-600">
+              TCE enviado na formalizacao do estagio via Agente Integrador.
+            </p>
+          </div>
+
+          {canUploadTce && (
+            <DocumentUpload
+              internshipId={internshipId}
+              documentType={DocumentType.TCE}
+              onUploadSuccess={refreshDocuments}
+              disabled={false}
+            />
+          )}
+
+          <DocumentList
+            internshipId={internshipId}
+            documents={tceDocs}
+            onRefresh={refreshDocuments}
+            showUploadButton={false}
+            title="TCE enviados"
+            showAlerts={false}
+          />
+        </div>
+      )}
+
+      {status === InternshipStatus.FINISHED && (
         <div className="bg-white p-6 rounded-lg shadow-md space-y-6 border border-gray-200">
           <div>
             <h3 className="text-base font-semibold text-gray-900">📋 Documentos Finais de Estágio</h3>
@@ -211,7 +258,7 @@ export default function DocumentsSection({ internshipId, status, initialDocument
               internshipId={internshipId}
               documents={treDocs}
               onRefresh={refreshDocuments}
-              showUploadButton={status !== InternshipStatus.CANCELED}
+              showUploadButton={true}
               title="TRE enviados"
               showAlerts={false}
             />
@@ -239,7 +286,7 @@ export default function DocumentsSection({ internshipId, status, initialDocument
               internshipId={internshipId}
               documents={rfeDocs}
               onRefresh={refreshDocuments}
-              showUploadButton={status !== InternshipStatus.CANCELED}
+              showUploadButton={true}
               title="RFE enviados"
               showAlerts={false}
             />
