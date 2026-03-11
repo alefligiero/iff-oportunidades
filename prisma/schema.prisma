@@ -17,8 +17,6 @@ model User {
   companyProfile Company?
   studentProfile Student?
   notifications  Notification[]
-  contactMessages ContactMessage[] @relation("ContactMessageSender")
-  contactReplies  ContactMessage[] @relation("ContactMessageReply")
 }
 
 model Student {
@@ -151,21 +149,6 @@ model Notification {
   user      User             @relation(fields: [userId], references: [id])
 }
 
-model ContactMessage {
-  id          String               @id @default(cuid())
-  userId      String
-  subject     String
-  message     String
-  status      ContactMessageStatus @default(OPEN)
-  adminReply  String?
-  repliedAt   DateTime?
-  repliedById String?
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
-  user        User                 @relation("ContactMessageSender", fields: [userId], references: [id])
-  repliedBy   User?                @relation("ContactMessageReply", fields: [repliedById], references: [id])
-}
-
 enum Role {
   ADMIN
   STUDENT
@@ -234,7 +217,6 @@ enum NotificationType {
   INTERNSHIP_STATUS
   DOCUMENT_STATUS
   VACANCY_STATUS
-  CONTACT_MESSAGE
 }
 
 enum VacancyType {
@@ -256,7 +238,3 @@ enum VacancyModality {
   REMOTO
 }
 
-enum ContactMessageStatus {
-  OPEN
-  REPLIED
-}

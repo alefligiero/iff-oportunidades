@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (userPayload.role === 'ADMIN') {
-      const [pendingInternships, pendingDocuments, pendingVacancies, pendingContacts] = await Promise.all([
+      const [pendingInternships, pendingDocuments, pendingVacancies] = await Promise.all([
         prisma.internship.findMany({
           where: { status: InternshipStatus.IN_ANALYSIS },
           select: {
@@ -87,21 +87,6 @@ export async function GET(request: NextRequest) {
           },
           orderBy: { createdAt: 'desc' },
         }),
-        prisma.contactMessage.findMany({
-          where: { status: 'OPEN' },
-          select: {
-            id: true,
-            subject: true,
-            user: {
-              select: {
-                email: true,
-                studentProfile: { select: { name: true } },
-                companyProfile: { select: { name: true } },
-              },
-            },
-          },
-          orderBy: { createdAt: 'desc' },
-        }),
       ]);
 
       const tasks: PendingTask[] = [];
@@ -131,19 +116,6 @@ export async function GET(request: NextRequest) {
           title: 'Aprovar vaga',
           description: `Empresa ${vacancy.company.name} - ${vacancy.title}.`,
           href: `/dashboard/admin/vacancies/${vacancy.id}`,
-        });
-      });
-
-      pendingContacts.forEach((contact) => {
-        const contactName =
-          contact.user.studentProfile?.name ||
-          contact.user.companyProfile?.name ||
-          contact.user.email;
-        tasks.push({
-          id: `contact-${contact.id}`,
-          title: 'Responder mensagem',
-          description: `${contactName} - ${contact.subject}.`,
-          href: '/dashboard/admin/contact',
         });
       });
 

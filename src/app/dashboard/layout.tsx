@@ -36,22 +36,19 @@ export default function DashboardLayout({
       case 'STUDENT':
         roleLinks = [
           { name: 'Meus Estágios', href: '/dashboard/internships' },
-          { name: 'Vagas', href: '/dashboard/vacancies' },
-          { name: 'Contato com a Agência', href: '/dashboard/contact' }
+          { name: 'Vagas', href: '/dashboard/vacancies' }
         ];
         break;
       case 'COMPANY':
         roleLinks = [
           { name: 'Publicar Vaga', href: '/dashboard/vacancies/new' },
-          { name: 'Minhas Vagas', href: '/dashboard/vacancies' },
-          { name: 'Contato com a Agência', href: '/dashboard/contact' }
+          { name: 'Minhas Vagas', href: '/dashboard/vacancies' }
         ];
         break;
       case 'ADMIN':
         roleLinks = [
           { name: 'Estágios', href: '/dashboard/admin/internships' },
-          { name: 'Vagas', href: '/dashboard/admin/vacancies' },
-          { name: 'Mensagens', href: '/dashboard/admin/contact' }
+          { name: 'Vagas', href: '/dashboard/admin/vacancies' }
         ];
         break;
       default:
