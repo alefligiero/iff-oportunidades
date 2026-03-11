@@ -17,6 +17,7 @@ interface DocumentItem {
 interface DocumentsModerationProps {
   internshipId: string;
   internshipStatus: InternshipStatus;
+  internshipType: string;
   initialDocuments: DocumentItem[];
 }
 
@@ -29,7 +30,6 @@ const documentTypeLabels: Record<DocumentType, string> = {
   SIGNED_CONTRACT: 'TCE + PAE assinados (PDF único)',
   LIFE_INSURANCE: 'Seguro de Vida',
 };
-
 const statusConfig: Record<DocumentStatus, { text: string; color: string }> = {
   PENDING_ANALYSIS: { text: 'Pendente', color: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
   APPROVED: { text: 'Aprovado', color: 'bg-green-100 text-green-800 border-green-300' },
@@ -40,6 +40,7 @@ const statusConfig: Record<DocumentStatus, { text: string; color: string }> = {
 export default function DocumentsModeration({
   internshipId,
   internshipStatus,
+  internshipType,
   initialDocuments,
 }: DocumentsModerationProps) {
   const router = useRouter();
@@ -329,6 +330,18 @@ export default function DocumentsModeration({
         ) : internshipStatus === InternshipStatus.IN_PROGRESS ? (
           <p className="text-sm text-green-700 font-medium">
             ✓ Estágio em andamento.
+          </p>
+        ) : internshipStatus === InternshipStatus.FINISHED ? (
+          <p className="text-sm text-green-700 font-medium">
+            ✓ Estágio concluído.
+          </p>
+        ) : internshipStatus === InternshipStatus.CANCELED ? (
+          <p className="text-sm text-gray-500 font-medium">
+            Estágio cancelado.
+          </p>
+        ) : internshipStatus === InternshipStatus.REJECTED ? (
+          <p className="text-sm text-red-600 font-medium">
+            Formulário de estágio recusado.
           </p>
         ) : (
           <p className="text-sm text-gray-600">

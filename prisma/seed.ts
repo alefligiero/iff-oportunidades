@@ -501,13 +501,11 @@ async function main() {
 
     // Copiar PDFs de exemplo para os documentos
     const tcePdfPath = await copyExamplePdf(internship.id, 'TCE');
-    const paePdfPath = await copyExamplePdf(internship.id, 'PAE');
     const insurancePdfPath = await copyExamplePdf(internship.id, 'LIFE_INSURANCE');
 
     await prisma.document.createMany({
       data: [
         { type: 'TCE', status: 'APPROVED', internshipId: internship.id, fileUrl: tcePdfPath },
-        { type: 'PAE', status: 'APPROVED', internshipId: internship.id, fileUrl: paePdfPath },
         { type: 'LIFE_INSURANCE', status: 'APPROVED', internshipId: internship.id, fileUrl: insurancePdfPath },
       ],
     });
@@ -569,8 +567,8 @@ async function main() {
 
     await prisma.document.createMany({
       data: [
-        { type: 'LIFE_INSURANCE', status: 'SIGNED_VALIDATED', internshipId: internship.id, fileUrl: insurancePdfPath3 },
-        { type: 'SIGNED_CONTRACT', status: 'SIGNED_VALIDATED', internshipId: internship.id, fileUrl: contractPdfPath },
+        { type: 'LIFE_INSURANCE', status: 'APPROVED', internshipId: internship.id, fileUrl: insurancePdfPath3 },
+        { type: 'SIGNED_CONTRACT', status: 'APPROVED', internshipId: internship.id, fileUrl: contractPdfPath },
       ],
     });
   }
@@ -633,8 +631,8 @@ async function main() {
 
     await prisma.document.createMany({
       data: [
-        { type: 'LIFE_INSURANCE', status: 'SIGNED_VALIDATED', internshipId: internship.id, fileUrl: insurancePdfPath4 },
-        { type: 'SIGNED_CONTRACT', status: 'SIGNED_VALIDATED', internshipId: internship.id, fileUrl: contractPdfPath4 },
+        { type: 'LIFE_INSURANCE', status: 'APPROVED', internshipId: internship.id, fileUrl: insurancePdfPath4 },
+        { type: 'SIGNED_CONTRACT', status: 'APPROVED', internshipId: internship.id, fileUrl: contractPdfPath4 },
         { type: 'TRE', status: 'APPROVED', internshipId: internship.id, fileUrl: trePdfPath },
         { type: 'RFE', status: 'APPROVED', internshipId: internship.id, fileUrl: rfePdfPath },
       ],
@@ -820,7 +818,6 @@ async function main() {
       ],
     });
   }
-
   console.log('🎯 Estágios criados');
   console.log('\n✅ Seed concluído!');
   console.log('\n📋 USUÁRIOS CRIADOS:');

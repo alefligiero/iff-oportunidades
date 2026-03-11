@@ -36,10 +36,8 @@ export default function InternshipForm({
   const { addNotification } = useNotification();
   const [internshipType, setInternshipType] = useState<InternshipType>(InternshipType.DIRECT);
   const [tceFile, setTceFile] = useState<File | null>(null);
-  const [paeFile, setPaeFile] = useState<File | null>(null);
   const [insuranceFile, setInsuranceFile] = useState<File | null>(null);
   const tceInputRef = useRef<HTMLInputElement>(null);
-  const paeInputRef = useRef<HTMLInputElement>(null);
   const insuranceInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState<FormData>({
@@ -229,14 +227,10 @@ export default function InternshipForm({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    // Validação: TCE e PAE obrigatórios para INTEGRATOR
+    // Validação: TCE obrigatório para INTEGRATOR
     if (internshipType === InternshipType.INTEGRATOR) {
       if (!tceFile) {
         setErrors({ tce: 'TCE é obrigatório para estágios via Agente Integrador' });
-        return;
-      }
-      if (!paeFile) {
-        setErrors({ pae: 'PAE é obrigatório para estágios via Agente Integrador' });
         return;
       }
     }
@@ -294,9 +288,8 @@ export default function InternshipForm({
       formDataToSend.append('type', internshipType);
       
       if (internshipType === InternshipType.INTEGRATOR) {
-        // Via Agente Integrador - apenas uploads
+        // Via Agente Integrador - apenas upload do TCE (PAE deve estar anexo ao TCE)
         formDataToSend.append('tce', tceFile!);
-        formDataToSend.append('pae', paeFile!);
 
         const unmaskCurrency = (value: string) => parseFloat(value.replace('R$ ', '').replace(/\./g, '').replace(',', '.'));
 
@@ -425,7 +418,7 @@ export default function InternshipForm({
               />
               <div>
                 <span className="font-medium text-gray-900">Via Agente Integrador</span>
-                <p className="text-sm text-gray-600">Apenas enviar TCE e PAE</p>
+                <p className="text-sm text-gray-600">Enviar TCE</p>
               </div>
             </label>
           </div>
@@ -438,7 +431,7 @@ export default function InternshipForm({
           <div className="border-2 border-blue-300 rounded-lg p-4 bg-blue-50">
             <p className="text-sm text-blue-900">
               <strong>ℹ️ Informação:</strong> Os dados do seu estágio (supervisor, datas, remuneração, etc.) podem ser obtidos do TCE fornecido pelo Agente Integrador. 
-              Preencha os campos abaixo com as informações contidas nos documentos TCE e PAE que você está enviando.
+              Preencha os campos abaixo com as informações contidas nos documentos TCE que você está enviando.
             </p>
           </div>
 
@@ -451,7 +444,7 @@ export default function InternshipForm({
             {/* TCE */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Termo de Compromisso de Estágio (TCE) *
+                TCE emitido pelo Agente Integrador *
               </label>
               <input
                 ref={tceInputRef}
@@ -475,35 +468,6 @@ export default function InternshipForm({
                 )}
               </div>
               {errors.tce && <p className="text-red-600 text-sm mt-1">{errors.tce}</p>}
-            </div>
-
-            {/* PAE */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Plano de Atividades de Estágio (PAE) *
-              </label>
-              <input
-                ref={paeInputRef}
-                type="file"
-                accept=".pdf"
-                onChange={(e) => setPaeFile(e.target.files?.[0] || null)}
-                className="hidden"
-              />
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => paeInputRef.current?.click()}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
-                >
-                  Selecionar PAE
-                </button>
-                {paeFile && (
-                  <span className="text-sm text-gray-700">
-                    ✓ {paeFile.name}
-                  </span>
-                )}
-              </div>
-              {errors.pae && <p className="text-red-600 text-sm mt-1">{errors.pae}</p>}
             </div>
           </fieldset>
         </>

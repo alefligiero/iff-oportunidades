@@ -90,12 +90,11 @@ async function createInternship(request: NextRequest) {
   }
 
   if (type === InternshipType.INTEGRATOR) {
-    // Via Agente Integrador - requer TCE e PAE além do formulário completo
+    // Via Agente Integrador - requer TCE (PAE deve estar em anexo no mesmo PDF)
     const tceFile = formData.get('tce') as File | null;
-    const paeFile = formData.get('pae') as File | null;
 
-    if (!tceFile || !paeFile) {
-      return createErrorResponse('TCE e PAE são obrigatórios para estágios via Agente Integrador', 400);
+    if (!tceFile) {
+      return createErrorResponse('TCE é obrigatório para estágios via Agente Integrador', 400);
     }
 
     // Criar internship com dados completos
@@ -119,21 +118,6 @@ async function createInternship(request: NextRequest) {
         data: {
           type: 'TCE',
           fileUrl: tceResult.file.url,
-          status: 'PENDING_ANALYSIS',
-          internshipId: internship.id,
-        },
-      });
-
-      // Upload PAE
-      const paeResult = await processUploadedFile(paeFile, internship.id, 'PAE');
-      if ('error' in paeResult) {
-        throw new Error(paeResult.error);
-      }
-
-      await tx.document.create({
-        data: {
-          type: 'PAE',
-          fileUrl: paeResult.file.url,
           status: 'PENDING_ANALYSIS',
           internshipId: internship.id,
         },

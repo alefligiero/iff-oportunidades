@@ -216,6 +216,7 @@ export default async function InternshipDetailPage({ params }: { params: Promise
         <DocumentsModeration
           internshipId={internship.id}
           internshipStatus={internship.status}
+          internshipType={internship.type}
           initialDocuments={initialDocuments}
         />
 
