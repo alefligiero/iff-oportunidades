@@ -213,18 +213,30 @@ export const createVacancySchema = z.object({
       .max(10, 'O período não pode ser maior que 10.')
       .optional()
   ),
+  transportationGrant: z.preprocess(
+    (val) => {
+      if (val === undefined || val === null || val === '') return undefined;
+      if (typeof val === 'string') {
+        const cleaned = val.replace(/R\$\s?/g, '').replace(/\./g, '').replace(',', '.');
+        const num = parseFloat(cleaned);
+        return isNaN(num) ? undefined : num;
+      }
+      return val;
+    },
+    z.number()
+      .min(0, 'O auxílio transporte não pode ser negativo.')
+      .max(100000, 'O auxílio transporte não pode ultrapassar R$ 100.000.')
+      .optional()
+  ),
   responsibilities: z.string()
-    .min(1, 'As responsabilidades são obrigatórias.')
-    .min(10, 'As responsabilidades devem ter pelo menos 10 caracteres.')
-    .max(2000, 'As responsabilidades não podem ter mais de 2000 caracteres.'),
+    .max(2000, 'As responsabilidades não podem ter mais de 2000 caracteres.')
+    .optional(),
   technicalSkills: z.string()
-    .min(1, 'As habilidades técnicas são obrigatórias.')
-    .min(10, 'As habilidades técnicas devem ter pelo menos 10 caracteres.')
-    .max(2000, 'As habilidades técnicas não podem ter mais de 2000 caracteres.'),
+    .max(2000, 'As habilidades técnicas não podem ter mais de 2000 caracteres.')
+    .optional(),
   softSkills: z.string()
-    .min(1, 'As habilidades comportamentais são obrigatórias.')
-    .min(10, 'As habilidades comportamentais devem ter pelo menos 10 caracteres.')
-    .max(2000, 'As habilidades comportamentais não podem ter mais de 2000 caracteres.'),
+    .max(2000, 'As habilidades comportamentais não podem ter mais de 2000 caracteres.')
+    .optional(),
   benefits: z.string()
     .max(1000, 'Os benefícios não podem ter mais de 1000 caracteres.')
     .optional(),

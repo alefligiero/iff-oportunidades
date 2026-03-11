@@ -37,6 +37,7 @@ export default function VacancyForm() {
     modality: undefined,
     eligibleCourses: [],
     minPeriod: undefined,
+    transportationGrant: undefined,
     responsibilities: '',
     technicalSkills: '',
     softSkills: '',
@@ -354,6 +355,34 @@ export default function VacancyForm() {
               <p className="mt-1 text-xs text-gray-500">Ex: 3 = a partir do 3º período</p>
             </div>
           )}
+
+          {(formData.modality === 'PRESENCIAL' || formData.modality === 'HIBRIDO') && (
+            <div>
+              <label
+                htmlFor="transportationGrant"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Auxílio Transporte *
+              </label>
+              <CurrencyInput
+                id="transportationGrant"
+                name="transportationGrant"
+                placeholder="R$ 0,00"
+                defaultValue={formData.transportationGrant}
+                decimalsLimit={2}
+                decimalSeparator=","
+                groupSeparator="."
+                prefix="R$ "
+                onValueChange={handleCurrencyChange}
+                onBlur={() => handleBlur('transportationGrant')}
+                className={getInputClassName('transportationGrant')}
+              />
+              {errors.transportationGrant && (
+                <p className="mt-1 text-xs text-red-600">{errors.transportationGrant}</p>
+              )}
+              <p className="mt-1 text-xs text-gray-500">Obrigatório para modalidade presencial/híbrida</p>
+            </div>
+          )}
         </div>
 
         {/* Cursos Elegíveis */}
@@ -419,7 +448,7 @@ export default function VacancyForm() {
             htmlFor="responsibilities"
             className="block text-sm font-medium text-gray-700"
           >
-            Responsabilidades e Atividades *
+            Responsabilidades e Atividades
           </label>
           <textarea
             name="responsibilities"
@@ -431,7 +460,6 @@ export default function VacancyForm() {
             maxLength={2000}
             className={getInputClassName('responsibilities')}
             placeholder="Liste as principais responsabilidades (uma por linha com hífen)&#10;Exemplo:&#10;- Desenvolver funcionalidades web&#10;- Participar de reuniões de equipe&#10;- Realizar testes de qualidade"
-            required
           ></textarea>
           {errors.responsibilities && (
             <p className="mt-1 text-xs text-red-600">{errors.responsibilities}</p>
@@ -447,7 +475,7 @@ export default function VacancyForm() {
             htmlFor="technicalSkills"
             className="block text-sm font-medium text-gray-700"
           >
-            Conhecimentos Técnicos / Hard Skills *
+            Conhecimentos Técnicos / Hard Skills
           </label>
           <textarea
             name="technicalSkills"
@@ -459,7 +487,6 @@ export default function VacancyForm() {
             maxLength={2000}
             className={getInputClassName('technicalSkills')}
             placeholder="Liste os conhecimentos técnicos necessários&#10;Exemplo:&#10;- JavaScript/TypeScript&#10;- React&#10;- Git e GitHub"
-            required
           ></textarea>
           {errors.technicalSkills && (
             <p className="mt-1 text-xs text-red-600">{errors.technicalSkills}</p>
@@ -475,7 +502,7 @@ export default function VacancyForm() {
             htmlFor="softSkills"
             className="block text-sm font-medium text-gray-700"
           >
-            Habilidades Comportamentais / Soft Skills *
+            Habilidades Comportamentais / Soft Skills
           </label>
           <textarea
             name="softSkills"
@@ -487,7 +514,6 @@ export default function VacancyForm() {
             maxLength={2000}
             className={getInputClassName('softSkills')}
             placeholder="Liste as habilidades comportamentais desejadas&#10;Exemplo:&#10;- Comunicação clara&#10;- Trabalho em equipe&#10;- Proatividade"
-            required
           ></textarea>
           {errors.softSkills && (
             <p className="mt-1 text-xs text-red-600">{errors.softSkills}</p>

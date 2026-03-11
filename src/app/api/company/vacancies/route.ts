@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
       modality,
       eligibleCourses,
       minPeriod,
+      transportationGrant,
       responsibilities,
       technicalSkills,
       softSkills,
@@ -84,6 +85,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if ((modality === 'PRESENCIAL' || modality === 'HIBRIDO') && transportationGrant === undefined) {
+      return NextResponse.json(
+        { error: 'O auxílio transporte é obrigatório para vagas presenciais e híbridas.', details: { transportationGrant: ['O auxílio transporte é obrigatório para esta modalidade.'] } },
+        { status: 400 }
+      );
+    }
+
     // Criar a vaga
     const newVacancy = await prisma.jobVacancy.create({
       data: {
@@ -95,9 +103,10 @@ export async function POST(request: NextRequest) {
         modality,
         eligibleCourses,
         minPeriod,
-        responsibilities: responsibilities.trim(),
-        technicalSkills: technicalSkills.trim(),
-        softSkills: softSkills.trim(),
+        transportationGrant: transportationGrant ?? null,
+        responsibilities: responsibilities?.trim() ?? '',
+        technicalSkills: technicalSkills?.trim() ?? '',
+        softSkills: softSkills?.trim() ?? '',
         benefits: benefits?.trim(),
         contactInfo: contactInfo.trim(),
         companyId: companyProfile.id,

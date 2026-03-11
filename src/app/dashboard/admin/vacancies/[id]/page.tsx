@@ -195,6 +195,12 @@ export default async function VacancyDetailAdminPage({ params }: { params: Promi
               <p className="text-sm text-gray-600 mb-1">Carga Horária</p>
               <p className="text-lg font-semibold text-gray-900">{vacancy.workload}h/semana</p>
             </div>
+            {vacancy.transportationGrant !== null && vacancy.transportationGrant !== undefined && (
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Auxílio Transporte</p>
+                <p className="text-lg font-semibold text-gray-900">{formatCurrency(vacancy.transportationGrant)}</p>
+              </div>
+            )}
             {vacancy.type === 'INTERNSHIP' && vacancy.minPeriod && (
               <div>
                 <p className="text-sm text-gray-600 mb-1">Período Mínimo</p>
