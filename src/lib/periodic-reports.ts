@@ -83,7 +83,11 @@ export function requiresPeriodicReports(startDate: Date, endDate: Date): boolean
 
 /**
  * Calcula quantos relatórios periódicos são esperados
- * Um relatório a cada 6 meses, sendo mais generoso com períodos quase completos
+ * Um relatório a cada 6 meses, excluindo o período final que coincide com o
+ * término do estágio (o relatório final não é um relatório periódico).
+ * Fórmula: floor((duração - 1) / 6)
+ * Ex: 12 meses → floor(11/6) = 1 relatório (apenas em 6 meses)
+ * Ex: 18 meses → floor(17/6) = 2 relatórios (em 6 e 12 meses)
  */
 export function calculateExpectedReportsCount(startDate: Date, endDate: Date): number {
   if (!requiresPeriodicReports(startDate, endDate)) {
@@ -91,14 +95,7 @@ export function calculateExpectedReportsCount(startDate: Date, endDate: Date): n
   }
   
   const durationInMonths = calculateInternshipDurationInMonths(startDate, endDate);
-  // Use Math.ceil instead of floor para contar períodos quase completos
-  // Ex: 11 meses conta como 2 períodos de 6 meses (arredonda para cima)
-  const reportCount = Math.ceil(durationInMonths / 6);
-  
-  // Mas se for exatamente 6 meses, retorna 1
-  if (durationInMonths <= 6) return 1;
-  
-  return reportCount;
+  return Math.floor((durationInMonths - 1) / 6);
 }
 
 /**
@@ -116,6 +113,13 @@ export function generateReportPeriods(
     const periodNumber = i + 1;
     const periodStartDate = i === 0 ? startDate : addMonths(startDate, i * 6);
     const dueDate = addMonths(periodStartDate, 6);
+
+    // Segurança: nunca gerar um período cujo vencimento coincida com ou ultrapasse
+    // o fim do estágio — esse período seria o relatório final, não o periódico.
+    if (!isBefore(startOfDay(dueDate), startOfDay(endDate))) {
+      break;
+    }
+
     const availableDate = addDays(dueDate, -30);
     
     const isAvailable = !isBefore(startOfDay(currentDate), startOfDay(availableDate));
