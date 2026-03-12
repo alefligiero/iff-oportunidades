@@ -86,10 +86,11 @@ export async function PATCH(
       const hasLifeInsurance = internship.documents.some(
         (doc) => doc.type === 'LIFE_INSURANCE' && doc.status === 'APPROVED'
       );
+      const insuranceRequirementMet = !internship.insuranceRequired || hasLifeInsurance;
 
-      if (!hasSignedContract || !hasLifeInsurance) {
+      if (!hasSignedContract || !insuranceRequirementMet) {
         return NextResponse.json(
-          { error: 'É necessário aprovar o TCE + PAE assinados e o seguro de vida para iniciar o estágio.' },
+          { error: 'É necessário aprovar o TCE + PAE assinados e, quando exigido, o seguro de vida para iniciar o estágio.' },
           { status: 400 }
         );
       }

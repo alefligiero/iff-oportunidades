@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { PrismaClient } from '@prisma/client';
 import InternshipForm from './InternshipForm'; // Importa o novo componente de cliente
+import { getSystemConfig } from '@/lib/system-config';
 
 const prisma = new PrismaClient();
 
@@ -37,13 +38,19 @@ async function getCurrentUserData() {
 
 // A página agora é um Server Component que busca dados
 export default async function NewInternshipPage() {
-  const userData = await getCurrentUserData();
+  const [userData, systemConfig] = await Promise.all([
+    getCurrentUserData(),
+    getSystemConfig(),
+  ]);
 
   return (
     <div>
       <h1 className="text-2xl font-semibold text-gray-800 mb-6">Solicitar Novo Estágio</h1>
       {/* Renderiza o formulário e passa os dados pré-preenchidos como props */}
-      <InternshipForm prefilledData={userData} />
+      <InternshipForm
+        prefilledData={userData}
+        insuranceRequired={systemConfig.requireLifeInsuranceForNewInternships}
+      />
     </div>
   );
 }

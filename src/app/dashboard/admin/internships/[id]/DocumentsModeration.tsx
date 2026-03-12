@@ -18,6 +18,7 @@ interface DocumentsModerationProps {
   internshipId: string;
   internshipStatus: InternshipStatus;
   internshipType: string;
+  insuranceRequired: boolean;
   initialDocuments: DocumentItem[];
 }
 
@@ -41,6 +42,7 @@ export default function DocumentsModeration({
   internshipId,
   internshipStatus,
   internshipType,
+  insuranceRequired,
   initialDocuments,
 }: DocumentsModerationProps) {
   const router = useRouter();
@@ -123,9 +125,15 @@ export default function DocumentsModeration({
     const documentToApprove = documents.find(d => d.id === documentId);
     if (!documentToApprove) return;
 
-    const otherRequiredDocType = documentToApprove.type === DocumentType.SIGNED_CONTRACT 
-      ? DocumentType.LIFE_INSURANCE 
+    const otherRequiredDocType = documentToApprove.type === DocumentType.SIGNED_CONTRACT
+      ? (insuranceRequired ? DocumentType.LIFE_INSURANCE : null)
       : DocumentType.SIGNED_CONTRACT;
+
+    if (!otherRequiredDocType && internshipStatus === InternshipStatus.APPROVED) {
+      setPendingApprovalDocId(documentId);
+      setConfirmModalOpen(true);
+      return;
+    }
 
     const otherDocApproved = documents.some(
       d => d.type === otherRequiredDocType && d.status === DocumentStatus.APPROVED
@@ -152,8 +160,8 @@ export default function DocumentsModeration({
       (doc) => doc.type === DocumentType.LIFE_INSURANCE && doc.status === DocumentStatus.APPROVED
     );
 
-    return signedContractApproved && lifeInsuranceApproved;
-  }, [documents, internshipStatus]);
+    return signedContractApproved && (!insuranceRequired || lifeInsuranceApproved);
+  }, [documents, internshipStatus, insuranceRequired]);
 
   const missingRequirements = useMemo(() => {
     const missing: string[] = [];
@@ -166,10 +174,12 @@ export default function DocumentsModeration({
     );
 
     if (!signedContractApproved) missing.push('TCE + PAE assinados (PDF único)');
-    if (!lifeInsuranceApproved) missing.push('Comprovante de seguro de vida');
+    if (insuranceRequired && !lifeInsuranceApproved) {
+      missing.push('Comprovante de seguro de vida');
+    }
 
     return missing;
-  }, [documents]);
+  }, [documents, insuranceRequired]);
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 space-y-4">

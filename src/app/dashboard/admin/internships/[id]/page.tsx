@@ -117,7 +117,7 @@ export default async function InternshipDetailPage({ params }: { params: Promise
 
   const approvedSubstatus =
     internship?.status === InternshipStatus.APPROVED
-      ? getApprovedSubstatus(internship.documents, internship.startDate)
+      ? getApprovedSubstatus(internship.documents, internship.startDate, internship.insuranceRequired)
       : null;
 
   const inProgressSubstatus =
@@ -167,7 +167,7 @@ export default async function InternshipDetailPage({ params }: { params: Promise
           earlyTerminationRequested={internship.earlyTerminationRequested}
         />
         <AdminActionGuide status={internship.status} />
-        <AdminDocumentAlerts status={internship.status} documents={initialDocuments} />
+        <AdminDocumentAlerts status={internship.status} documents={initialDocuments} insuranceRequired={internship.insuranceRequired} />
 
         {/* Admin-finished message */}
         {internship.status === InternshipStatus.FINISHED &&
@@ -217,6 +217,7 @@ export default async function InternshipDetailPage({ params }: { params: Promise
           internshipId={internship.id}
           internshipStatus={internship.status}
           internshipType={internship.type}
+          insuranceRequired={internship.insuranceRequired}
           initialDocuments={initialDocuments}
         />
 
@@ -284,18 +285,20 @@ export default async function InternshipDetailPage({ params }: { params: Promise
             </div>
         </div>
         
-        <div className="border-t border-gray-200 pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Dados do Seguro</h3>
-            <dl className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-8">
-                <DetailItem label="Seguradora" value={internship.insuranceCompany} />
-                <DetailItem label="Nº da Apólice" value={internship.insurancePolicyNumber} />
-                <DetailItem label="CNPJ da Seguradora" value={internship.insuranceCompanyCnpj} />
-                <DetailItem
-                  label="Vigência do Seguro"
-                  value={formatInsuranceValidity(internship.insuranceStartDate, internship.insuranceEndDate)}
-                />
-            </dl>
-        </div>
+        {internship.insuranceRequired && (
+          <div className="border-t border-gray-200 pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Dados do Seguro</h3>
+              <dl className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-8">
+                  <DetailItem label="Seguradora" value={internship.insuranceCompany} />
+                  <DetailItem label="Nº da Apólice" value={internship.insurancePolicyNumber} />
+                  <DetailItem label="CNPJ da Seguradora" value={internship.insuranceCompanyCnpj} />
+                  <DetailItem
+                    label="Vigência do Seguro"
+                    value={formatInsuranceValidity(internship.insuranceStartDate, internship.insuranceEndDate)}
+                  />
+              </dl>
+          </div>
+        )}
 
       </div>
     </div>

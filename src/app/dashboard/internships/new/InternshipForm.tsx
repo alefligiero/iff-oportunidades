@@ -26,11 +26,13 @@ const courseLabels: { [key in Course]: string } = {
 export default function InternshipForm({ 
   prefilledData,
   internshipData,
-  isEditing = false 
+  isEditing = false,
+  insuranceRequired = false,
 }: { 
   prefilledData: PrefilledData,
   internshipData?: Internship | null,
-  isEditing?: boolean
+  isEditing?: boolean,
+  insuranceRequired?: boolean,
 }) {
   const router = useRouter();
   const { addNotification } = useNotification();
@@ -746,7 +748,7 @@ export default function InternshipForm({
       </fieldset>
       
       {/* --- DADOS DO SEGURO --- */}
-      <fieldset className="space-y-4">
+      {insuranceRequired && <fieldset className="space-y-4">
         <legend className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Dados do Seguro de Vida</legend>
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
           <p className="text-sm text-blue-800">
@@ -817,7 +819,7 @@ export default function InternshipForm({
             O comprovante deve ser enviado junto com os dados. Formatos aceitos: PDF, JPEG, PNG
           </p>
         </div>
-      </fieldset>
+      </fieldset>}
       
       <div className="pt-4 flex justify-end">
         <button type="submit" disabled={isLoading} className="button-primary px-6 py-2">

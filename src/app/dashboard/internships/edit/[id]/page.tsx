@@ -67,7 +67,8 @@ export default async function EditInternshipPage({ params }: { params: Promise<{
       <InternshipForm 
         prefilledData={prefilledData} 
         internshipData={internshipData} 
-        isEditing={true} 
+        isEditing={true}
+        insuranceRequired={internshipData.insuranceRequired}
       />
     </div>
   );

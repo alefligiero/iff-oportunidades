@@ -37,11 +37,16 @@ const statusBadgeMap: { [key in InternshipStatus]: { text: string; color: string
   CANCELED: { text: 'Cancelado', color: 'bg-gray-100 text-gray-800' },
 };
 
-const getStatusLabel = (status: InternshipStatus, documents: DocumentSummary[], startDate: string) => {
+const getStatusLabel = (
+  status: InternshipStatus,
+  documents: DocumentSummary[],
+  startDate: string,
+  insuranceRequired: boolean
+) => {
   const baseStatus = statusBadgeMap[status].text;
   
   if (status === InternshipStatus.APPROVED) {
-    const substatus = getApprovedSubstatus(documents, startDate);
+    const substatus = getApprovedSubstatus(documents, startDate, insuranceRequired);
     return `${baseStatus} - ${substatus}`;
   }
   
@@ -70,6 +75,7 @@ interface Internship {
   startDate: string;
   endDate: string;
   earlyTerminationRequested: boolean;
+  insuranceRequired: boolean;
   documents: DocumentSummary[];
 }
 
@@ -152,7 +158,12 @@ export default function InternshipTable({ internships, loading = false }: Intern
                         statusBadgeMap[internship.status].color
                       }`}
                     >
-                      {getStatusLabel(internship.status, internship.documents, internship.startDate)}
+                      {getStatusLabel(
+                        internship.status,
+                        internship.documents,
+                        internship.startDate,
+                        internship.insuranceRequired
+                      )}
                     </span>
                     {internship.earlyTerminationRequested && (
                       <span className="inline-flex items-center justify-center w-5 h-5 bg-yellow-200 text-yellow-800 rounded-full text-xs font-bold" title="Encerramento antecipado solicitado">

@@ -33,6 +33,15 @@ async function checkAndStartInternshipIfReady(internshipId: string): Promise<voi
     where: { internshipId },
   });
 
+  const internship = await prisma.internship.findUnique({
+    where: { id: internshipId },
+    select: { status: true, startDate: true, insuranceRequired: true },
+  });
+
+  if (!internship) {
+    return;
+  }
+
   // Verificar se SIGNED_CONTRACT está aprovado
   const hasSignedContractApproved = documents.some(
     (doc) => doc.type === DocumentType.SIGNED_CONTRACT && doc.status === DocumentStatus.APPROVED
@@ -43,15 +52,12 @@ async function checkAndStartInternshipIfReady(internshipId: string): Promise<voi
     (doc) => doc.type === DocumentType.LIFE_INSURANCE && doc.status === DocumentStatus.APPROVED
   );
 
-  // Se ambos estão aprovados, verificar o status do estágio
-  if (hasSignedContractApproved && hasLifeInsuranceApproved) {
-    const internship = await prisma.internship.findUnique({
-      where: { id: internshipId },
-      select: { status: true, startDate: true },
-    });
+  const insuranceRequirementMet = !internship.insuranceRequired || hasLifeInsuranceApproved;
 
+  // Se documentos obrigatórios estão aprovados, verificar o status do estágio
+  if (hasSignedContractApproved && insuranceRequirementMet) {
     // Se estágio está aprovado (aguardando documentos), verificar data de início
-    if (internship?.status === InternshipStatus.APPROVED) {
+    if (internship.status === InternshipStatus.APPROVED) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       

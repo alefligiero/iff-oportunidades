@@ -170,6 +170,12 @@ export const decideEarlyTerminationSchema = z.object({
 
 export const updateInternshipSchema = internshipBaseSchema.partial().superRefine(validateInternshipDates);
 
+export const updateSystemConfigSchema = z.object({
+  requireLifeInsuranceForNewInternships: z.boolean({
+    invalid_type_error: 'Valor inválido para configuração de seguro.',
+  }),
+});
+
 // ===== SCHEMAS DE VAGA =====
 
 export const createVacancySchema = z.object({

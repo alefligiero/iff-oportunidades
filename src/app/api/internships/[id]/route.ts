@@ -189,7 +189,25 @@ export async function PUT(
       select: { id: true },
     });
 
-    if (!existingInsuranceProof && (hasInsuranceData || insuranceFile)) {
+    const insuranceRequired = Boolean(existingInternship.insuranceRequired);
+
+    if (insuranceRequired) {
+      if (!hasAllInsuranceFields) {
+        return NextResponse.json(
+          { error: 'Preencha todos os dados do seguro para continuar.' },
+          { status: 400 }
+        );
+      }
+
+      if (!existingInsuranceProof && !insuranceFile) {
+        return NextResponse.json(
+          { error: 'Envie o comprovante do seguro para continuar.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (!insuranceRequired && !existingInsuranceProof && (hasInsuranceData || insuranceFile)) {
       if (!insuranceFile || !hasAllInsuranceFields) {
         return NextResponse.json(
           { error: 'Envie os dados do seguro e o comprovante no mesmo envio.' },

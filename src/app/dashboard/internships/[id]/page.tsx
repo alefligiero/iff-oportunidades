@@ -131,7 +131,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
 
   const approvedSubstatus =
     internship?.status === InternshipStatus.APPROVED
-      ? getApprovedSubstatus(internship.documents, internship.startDate)
+      ? getApprovedSubstatus(internship.documents, internship.startDate, internship.insuranceRequired)
       : null;
 
   const lifeInsuranceDocument = internship?.documents.find(
@@ -231,9 +231,13 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
 
         <StatusProgress status={internship.status} />
 
-        <NextStepsGuide status={internship.status} documents={initialDocuments} />
+        <NextStepsGuide
+          status={internship.status}
+          documents={initialDocuments}
+          insuranceRequired={internship.insuranceRequired}
+        />
 
-        <InsuranceDataForm
+        {internship.insuranceRequired && <InsuranceDataForm
           internshipId={internship.id}
           currentData={{
             insuranceCompany: internship.insuranceCompany,
@@ -245,7 +249,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
           status={internship.status}
           lifeInsuranceStatus={lifeInsuranceDocument?.status}
           lifeInsuranceRejectionComments={lifeInsuranceDocument?.rejectionComments ?? null}
-        />
+        />}
 
         <DocumentsSection
           internshipId={internship.id}
@@ -456,7 +460,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
         </div>
 
         {/* Seguro */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        {internship.insuranceRequired && <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Seguro de Vida</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
@@ -479,7 +483,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
               </p>
             </div>
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   );

@@ -95,6 +95,7 @@ model Internship {
   earlyTerminationRequested Boolean            @default(false)
   earlyTerminationRejectionReason String?
   hasDetailedInfo           Boolean            @default(false)
+  insuranceRequired         Boolean            @default(false)
   documents                 Document[]
   student                   Student            @relation(fields: [studentId], references: [id])
 }
@@ -147,6 +148,13 @@ model Notification {
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
   user      User             @relation(fields: [userId], references: [id])
+}
+
+model SystemConfig {
+  id                                   String   @id @default("global")
+  requireLifeInsuranceForNewInternships Boolean  @default(false)
+  createdAt                            DateTime @default(now())
+  updatedAt                            DateTime @updatedAt
 }
 
 enum Role {

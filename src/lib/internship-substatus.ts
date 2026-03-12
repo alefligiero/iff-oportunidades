@@ -9,7 +9,11 @@ export interface DocumentSummary {
 /**
  * Calcula o substatus de um estágio com status APPROVED
  */
-export function getApprovedSubstatus(documents: DocumentSummary[], startDate: string | Date): string {
+export function getApprovedSubstatus(
+  documents: DocumentSummary[],
+  startDate: string | Date,
+  insuranceRequired: boolean = true
+): string {
   // Verificar status do SIGNED_CONTRACT
   const signedContract = documents.find((doc) => doc.type === DocumentType.SIGNED_CONTRACT);
   const hasSignedContractApproved = signedContract?.status === DocumentStatus.APPROVED;
@@ -21,19 +25,19 @@ export function getApprovedSubstatus(documents: DocumentSummary[], startDate: st
   const hasLifeInsurancePending = lifeInsurance?.status === DocumentStatus.PENDING_ANALYSIS;
 
   // Prioridade 1: Documentos pendentes de aprovação
-  if (hasSignedContractPending && hasLifeInsurancePending) {
+  if (hasSignedContractPending && insuranceRequired && hasLifeInsurancePending) {
     return 'Documentos em análise';
   }
   if (hasSignedContractPending) {
     return 'TCE/PAE em análise';
   }
-  if (hasLifeInsurancePending) {
+  if (insuranceRequired && hasLifeInsurancePending) {
     return 'Seguro em análise';
   }
   
   // Prioridade 2: Documentos não enviados ou rejeitados
   if (!hasSignedContractApproved) return 'Aguardando TCE/PAE assinados';
-  if (!hasLifeInsuranceApproved) return 'Aguardando Seguro';
+  if (insuranceRequired && !hasLifeInsuranceApproved) return 'Aguardando Seguro';
   
   // Prioridade 3: Verificar se a data de início já chegou
   const today = new Date();
@@ -148,12 +152,13 @@ export function isInternshipBlocking(
 export function getStatusWithSubstatus(
   status: string,
   documents: DocumentSummary[],
-  startDate?: string | Date
+  startDate?: string | Date,
+  insuranceRequired: boolean = true
 ): string {
   switch (status) {
     case 'APPROVED':
       if (startDate) {
-        const substatus = getApprovedSubstatus(documents, startDate);
+        const substatus = getApprovedSubstatus(documents, startDate, insuranceRequired);
         return `Aprovado - ${substatus}`;
       }
       return 'Aprovado';

@@ -141,7 +141,7 @@ async function main() {
     },
   });
 
-  // 7. Estudante SEM DADOS DE SEGURO
+  // 7. Estudante com estágio EM ANÁLISE
   const student6 = await prisma.user.create({
     data: {
       email: 'carla.mendes@estudante.iff.edu.br',
@@ -445,6 +445,7 @@ async function main() {
         supervisorRole: 'Supervisor Técnico',
         internshipSector: 'Desenvolvimento de Software',
         technicalActivities: 'Desenvolvimento de aplicações web, manutenção de sistemas.',
+        insuranceRequired: false,
       },
     });
   }
@@ -491,23 +492,15 @@ async function main() {
         supervisorRole: 'Analista Sênior',
         internshipSector: 'Suporte Técnico',
         technicalActivities: 'Suporte técnico aos usuários, configuração de equipamentos.',
-        insuranceCompany: 'Seguradora Vida & Trabalho',
-        insurancePolicyNumber: 'VT-2024-005678',
-        insuranceCompanyCnpj: '77888999000111',
-        insuranceStartDate: new Date('2026-04-01'),
-        insuranceEndDate: new Date('2027-03-31'),
+        insuranceRequired: false,
       },
     });
 
-    // Copiar PDFs de exemplo para os documentos
+    // Copiar PDF de exemplo para o documento
     const tcePdfPath = await copyExamplePdf(internship.id, 'TCE');
-    const insurancePdfPath = await copyExamplePdf(internship.id, 'LIFE_INSURANCE');
 
-    await prisma.document.createMany({
-      data: [
-        { type: 'TCE', status: 'APPROVED', internshipId: internship.id, fileUrl: tcePdfPath },
-        { type: 'LIFE_INSURANCE', status: 'APPROVED', internshipId: internship.id, fileUrl: insurancePdfPath },
-      ],
+    await prisma.document.create({
+      data: { type: 'TCE', status: 'APPROVED', internshipId: internship.id, fileUrl: tcePdfPath },
     });
   }
 
@@ -553,23 +546,15 @@ async function main() {
         supervisorRole: 'Tech Lead',
         internshipSector: 'Desenvolvimento Backend',
         technicalActivities: 'Desenvolvimento de APIs REST, integração com bancos de dados.',
-        insuranceCompany: 'Seguros Globo',
-        insurancePolicyNumber: 'GLB-2023-789456',
-        insuranceCompanyCnpj: '88999000111222',
-        insuranceStartDate: new Date('2025-09-01'),
-        insuranceEndDate: new Date('2026-08-31'),
+        insuranceRequired: false,
       },
     });
 
-    // Copiar PDFs de exemplo para os documentos
-    const insurancePdfPath3 = await copyExamplePdf(internship.id, 'LIFE_INSURANCE');
+    // Copiar PDF de exemplo para o documento
     const contractPdfPath = await copyExamplePdf(internship.id, 'SIGNED_CONTRACT');
 
-    await prisma.document.createMany({
-      data: [
-        { type: 'LIFE_INSURANCE', status: 'APPROVED', internshipId: internship.id, fileUrl: insurancePdfPath3 },
-        { type: 'SIGNED_CONTRACT', status: 'APPROVED', internshipId: internship.id, fileUrl: contractPdfPath },
-      ],
+    await prisma.document.create({
+      data: { type: 'SIGNED_CONTRACT', status: 'APPROVED', internshipId: internship.id, fileUrl: contractPdfPath },
     });
   }
 
@@ -615,23 +600,17 @@ async function main() {
         supervisorRole: 'Químico Responsável',
         internshipSector: 'Análises Laboratoriais',
         technicalActivities: 'Realização de análises químicas, controle de qualidade.',
-        insuranceCompany: 'Proteção Seguradora',
-        insurancePolicyNumber: 'PRT-2023-123123',
-        insuranceCompanyCnpj: '11223344556677',
-        insuranceStartDate: new Date('2024-03-01'),
-        insuranceEndDate: new Date('2025-02-28'),
+        insuranceRequired: false,
       },
     });
 
     // Copiar PDFs de exemplo para os documentos
-    const insurancePdfPath4 = await copyExamplePdf(internship.id, 'LIFE_INSURANCE');
     const contractPdfPath4 = await copyExamplePdf(internship.id, 'SIGNED_CONTRACT');
     const trePdfPath = await copyExamplePdf(internship.id, 'TRE');
     const rfePdfPath = await copyExamplePdf(internship.id, 'RFE');
 
     await prisma.document.createMany({
       data: [
-        { type: 'LIFE_INSURANCE', status: 'APPROVED', internshipId: internship.id, fileUrl: insurancePdfPath4 },
         { type: 'SIGNED_CONTRACT', status: 'APPROVED', internshipId: internship.id, fileUrl: contractPdfPath4 },
         { type: 'TRE', status: 'APPROVED', internshipId: internship.id, fileUrl: trePdfPath },
         { type: 'RFE', status: 'APPROVED', internshipId: internship.id, fileUrl: rfePdfPath },
@@ -681,18 +660,14 @@ async function main() {
         supervisorRole: 'Coordenadora de Projetos',
         internshipSector: 'Desenvolvimento Web',
         technicalActivities: 'Criação de sites institucionais.',
-        insuranceCompany: 'Vida Segura',
-        insurancePolicyNumber: 'VS-2024-999',
-        insuranceCompanyCnpj: '99988877766655',
-        insuranceStartDate: new Date('2024-08-01'),
-        insuranceEndDate: new Date('2025-02-01'),
+        insuranceRequired: false,
         rejectionReason: `Carga horaria semanal incompatível com o curso. O estágio requer 20 horas semanais, mas o curso permite apenas 15 horas.\n\n${autoCancelNote}`,
         rejectedAt: new Date('2024-08-10'),
       },
     });
   }
 
-  // Estágio 6: SEM DADOS DE SEGURO (Carla)
+  // Estágio 6: EM ANÁLISE (Carla)
   if (profile6) {
     const internship = await prisma.internship.create({
       data: {
@@ -734,24 +709,7 @@ async function main() {
         supervisorRole: 'Product Manager',
         internshipSector: 'UX/UI Design',
         technicalActivities: 'Design de interfaces, prototipação, testes de usabilidade.',
-        // DADOS DE SEGURO
-        insuranceCompany: 'Seguradora Total Proteção',
-        insurancePolicyNumber: 'TP-2026-456789',
-        insuranceCompanyCnpj: '12345678901234',
-        insuranceStartDate: new Date('2026-05-01'),
-        insuranceEndDate: new Date('2026-11-01'),
-      },
-    });
-
-    // Copiar PDF de exemplo para o documento
-    const insurancePdfPath6 = await copyExamplePdf(internship.id, 'LIFE_INSURANCE');
-
-    await prisma.document.create({
-      data: {
-        type: 'LIFE_INSURANCE',
-        status: 'PENDING_ANALYSIS',
-        internshipId: internship.id,
-        fileUrl: insurancePdfPath6,
+        insuranceRequired: false,
       },
     });
   }
@@ -798,24 +756,15 @@ async function main() {
         supervisorRole: 'Coordenador de TI',
         internshipSector: 'Infraestrutura e Redes',
         technicalActivities: 'Manutenção de servidores, configuração de redes, suporte técnico.',
-        insuranceCompany: 'Seguradora Confiança',
-        insurancePolicyNumber: 'CNF-2025-456789',
-        insuranceCompanyCnpj: '12312312312312',
-        insuranceStartDate: new Date('2025-08-01'),
-        insuranceEndDate: new Date('2026-02-20'),
+        insuranceRequired: false,
       },
     });
 
-    // Documentos iniciais aprovados (TCE/PAE e Seguro), mas SEM TRE e RFE
-    const insurancePdfPath7 = await copyExamplePdf(internship.id, 'LIFE_INSURANCE');
+    // Contrato aprovado, mas SEM TRE e RFE (para testar o fluxo de upload)
     const contractPdfPath7 = await copyExamplePdf(internship.id, 'SIGNED_CONTRACT');
 
-    await prisma.document.createMany({
-      data: [
-        { type: 'LIFE_INSURANCE', status: 'APPROVED', internshipId: internship.id, fileUrl: insurancePdfPath7 },
-        { type: 'SIGNED_CONTRACT', status: 'APPROVED', internshipId: internship.id, fileUrl: contractPdfPath7 },
-        // TRE e RFE NÃO criados - permitindo testar o fluxo de upload
-      ],
+    await prisma.document.create({
+      data: { type: 'SIGNED_CONTRACT', status: 'APPROVED', internshipId: internship.id, fileUrl: contractPdfPath7 },
     });
   }
   console.log('🎯 Estágios criados');
@@ -830,7 +779,7 @@ async function main() {
   console.log('   3️⃣  pedro.santos@estudante.iff.edu.br - EM ANDAMENTO');
   console.log('   4️⃣  ana.costa@estudante.iff.edu.br - FINALIZADO (com TRE/RFE aprovados)');
   console.log('   5️⃣  lucas.lima@estudante.iff.edu.br - CANCELADO');
-  console.log('   6️⃣  carla.mendes@estudante.iff.edu.br - SEM DADOS DE SEGURO');
+  console.log('   6️⃣  carla.mendes@estudante.iff.edu.br - EM ANÁLISE');
   console.log('   7️⃣  bruno.oliveira@estudante.iff.edu.br - FINALIZADO RECENTE (sem documentos finais) ⭐');
   console.log('\n🏢 EMPRESAS:');
   console.log('   📧 rh@techcorp.com.br');

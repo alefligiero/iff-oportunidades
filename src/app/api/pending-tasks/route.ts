@@ -189,8 +189,9 @@ export async function GET(request: NextRequest) {
           internship.insuranceStartDate &&
           internship.insuranceEndDate
       );
+      const isInsuranceRequired = Boolean(internship.insuranceRequired);
 
-      if (!hasAllInsuranceData) {
+      if (isInsuranceRequired && !hasAllInsuranceData) {
         tasks.push({
           id: `${internship.id}-insurance-data`,
           title: 'Enviar dados do seguro',
@@ -227,7 +228,7 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      if (hasAllInsuranceData) {
+      if (isInsuranceRequired && hasAllInsuranceData) {
         const lifeInsuranceLatest = getLatestDocumentByType(documents, DocumentType.LIFE_INSURANCE);
         const hasLifeInsuranceApproved = documents.some(
           (doc) =>

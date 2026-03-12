@@ -7,6 +7,7 @@ import { withErrorHandling, withLogging } from '@/lib/validations/middleware';
 import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/get-user-from-token';
 import { processUploadedFile } from '@/lib/file-upload';
+import { getSystemConfig } from '@/lib/system-config';
 
 async function createInternship(request: NextRequest) {
   // Autenticação
@@ -22,6 +23,9 @@ async function createInternship(request: NextRequest) {
   if (!studentProfile) {
     return createErrorResponse('Perfil de aluno não encontrado.', 404);
   }
+
+  const systemConfig = await getSystemConfig();
+  const insuranceRequired = systemConfig.requireLifeInsuranceForNewInternships;
 
   // Verificar se aluno já possui estágio que impede nova solicitação
   const allInternships = await prisma.internship.findMany({
@@ -72,11 +76,17 @@ async function createInternship(request: NextRequest) {
     return validation.error;
   }
 
-  const insuranceCompany = (validation.data.insuranceCompany ?? '').toString().trim();
-  const insurancePolicyNumber = (validation.data.insurancePolicyNumber ?? '').toString().trim();
-  const insuranceCompanyCnpj = (validation.data.insuranceCompanyCnpj ?? '').toString().trim();
-  const insuranceStartDate = validation.data.insuranceStartDate ?? null;
-  const insuranceEndDate = validation.data.insuranceEndDate ?? null;
+  if (!validation.data) {
+    return createErrorResponse('Dados do formulario invalidos.', 400);
+  }
+
+  const validatedData = validation.data;
+
+  const insuranceCompany = (validatedData.insuranceCompany ?? '').toString().trim();
+  const insurancePolicyNumber = (validatedData.insurancePolicyNumber ?? '').toString().trim();
+  const insuranceCompanyCnpj = (validatedData.insuranceCompanyCnpj ?? '').toString().trim();
+  const insuranceStartDate = validatedData.insuranceStartDate ?? null;
+  const insuranceEndDate = validatedData.insuranceEndDate ?? null;
 
   const hasInsuranceData = Boolean(
     insuranceCompany ||
@@ -93,7 +103,11 @@ async function createInternship(request: NextRequest) {
     insuranceEndDate
   );
 
-  if (hasInsuranceData || insuranceFile) {
+  if (insuranceRequired) {
+    if (!insuranceFile || !hasAllInsuranceFields) {
+      return createErrorResponse('O envio dos dados do seguro e comprovante e obrigatorio para novas solicitacoes.', 400);
+    }
+  } else if (hasInsuranceData || insuranceFile) {
     if (!insuranceFile || !hasAllInsuranceFields) {
       return createErrorResponse('Envie os dados do seguro e o comprovante no mesmo envio.', 400);
     }
@@ -111,11 +125,12 @@ async function createInternship(request: NextRequest) {
     const newInternship = await prisma.$transaction(async (tx) => {
       const internship = await tx.internship.create({
         data: {
-          ...validation.data,
+          ...validatedData,
           type: InternshipType.INTEGRATOR,
           studentId: studentProfile.id,
           hasDetailedInfo: true,
-        },
+          insuranceRequired,
+        } as any,
       });
 
       // Upload TCE
@@ -175,11 +190,12 @@ async function createInternship(request: NextRequest) {
     const newInternship = await prisma.$transaction(async (tx) => {
       const internship = await tx.internship.create({
         data: {
-          ...validation.data,
+          ...validatedData,
           type: InternshipType.DIRECT,
           studentId: studentProfile.id,
           hasDetailedInfo: true,
-        },
+          insuranceRequired,
+        } as any,
       });
 
       // Criar documento de seguro somente se houver arquivo enviado

@@ -10,9 +10,10 @@ interface Document {
 interface NextStepsGuideProps {
   status: string; // InternshipStatus
   documents: Document[];
+  insuranceRequired: boolean;
 }
 
-export default function NextStepsGuide({ status, documents }: NextStepsGuideProps) {
+export default function NextStepsGuide({ status, documents, insuranceRequired }: NextStepsGuideProps) {
   const getNextSteps = () => {
     // Estágio em andamento
     if (status === 'IN_PROGRESS') {
@@ -140,7 +141,7 @@ export default function NextStepsGuide({ status, documents }: NextStepsGuideProp
       // Se já tem TCE/PAE assinados aprovados
       if (signedContractApproved) {
         const insuranceSteps = [];
-        if (!lifeInsuranceApproved && (lifecInsurancePending || noLifeInsurance)) {
+        if (insuranceRequired && !lifeInsuranceApproved && (lifecInsurancePending || noLifeInsurance)) {
           insuranceSteps.push(
             'Envie ou complete o formulário de seguro de vida (pode ser feito agora ou antes de iniciar o estágio)'
           );
@@ -168,8 +169,8 @@ export default function NextStepsGuide({ status, documents }: NextStepsGuideProp
           '   • Assinatura do supervisor de estágio',
           '   • Assinatura do professor orientador',
           '3️⃣ Reenvie os documentos assinados como um PDF único',
-          '4️⃣ Envie o comprovante de seguro de vida',
-          '5️⃣ Após aprovação de tudo, o estágio será iniciado',
+          ...(insuranceRequired ? ['4️⃣ Envie o comprovante de seguro de vida'] : []),
+          `${insuranceRequired ? '5️⃣' : '4️⃣'} Após aprovação de tudo, o estágio será iniciado`,
         ],
         color: 'bg-orange-50 border-orange-200',
         textColor: 'text-orange-900',

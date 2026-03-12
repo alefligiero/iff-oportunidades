@@ -10,6 +10,7 @@ interface DocumentItem {
 interface AdminDocumentAlertsProps {
   status: string; // InternshipStatus
   documents: DocumentItem[];
+  insuranceRequired: boolean;
 }
 
 const documentTypeLabels: Record<string, string> = {
@@ -22,7 +23,7 @@ const documentTypeLabels: Record<string, string> = {
   LIFE_INSURANCE: 'Seguro de Vida',
 };
 
-export default function AdminDocumentAlerts({ status, documents }: AdminDocumentAlertsProps) {
+export default function AdminDocumentAlerts({ status, documents, insuranceRequired }: AdminDocumentAlertsProps) {
   const pendingDocuments = documents.filter(
     (doc) => doc.status === 'PENDING_ANALYSIS' && Boolean(doc.fileUrl)
   );
@@ -38,7 +39,7 @@ export default function AdminDocumentAlerts({ status, documents }: AdminDocument
     (doc) => doc.type === 'SIGNED_CONTRACT' && doc.status === 'PENDING_ANALYSIS' && Boolean(doc.fileUrl)
   );
 
-  if (pendingDocuments.length === 0 && hasLifeInsurance && (status !== 'APPROVED' || signedContractExists)) {
+  if (pendingDocuments.length === 0 && (!insuranceRequired || hasLifeInsurance) && (status !== 'APPROVED' || signedContractExists)) {
     return null;
   }
 
@@ -53,7 +54,7 @@ export default function AdminDocumentAlerts({ status, documents }: AdminDocument
         </div>
       )}
 
-      {!hasLifeInsurance && (
+      {insuranceRequired && !hasLifeInsurance && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
           <p className="text-sm text-amber-800 font-medium">⚠️ Seguro de vida não enviado</p>
           <p className="text-sm text-amber-700 mt-1">

@@ -8,6 +8,11 @@ interface Internship {
   id: string;
   status: string;
   type: string;
+  companyName: string;
+  studentCourse: string;
+  modality: string;
+  earlyTerminationRequested: boolean;
+  insuranceRequired: boolean;
   startDate: string;
   endDate: string;
   createdAt: string;

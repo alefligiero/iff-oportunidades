@@ -15,12 +15,17 @@ const statusMap = {
   [InternshipStatus.CANCELED]: { text: 'Cancelado', color: 'bg-gray-100 text-gray-800' },
 };
 
-const getStatusLabel = (status: InternshipStatus, documents: DocumentSummary[] = [], startDate?: string | Date) => {
+const getStatusLabel = (
+  status: InternshipStatus,
+  documents: DocumentSummary[] = [],
+  startDate?: string | Date,
+  insuranceRequired: boolean = true
+) => {
   const baseStatus = statusMap[status]?.text ?? 'Desconhecido';
   
   if (status === InternshipStatus.APPROVED && startDate) {
     const dateString = typeof startDate === 'string' ? startDate : startDate.toISOString();
-    const substatus = getApprovedSubstatus(documents, dateString);
+    const substatus = getApprovedSubstatus(documents, dateString, insuranceRequired);
     return `${baseStatus} - ${substatus}`;
   }
   
@@ -124,7 +129,12 @@ export default async function MyInternshipsPage() {
                   </div>
                   <div className="flex items-center space-x-2">
                     <span className={`px-3 py-1 text-xs font-medium rounded-full ${statusMap[internship.status]?.color ?? 'bg-gray-100'}`}>
-                      {getStatusLabel(internship.status, internship.documents, internship.startDate)}
+                      {getStatusLabel(
+                        internship.status,
+                        internship.documents,
+                        internship.startDate,
+                        (internship as { insuranceRequired?: boolean }).insuranceRequired ?? true
+                      )}
                     </span>
                     <Link
                       href={`/dashboard/internships/${internship.id}`}

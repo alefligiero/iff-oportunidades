@@ -17,14 +17,24 @@ type FieldErrors = {
   cnpj?: string;
 };
 
+interface AdminSettingsData {
+  requireLifeInsuranceForNewInternships: boolean;
+  updatedAt?: string;
+}
+
 export default function SettingsPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [loadingAdminSettings, setLoadingAdminSettings] = useState(false);
+  const [savingAdminSettings, setSavingAdminSettings] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [adminSettings, setAdminSettings] = useState<AdminSettingsData>({
+    requireLifeInsuranceForNewInternships: false,
+  });
 
   // Dados pessoais
   const [userData, setUserData] = useState<UserData>({
@@ -45,6 +55,12 @@ export default function SettingsPage() {
     fetchUserData();
   }, []);
 
+  useEffect(() => {
+    if (user?.role === 'ADMIN') {
+      fetchAdminSettings();
+    }
+  }, [user?.role]);
+
   const fetchUserData = async () => {
     try {
       const response = await fetch('/api/users/me');
@@ -61,6 +77,27 @@ export default function SettingsPage() {
       console.error('Erro ao carregar dados:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAdminSettings = async () => {
+    setLoadingAdminSettings(true);
+    try {
+      const response = await fetch('/api/admin/settings');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao carregar configuracoes administrativas.');
+      }
+
+      setAdminSettings({
+        requireLifeInsuranceForNewInternships: Boolean(data.requireLifeInsuranceForNewInternships),
+        updatedAt: data.updatedAt,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao carregar configuracoes administrativas.');
+    } finally {
+      setLoadingAdminSettings(false);
     }
   };
 
@@ -210,6 +247,39 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSaveAdminSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setMessage('');
+    setSavingAdminSettings(true);
+
+    try {
+      const response = await fetch('/api/admin/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requireLifeInsuranceForNewInternships: adminSettings.requireLifeInsuranceForNewInternships,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao salvar configuracoes administrativas.');
+      }
+
+      setAdminSettings((prev) => ({
+        ...prev,
+        updatedAt: data.updatedAt,
+      }));
+      setMessage('Configuracoes administrativas atualizadas com sucesso!');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao salvar configuracoes administrativas.');
+    } finally {
+      setSavingAdminSettings(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -231,6 +301,52 @@ export default function SettingsPage() {
       {error && (
         <div className="mb-6 p-4 bg-red-100 text-red-800 rounded-lg">
           {error}
+        </div>
+      )}
+
+      {user?.role === 'ADMIN' && (
+        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-1">Configuracoes Administrativas</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Controle se novas solicitacoes de estagio exigem dados de seguro e comprovante.
+          </p>
+
+          {loadingAdminSettings ? (
+            <p className="text-sm text-gray-600">Carregando configuracoes...</p>
+          ) : (
+            <form onSubmit={handleSaveAdminSettings}>
+              <label className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg">
+                <input
+                  type="checkbox"
+                  checked={adminSettings.requireLifeInsuranceForNewInternships}
+                  onChange={(e) =>
+                    setAdminSettings((prev) => ({
+                      ...prev,
+                      requireLifeInsuranceForNewInternships: e.target.checked,
+                    }))
+                  }
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-green-700 focus:ring-green-500"
+                />
+                <span className="text-sm text-gray-800">
+                  Exigir dados do seguro de vida e comprovante para novas solicitacoes de estagio
+                </span>
+              </label>
+
+              {adminSettings.updatedAt && (
+                <p className="mt-2 text-xs text-gray-500">
+                  Ultima atualizacao: {new Date(adminSettings.updatedAt).toLocaleString('pt-BR')}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={savingAdminSettings}
+                className="mt-4 bg-green-700 text-white px-6 py-2 rounded-lg hover:bg-green-800 transition-colors font-medium disabled:opacity-50"
+              >
+                {savingAdminSettings ? 'Salvando...' : 'Salvar Configuracoes'}
+              </button>
+            </form>
+          )}
         </div>
       )}
 
@@ -332,7 +448,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Alterar Senha */}
-      <div className="bg-white p-6 rounded-lg shadow-md">
+      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Alterar Senha</h2>
         <form onSubmit={handleChangePassword}>
           <div className="grid grid-cols-1 gap-4 mb-4">
