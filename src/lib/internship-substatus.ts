@@ -125,6 +125,24 @@ export function getFinishedSubstatus(documents: DocumentSummary[]): string {
 }
 
 /**
+ * Verifica se um estágio bloqueia a criação de um novo estágio pelo aluno.
+ * Bloqueia se: IN_ANALYSIS, APPROVED, IN_PROGRESS, ou FINISHED sem todos os documentos finais aprovados.
+ * Não bloqueia se: REJECTED, CANCELED, ou FINISHED com TRE e RFE aprovados ("Concluído").
+ */
+export function isInternshipBlocking(
+  status: string,
+  documents: DocumentSummary[]
+): boolean {
+  if (['IN_ANALYSIS', 'APPROVED', 'IN_PROGRESS'].includes(status)) {
+    return true;
+  }
+  if (status === 'FINISHED') {
+    return getFinishedSubstatus(documents) !== 'Concluído';
+  }
+  return false;
+}
+
+/**
  * Obtém o label completo de status com substatus (se aplicável)
  */
 export function getStatusWithSubstatus(

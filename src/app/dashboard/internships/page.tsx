@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { PrismaClient, InternshipStatus } from '@prisma/client';
-import { getApprovedSubstatus, getInProgressSubstatus, getFinishedSubstatus, type DocumentSummary } from '@/lib/internship-substatus';
+import { getApprovedSubstatus, getInProgressSubstatus, getFinishedSubstatus, isInternshipBlocking, type DocumentSummary } from '@/lib/internship-substatus';
 
 const prisma = new PrismaClient();
 
@@ -72,7 +72,7 @@ async function getStudentInternships() {
       orderBy: { createdAt: 'desc' },
     });
 
-    const hasActiveInternship = internships.some(i => i.status === InternshipStatus.IN_PROGRESS);
+    const hasActiveInternship = internships.some((i) => isInternshipBlocking(i.status, i.documents));
 
     return { data: internships, hasActiveInternship, error: null };
 
@@ -96,7 +96,7 @@ export default async function MyInternshipsPage() {
         {hasActiveInternship ? (
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-600 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2">
-              ⚠️ Você já possui um estágio em andamento
+              ⚠️ Você possui um estágio ou uma solicitação de estágio em andamento ou aguardando documentos. Conclua/Cancele o atual antes de solicitar um novo.
             </span>
           </div>
         ) : (

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { Role, InternshipType, NotificationType } from '@prisma/client';
 import { createInternshipSchema } from '@/lib/validations/schemas';
+import { isInternshipBlocking } from '@/lib/internship-substatus';
 import { validateRequestBody, createErrorResponse, createSuccessResponse } from '@/lib/validations/utils';
 import { withErrorHandling, withLogging } from '@/lib/validations/middleware';
 import { prisma } from '@/lib/prisma';
@@ -22,16 +23,25 @@ async function createInternship(request: NextRequest) {
     return createErrorResponse('Perfil de aluno não encontrado.', 404);
   }
 
-  // Verificar se aluno já possui estágio em andamento
-  const activeInternship = await prisma.internship.findFirst({
-    where: {
-      studentId: studentProfile.id,
-      status: 'IN_PROGRESS',
+  // Verificar se aluno já possui estágio que impede nova solicitação
+  const allInternships = await prisma.internship.findMany({
+    where: { studentId: studentProfile.id },
+    include: {
+      documents: {
+        select: { type: true, status: true, fileUrl: true },
+      },
     },
   });
 
-  if (activeInternship) {
-    return createErrorResponse('Você já possui um estágio em andamento. Finalize o atual antes de solicitar um novo.', 409);
+  const blockingInternship = allInternships.find((i) =>
+    isInternshipBlocking(i.status, i.documents)
+  );
+
+  if (blockingInternship) {
+    return createErrorResponse(
+      'Você possui um estágio ou uma solicitação de estágio em andamento ou aguardando documentos. Conclua/Cancele o atual antes de solicitar um novo.',
+      409
+    );
   }
 
   // Processar FormData
