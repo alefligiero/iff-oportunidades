@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { VacancyStatus, VacancyType, VacancyModality, Course } from '@prisma/client';
+import { VacancyStatus, VacancyType, VacancyModality } from '@prisma/client';
 import VacancyTabs from './VacancyTabs';
 import VacancyFilters, { FilterState } from './VacancyFilters';
 import VacancyTable from './VacancyTable';
@@ -19,7 +19,7 @@ interface Vacancy {
   createdAt: string;
   updatedAt: string;
   company: { name: string };
-  eligibleCourses: Course[];
+  eligibleCourses: string[];
 }
 
 interface VacanciesPageContentProps {
@@ -77,7 +77,7 @@ export default function VacanciesPageContent({ allVacancies }: VacanciesPageCont
 
     // Curso elegível
     if (filters.course) {
-      result = result.filter((vacancy) => vacancy.eligibleCourses.includes(filters.course as Course));
+      result = result.filter((vacancy) => vacancy.eligibleCourses.includes(filters.course));
     }
 
     // Tipo

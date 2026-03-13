@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { InternshipStatus } from '@prisma/client';
 
 interface Props {
@@ -28,14 +28,32 @@ export default function RequestEarlyTermination(props: Props) {
   const [requested, setRequested] = useState(earlyTerminationRequested);
   const [approved, setApproved] = useState(earlyTerminationApproved);
   const [handledAt, setHandledAt] = useState(earlyTerminationHandledAt);
+  const [requestReason, setRequestReason] = useState(earlyTerminationReason);
+  const [rejectionReason, setRejectionReason] = useState(earlyTerminationRejectionReason);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setRequested(earlyTerminationRequested);
+    setApproved(earlyTerminationApproved);
+    setHandledAt(earlyTerminationHandledAt);
+    setRequestReason(earlyTerminationReason);
+    setRejectionReason(earlyTerminationRejectionReason);
+  }, [
+    earlyTerminationRequested,
+    earlyTerminationApproved,
+    earlyTerminationHandledAt,
+    earlyTerminationReason,
+    earlyTerminationRejectionReason,
+  ]);
 
   const alreadyDecided = approved !== null && handledAt !== null;
 
   const canRequest =
     (status === InternshipStatus.APPROVED || status === InternshipStatus.IN_PROGRESS) &&
     !requested;
+
+  const shouldShowSection = requested || canRequest || alreadyDecided;
 
   const submit = async () => {
     if (!reason.trim()) {
@@ -55,7 +73,13 @@ export default function RequestEarlyTermination(props: Props) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'Não foi possível enviar a solicitação.');
       }
+
       setRequested(true);
+      setApproved(null);
+      setHandledAt(null);
+      setRequestReason(reason.trim());
+      setRejectionReason(null);
+      setReason('');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro inesperado';
       setError(message);
@@ -67,31 +91,31 @@ export default function RequestEarlyTermination(props: Props) {
   return (
     <>
       {/* Mostrar seção apenas se: há solicitação OU é possível fazer solicitação */}
-      {(requested || canRequest) && (
+      {shouldShowSection && (
         <div className="bg-white p-4 rounded-lg shadow-md space-y-3">
           <h3 className="text-lg font-semibold text-gray-900">Encerramento antecipado</h3>
 
           {requested && !alreadyDecided && (
             <div className="text-sm text-gray-700 bg-yellow-50 border border-yellow-200 rounded-md p-3">
               Solicitação enviada e aguardando análise da Agência.
-              {earlyTerminationReason && (
-                <div className="mt-1 text-gray-600">Justificativa: {earlyTerminationReason}</div>
+              {requestReason && (
+                <div className="mt-1 text-gray-600">Justificativa: {requestReason}</div>
               )}
             </div>
           )}
 
-          {requested && alreadyDecided && approved === true && (
+          {alreadyDecided && approved === true && (
             <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-md p-3">
               Encerramento antecipado aprovado em {new Date(handledAt as string).toLocaleString('pt-BR')}.
             </div>
           )}
 
-          {requested && alreadyDecided && approved === false && (
+          {alreadyDecided && approved === false && (
             <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md p-3">
               <div>Encerramento antecipado recusado em {new Date(handledAt as string).toLocaleString('pt-BR')}.</div>
-              {earlyTerminationRejectionReason && (
+              {rejectionReason && (
                 <div className="mt-2 text-red-600 font-medium">
-                  Motivo: {earlyTerminationRejectionReason}
+                  Motivo: {rejectionReason}
                 </div>
               )}
             </div>

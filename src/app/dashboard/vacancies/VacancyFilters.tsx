@@ -2,7 +2,6 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import { Course } from '@prisma/client';
 
 const sortLabels: Record<string, string> = {
   createdAt_desc: 'Mais recentes',
@@ -13,18 +12,9 @@ const sortLabels: Record<string, string> = {
   title_asc: 'Título (A-Z)'
 };
 
-const courseLabels: Record<Course, string> = {
-  BSI: 'BSI',
-  LIC_QUIMICA: 'Lic. Química',
-  ENG_MECANICA: 'Eng. Mecânica',
-  TEC_ADM_INTEGRADO: 'Téc. Adm.',
-  TEC_ELETRO_INTEGRADO: 'Téc. Eletro.',
-  TEC_INFO_INTEGRADO: 'Téc. Info.',
-  TEC_QUIMICA_INTEGRADO: 'Téc. Química',
-  TEC_AUTOMACAO_SUBSEQUENTE: 'Téc. Automação',
-  TEC_ELETRO_CONCOMITANTE: 'Téc. Eletro. (Conc.)',
-  TEC_MECANICA_CONCOMITANTE: 'Téc. Mecânica (Conc.)',
-  TEC_QUIMICA_CONCOMITANTE: 'Téc. Química (Conc.)',
+type CourseOption = {
+  code: string;
+  name: string;
 };
 
 const modalityLabels: Record<string, string> = {
@@ -47,10 +37,27 @@ export default function VacancyFilters() {
   const [minWorkload, setMinWorkload] = useState(searchParams.get('minWorkload') || '');
   const [maxWorkload, setMaxWorkload] = useState(searchParams.get('maxWorkload') || '');
   const [sort, setSort] = useState(searchParams.get('sort') || 'createdAt_desc');
+  const [courses, setCourses] = useState<CourseOption[]>([]);
 
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Sincronizar com URL params quando a página carrega/atualiza
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await fetch('/api/courses');
+        const data = await response.json();
+        if (response.ok && Array.isArray(data)) {
+          setCourses(data);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar cursos:', error);
+      }
+    };
+
+    fetchCourses();
+  }, []);
+
   useEffect(() => {
     setSearch(searchParams.get('search') || '');
     setType(searchParams.get('type') || '');
@@ -221,8 +228,8 @@ export default function VacancyFilters() {
             className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${course ? 'text-gray-900' : 'text-gray-700'}`}
           >
             <option value="">Todos os cursos</option>
-            {Object.entries(courseLabels).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
+            {courses.map((courseOption) => (
+              <option key={courseOption.code} value={courseOption.code}>{courseOption.name}</option>
             ))}
           </select>
         </div>
@@ -336,7 +343,7 @@ export default function VacancyFilters() {
             {search && <span className="ml-2 inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Busca: &quot;{search}&quot;</span>}
             {type && <span className="ml-2 inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs">{type === 'INTERNSHIP' ? 'Estágio' : 'Emprego'}</span>}
             {modality && <span className="ml-2 inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs">{modalityLabels[modality]}</span>}
-            {course && <span className="ml-2 inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs">{courseLabels[course as Course]}</span>}
+            {course && <span className="ml-2 inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs">{courses.find((c) => c.code === course)?.name || course}</span>}
             {minSalary && <span className="ml-2 inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Min: R$ {minSalary}</span>}
             {maxSalary && <span className="ml-2 inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Max: R$ {maxSalary}</span>}
             {minWorkload && <span className="ml-2 inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Min: {minWorkload}h/sem</span>}

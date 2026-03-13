@@ -1,25 +1,11 @@
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
-import { PrismaClient, Role, Course } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
 import { notFound } from 'next/navigation';
+import { getCourseNameMap } from '@/lib/courses';
 
 const prisma = new PrismaClient();
-
-// Mapeamento de cursos para exibição
-const courseLabels: Partial<Record<Course, string>> = {
-  BSI: 'Bacharelado em Sistemas de Informação',
-  LIC_QUIMICA: 'Licenciatura em Química',
-  ENG_MECANICA: 'Engenharia Mecânica',
-  TEC_ADM_INTEGRADO: 'Técnico em Administração (Integrado)',
-  TEC_ELETRO_INTEGRADO: 'Técnico em Eletrotécnica (Integrado)',
-  TEC_INFO_INTEGRADO: 'Técnico em Informática (Integrado)',
-  TEC_QUIMICA_INTEGRADO: 'Técnico em Química (Integrado)',
-  TEC_AUTOMACAO_SUBSEQUENTE: 'Técnico em Automação Industrial (Subsequente)',
-  TEC_ELETRO_CONCOMITANTE: 'Técnico em Eletrotécnica (Concomitante)',
-  TEC_MECANICA_CONCOMITANTE: 'Técnico em Mecânica (Concomitante)',
-  TEC_QUIMICA_CONCOMITANTE: 'Técnico em Química (Concomitante)',
-};
 
 const modalityLabels = {
   PRESENCIAL: 'Presencial',
@@ -112,6 +98,7 @@ const formatTextList = (text: string) => {
 export default async function VacancyDetailsPage({ params }: VacancyDetailsParams) {
   const { id } = await params;
   const { vacancy, error, userRole, isOwner } = await getVacancyDetails(id);
+  const courseNameMap = await getCourseNameMap(true);
 
   if (error || !vacancy) {
     notFound();
@@ -185,7 +172,7 @@ export default async function VacancyDetailsPage({ params }: VacancyDetailsParam
                   key={course}
                   className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium"
                 >
-                  {courseLabels[course as Course]}
+                  {courseNameMap[course] || course}
                 </span>
               ))}
             </div>

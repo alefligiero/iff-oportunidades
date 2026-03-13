@@ -1,22 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { InternshipStatus, Course, InternshipType, InternshipModality } from '@prisma/client';
+import { InternshipStatus, InternshipType, InternshipModality } from '@prisma/client';
 import { getApprovedSubstatus, getInProgressSubstatus, getFinishedSubstatus, type DocumentSummary } from '@/lib/internship-substatus';
-
-const courseMap: { [key in Course]: string } = {
-  BSI: 'Bacharelado em Sistemas de Informação',
-  LIC_QUIMICA: 'Licenciatura em Química',
-  ENG_MECANICA: 'Engenharia Mecânica',
-  TEC_ADM_INTEGRADO: 'Técnico em Administração Integrado',
-  TEC_ELETRO_INTEGRADO: 'Técnico em Eletrônica Integrado',
-  TEC_INFO_INTEGRADO: 'Técnico em Informática Integrado',
-  TEC_QUIMICA_INTEGRADO: 'Técnico em Química Integrado',
-  TEC_AUTOMACAO_SUBSEQUENTE: 'Técnico em Automação Subsequente',
-  TEC_ELETRO_CONCOMITANTE: 'Técnico em Eletrônica Concomitante',
-  TEC_MECANICA_CONCOMITANTE: 'Técnico em Mecânica Concomitante',
-  TEC_QUIMICA_CONCOMITANTE: 'Técnico em Química Concomitante',
-};
 
 const typeMap: { [key in InternshipType]: string } = {
   DIRECT: 'Estágio Direto',
@@ -70,7 +56,8 @@ interface Internship {
   createdAt: string;
   student: { name: string; matricula: string };
   companyName: string;
-  studentCourse: Course;
+  studentCourse: string;
+  studentCourseName?: string;
   type: InternshipType;
   modality: InternshipModality;
   startDate: string;
@@ -145,7 +132,7 @@ export default function InternshipTable({ internships, loading = false }: Intern
                   {internship.companyName}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  {courseMap[internship.studentCourse]}
+                  {internship.studentCourseName || internship.studentCourse}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                   {typeMap[internship.type]}

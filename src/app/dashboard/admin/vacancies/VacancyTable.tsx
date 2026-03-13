@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { VacancyStatus, VacancyType, VacancyModality, Course } from '@prisma/client';
+import { VacancyStatus, VacancyType, VacancyModality } from '@prisma/client';
 
 const typeMap: { [key in VacancyType]: string } = {
   INTERNSHIP: 'Estágio',
@@ -34,7 +34,7 @@ interface Vacancy {
   updatedAt: string;
   closureReason?: string | null;
   company: { name: string };
-  eligibleCourses: Course[];
+  eligibleCourses: string[];
 }
 
 interface VacancyTableProps {

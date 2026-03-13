@@ -1,8 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { Role, Gender, Course, InternshipModality } from '@prisma/client';
+import { Role, Gender, InternshipModality } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { processUploadedFile } from '@/lib/file-upload';
+import { isActiveCourseCode } from '@/lib/courses';
 
 const updateInternshipSchema = z.object({
   studentGender: z.nativeEnum(Gender),
@@ -13,7 +14,7 @@ const updateInternshipSchema = z.object({
   studentAddressCep: z.string().min(1, 'O CEP é obrigatório.'),
   studentPhone: z.string().min(1, 'O telefone é obrigatório.'),
   studentCpf: z.string().min(1, 'O CPF é obrigatório.'),
-  studentCourse: z.nativeEnum(Course),
+  studentCourse: z.string().min(1, 'Curso invalido'),
   studentCoursePeriod: z.string().min(1, 'O período é obrigatório.'),
   studentSchoolYear: z.string().min(1, 'O ano letivo é obrigatório.'),
   companyName: z.string().min(1, 'O nome da empresa é obrigatório.'),
@@ -155,6 +156,11 @@ export async function PUT(
     }
 
     const updatedData = validation.data;
+
+    const isValidCourse = await isActiveCourseCode(updatedData.studentCourse);
+    if (!isValidCourse) {
+      return NextResponse.json({ error: 'Curso invalido ou inativo.' }, { status: 400 });
+    }
 
     // Verificar se há novo seguro para upload
     const insuranceFile = formData.get('insurance') as File | null;

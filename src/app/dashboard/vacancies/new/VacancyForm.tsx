@@ -1,33 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useNotification } from '@/contexts/NotificationContext';
-import { VacancyType, Course } from '@prisma/client';
+import { VacancyType } from '@prisma/client';
 import CurrencyInput from 'react-currency-input-field';
 import { createVacancySchema } from '@/lib/validations/schemas';
 import { z } from 'zod';
 
 type FormErrors = { [key: string]: string };
 type FormData = z.infer<typeof createVacancySchema>;
-
-const courseLabels: Record<Course, string> = {
-  BSI: 'Bacharelado em Sistemas de Informação',
-  LIC_QUIMICA: 'Licenciatura em Química',
-  ENG_MECANICA: 'Engenharia Mecânica',
-  TEC_ADM_INTEGRADO: 'Técnico em Administração (Integrado)',
-  TEC_ELETRO_INTEGRADO: 'Técnico em Eletrotécnica (Integrado)',
-  TEC_INFO_INTEGRADO: 'Técnico em Informática (Integrado)',
-  TEC_QUIMICA_INTEGRADO: 'Técnico em Química (Integrado)',
-  TEC_AUTOMACAO_SUBSEQUENTE: 'Técnico em Automação (Subsequente)',
-  TEC_ELETRO_CONCOMITANTE: 'Técnico em Eletrotécnica (Concomitante)',
-  TEC_MECANICA_CONCOMITANTE: 'Técnico em Mecânica (Concomitante)',
-  TEC_QUIMICA_CONCOMITANTE: 'Técnico em Química (Concomitante)',
+type CourseOption = {
+  code: string;
+  name: string;
 };
 
 export default function VacancyForm() {
   const router = useRouter();
   const { addNotification } = useNotification();
+  const [courses, setCourses] = useState<CourseOption[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
   const [formData, setFormData] = useState<Partial<FormData>>({
     title: '',
     description: '',
@@ -46,6 +38,24 @@ export default function VacancyForm() {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        const response = await fetch('/api/courses');
+        const data = await response.json();
+        if (response.ok && Array.isArray(data)) {
+          setCourses(data);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar cursos:', error);
+      } finally {
+        setLoadingCourses(false);
+      }
+    };
+
+    loadCourses();
+  }, []);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -77,13 +87,13 @@ export default function VacancyForm() {
         setErrors(prev => ({ ...prev, [fieldName]: fieldError.message }));
       }
     }
-  };  const handleCourseChange = (course: Course) => {
+  };  const handleCourseChange = (courseCode: string) => {
     setFormData(prev => {
       const currentCourses = prev.eligibleCourses || [];
-      const isSelected = currentCourses.includes(course);
+      const isSelected = currentCourses.includes(courseCode);
       const newCourses = isSelected
-        ? currentCourses.filter(c => c !== course)
-        : [...currentCourses, course];
+        ? currentCourses.filter(c => c !== courseCode)
+        : [...currentCourses, courseCode];
       return {
         ...prev,
         eligibleCourses: newCourses,
@@ -391,24 +401,25 @@ export default function VacancyForm() {
             Cursos Elegíveis *
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto border border-gray-300 rounded-md p-4">
-            {Object.entries(courseLabels).map(([value, label]) => (
-              <div key={value} className="flex items-center">
+            {courses.map((course) => (
+              <div key={course.code} className="flex items-center">
                 <input
                   type="checkbox"
-                  id={`course-${value}`}
-                  checked={formData.eligibleCourses?.includes(value as Course) || false}
-                  onChange={() => handleCourseChange(value as Course)}
+                  id={`course-${course.code}`}
+                  checked={formData.eligibleCourses?.includes(course.code) || false}
+                  onChange={() => handleCourseChange(course.code)}
                   className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                 />
                 <label
-                  htmlFor={`course-${value}`}
+                  htmlFor={`course-${course.code}`}
                   className="ml-2 text-sm text-gray-700 cursor-pointer"
                 >
-                  {label}
+                  {course.name}
                 </label>
               </div>
             ))}
           </div>
+          {loadingCourses && <p className="mt-1 text-xs text-gray-500">Carregando cursos...</p>}
           {errors.eligibleCourses && (
             <p className="mt-1 text-xs text-red-600">{errors.eligibleCourses}</p>
           )}

@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/get-user-from-token';
 import { processUploadedFile } from '@/lib/file-upload';
 import { getSystemConfig } from '@/lib/system-config';
+import { isActiveCourseCode } from '@/lib/courses';
 
 async function createInternship(request: NextRequest) {
   // Autenticação
@@ -81,6 +82,11 @@ async function createInternship(request: NextRequest) {
   }
 
   const validatedData = validation.data;
+
+  const isValidCourse = await isActiveCourseCode(validatedData.studentCourse);
+  if (!isValidCourse) {
+    return createErrorResponse('Curso invalido ou inativo.', 400);
+  }
 
   const insuranceCompany = (validatedData.insuranceCompany ?? '').toString().trim();
   const insurancePolicyNumber = (validatedData.insurancePolicyNumber ?? '').toString().trim();

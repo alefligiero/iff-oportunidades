@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { Role, NotificationType } from '@prisma/client';
 import { createVacancySchema } from '@/lib/validations/schemas';
 import { prisma } from '@/lib/prisma';
+import { areActiveCourseCodes } from '@/lib/courses';
 
 export async function POST(request: NextRequest) {
   try {
@@ -85,6 +86,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const validCourses = await areActiveCourseCodes(eligibleCourses);
+    if (!validCourses) {
+      return NextResponse.json(
+        { error: 'Um ou mais cursos selecionados estao inativos ou nao existem.' },
+        { status: 400 }
+      );
+    }
+
     if ((modality === 'PRESENCIAL' || modality === 'HIBRIDO') && transportationGrant === undefined) {
       return NextResponse.json(
         { error: 'O auxílio transporte é obrigatório para vagas presenciais e híbridas.', details: { transportationGrant: ['O auxílio transporte é obrigatório para esta modalidade.'] } },
@@ -101,7 +110,7 @@ export async function POST(request: NextRequest) {
         remuneration,
         workload,
         modality,
-        eligibleCourses,
+        eligibleCourses: Array.from(new Set(eligibleCourses)),
         minPeriod,
         transportationGrant: transportationGrant ?? null,
         responsibilities: responsibilities?.trim() ?? '',

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Gender, Course, InternshipModality, VacancyType, InternshipStatus, DocumentType, DocumentStatus } from '@prisma/client';
+import { Gender, InternshipModality, VacancyType, InternshipStatus, DocumentType, DocumentStatus } from '@prisma/client';
 
 // ===== FUNÇÕES AUXILIARES DE VALIDAÇÃO =====
 
@@ -104,7 +104,7 @@ const internshipBaseSchema = z.object({
   studentAddressCep: z.string().min(1, 'O CEP é obrigatório.'),
   studentPhone: z.string().min(1, 'O telefone é obrigatório.'),
   studentCpf: z.string().min(1, 'O CPF é obrigatório.'),
-  studentCourse: z.nativeEnum(Course, { message: 'Curso inválido' }),
+  studentCourse: z.string().min(1, 'Curso inválido'),
   studentCoursePeriod: z.string().min(1, 'O período é obrigatório.'),
   studentSchoolYear: z.string().min(1, 'O ano letivo é obrigatório.'),
   companyName: z.string().min(1, 'O nome da empresa é obrigatório.'),
@@ -207,9 +207,9 @@ export const createVacancySchema = z.object({
     required_error: 'A modalidade é obrigatória',
     invalid_type_error: 'Selecione uma modalidade válida'
   }),
-  eligibleCourses: z.array(z.nativeEnum(Course))
+  eligibleCourses: z.array(z.string().min(1, 'Curso inválido'))
     .min(1, 'Selecione pelo menos um curso elegível')
-    .max(11, 'Você selecionou todos os cursos. Isso pode não ser necessário.'),
+    .max(50, 'Quantidade de cursos elegíveis inválida.'),
   minPeriod: z.preprocess(
     (val) => (val === undefined || val === null || val === '' ? undefined : Number(val)),
     z.number()
@@ -287,7 +287,7 @@ export const paginationSchema = z.object({
 
 export const internshipFiltersSchema = z.object({
   status: z.nativeEnum(InternshipStatus).optional(),
-  course: z.nativeEnum(Course).optional(),
+  course: z.string().optional(),
   modality: z.nativeEnum(InternshipModality).optional(),
 });
 

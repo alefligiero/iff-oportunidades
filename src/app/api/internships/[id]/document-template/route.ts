@@ -4,21 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Course } from '@prisma/client';
-
-const courseMap: Record<Course, string> = {
-  BSI: 'Bacharelado em Sistemas de Informação',
-  LIC_QUIMICA: 'Licenciatura em Química',
-  ENG_MECANICA: 'Engenharia Mecânica',
-  TEC_ADM_INTEGRADO: 'Técnico em Administração Integrado ao Ensino Médio',
-  TEC_ELETRO_INTEGRADO: 'Técnico em Eletrotécnica Integrado ao Ensino Médio',
-  TEC_INFO_INTEGRADO: 'Técnico em Informática Integrado ao Ensino Médio',
-  TEC_QUIMICA_INTEGRADO: 'Técnico em Química Integrado ao Ensino Médio',
-  TEC_AUTOMACAO_SUBSEQUENTE: 'Técnico em Automação Subsequente',
-  TEC_ELETRO_CONCOMITANTE: 'Técnico em Eletrotécnica Concomitante',
-  TEC_MECANICA_CONCOMITANTE: 'Técnico em Mecânica Concomitante',
-  TEC_QUIMICA_CONCOMITANTE: 'Técnico em Química Concomitante',
-};
+import { getCourseNameMap } from '@/lib/courses';
 
 export async function GET(
   request: NextRequest,
@@ -27,17 +13,19 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const internship = await prisma.internship.findUnique({
-      where: { id },
-      include: {
-        student: {
-          include: {
-            user: true,
+    const [internship, courseNameMap] = await Promise.all([
+      prisma.internship.findUnique({
+        where: { id },
+        include: {
+          student: {
+            include: {
+              user: true,
+            },
           },
         },
-        company: true,
-      },
-    });
+      }),
+      getCourseNameMap(true),
+    ]);
 
     if (!internship) {
       return NextResponse.json({ error: 'Estágio não encontrado' }, { status: 404 });
@@ -55,9 +43,9 @@ export async function GET(
     const startDate = format(new Date(internship.startDate), 'dd/MM/yyyy');
     const endDate = format(new Date(internship.endDate), 'dd/MM/yyyy');
     const studentName = internship.student?.name || 'Não informado';
-    const studentCourse = courseMap[internship.studentCourse] || internship.studentCourse;
+    const studentCourse = courseNameMap[internship.studentCourse] || internship.studentCourse;
     const studentMatricula = internship.student?.matricula || 'Não informado';
-    const companyName = internship.company?.fantasyName || internship.companyName || 'Não informado';
+    const companyName = internship.companyName || 'Não informado';
 
     // Realizar substituições (usando regex para lidar com fragmentação do pdf2htmlEX se necessário)
     // Mas primeiro tentamos substituição simples

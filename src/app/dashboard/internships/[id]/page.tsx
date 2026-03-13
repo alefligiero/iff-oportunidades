@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
-import { PrismaClient, InternshipStatus, InternshipType, InternshipModality, Gender, Course, DocumentType } from '@prisma/client';
+import { PrismaClient, InternshipStatus, InternshipType, InternshipModality, Gender, DocumentType } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import { getApprovedSubstatus, getInProgressSubstatus, getFinishedSubstatus, type DocumentSummary } from '@/lib/internship-substatus';
 import RequestEarlyTermination from './RequestEarlyTermination';
@@ -10,6 +10,7 @@ import NextStepsGuide from './NextStepsGuide';
 import StatusProgress from './StatusProgress';
 import InsuranceDataForm from './InsuranceDataForm';
 import PeriodicReportsSection from './PeriodicReportsSection';
+import { getCourseNameMap } from '@/lib/courses';
 
 const prisma = new PrismaClient();
 
@@ -37,20 +38,6 @@ const modalityMap = {
 const genderMap = {
   [Gender.MALE]: 'Masculino',
   [Gender.FEMALE]: 'Feminino',
-};
-
-const courseMap = {
-  [Course.BSI]: 'Bacharelado em Sistemas de Informação',
-  [Course.LIC_QUIMICA]: 'Licenciatura em Química',
-  [Course.ENG_MECANICA]: 'Engenharia Mecânica',
-  [Course.TEC_ADM_INTEGRADO]: 'Técnico em Administração Integrado',
-  [Course.TEC_ELETRO_INTEGRADO]: 'Técnico em Eletrônica Integrado',
-  [Course.TEC_INFO_INTEGRADO]: 'Técnico em Informática Integrado',
-  [Course.TEC_QUIMICA_INTEGRADO]: 'Técnico em Química Integrado',
-  [Course.TEC_AUTOMACAO_SUBSEQUENTE]: 'Técnico em Automação Subsequente',
-  [Course.TEC_ELETRO_CONCOMITANTE]: 'Técnico em Eletrônica Concomitante',
-  [Course.TEC_MECANICA_CONCOMITANTE]: 'Técnico em Mecânica Concomitante',
-  [Course.TEC_QUIMICA_CONCOMITANTE]: 'Técnico em Química Concomitante',
 };
 
 async function getInternshipDetails(id: string) {
@@ -118,6 +105,7 @@ interface InternshipDetailsPageProps {
 export default async function InternshipDetailsPage({ params }: InternshipDetailsPageProps) {
   const { id } = await params;
   const { data: internship, error } = await getInternshipDetails(id);
+  const courseNameMap = await getCourseNameMap(true);
 
   const initialDocuments = internship?.documents.map((doc) => ({
     id: doc.id,
@@ -344,7 +332,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
             </div>
             <div>
               <span className="font-medium text-gray-700">Curso:</span>
-              <p className="text-gray-900">{courseMap[internship.studentCourse]}</p>
+              <p className="text-gray-900">{courseNameMap[internship.studentCourse] || internship.studentCourse}</p>
             </div>
             <div>
               <span className="font-medium text-gray-700">Período:</span>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { InternshipStatus, Course, InternshipType, InternshipModality } from '@prisma/client';
+import { InternshipStatus, InternshipType, InternshipModality } from '@prisma/client';
 import InternshipTabs from './InternshipTabs';
 import InternshipFilters, { FilterState } from './InternshipFilters';
 import InternshipTable from './InternshipTable';
@@ -12,7 +12,8 @@ interface Internship {
   createdAt: string;
   student: { name: string; matricula: string };
   companyName: string;
-  studentCourse: Course;
+  studentCourse: string;
+  studentCourseName?: string;
   type: InternshipType;
   modality: InternshipModality;
   startDate: string;

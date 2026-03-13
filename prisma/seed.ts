@@ -1,9 +1,23 @@
-import { PrismaClient, Role, VacancyType, VacancyStatus, VacancyModality, Course } from '@prisma/client';
+import { PrismaClient, Role, VacancyType, VacancyStatus, VacancyModality } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import fs from 'fs/promises';
 import path from 'path';
 
 const prisma = new PrismaClient();
+
+const Course = {
+  BSI: 'BSI',
+  LIC_QUIMICA: 'LIC_QUIMICA',
+  ENG_MECANICA: 'ENG_MECANICA',
+  TEC_ADM_INTEGRADO: 'TEC_ADM_INTEGRADO',
+  TEC_ELETRO_INTEGRADO: 'TEC_ELETRO_INTEGRADO',
+  TEC_INFO_INTEGRADO: 'TEC_INFO_INTEGRADO',
+  TEC_QUIMICA_INTEGRADO: 'TEC_QUIMICA_INTEGRADO',
+  TEC_AUTOMACAO_SUBSEQUENTE: 'TEC_AUTOMACAO_SUBSEQUENTE',
+  TEC_ELETRO_CONCOMITANTE: 'TEC_ELETRO_CONCOMITANTE',
+  TEC_MECANICA_CONCOMITANTE: 'TEC_MECANICA_CONCOMITANTE',
+  TEC_QUIMICA_CONCOMITANTE: 'TEC_QUIMICA_CONCOMITANTE',
+} as const;
 
 // Helper para copiar PDF de exemplo e gerar nome único
 async function copyExamplePdf(internshipId: string, documentType: string): Promise<string | null> {

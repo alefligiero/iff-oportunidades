@@ -74,7 +74,7 @@ model Internship {
   studentAddressDistrict    String
   studentAddressNumber      String
   studentAddressStreet      String
-  studentCourse             Course
+  studentCourse             String
   studentCoursePeriod       String
   studentCpf                String
   studentGender             Gender
@@ -126,7 +126,7 @@ model JobVacancy {
   transportationGrant  Float?
   benefits             String?
   contactInfo          String          @default("")
-  eligibleCourses      Course[]
+  eligibleCourses      String[]
   minPeriod            Int?
   modality             VacancyModality @default(PRESENCIAL)
   responsibilities String          @default("")
@@ -135,6 +135,14 @@ model JobVacancy {
   rejectionReason  String?
   closureReason    String?
   company          Company         @relation(fields: [companyId], references: [id])
+}
+
+model AvailableCourse {
+  code      String   @id
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Notification {
@@ -166,20 +174,6 @@ enum Role {
 enum Gender {
   MALE
   FEMALE
-}
-
-enum Course {
-  BSI
-  LIC_QUIMICA
-  ENG_MECANICA
-  TEC_ADM_INTEGRADO
-  TEC_ELETRO_INTEGRADO
-  TEC_INFO_INTEGRADO
-  TEC_QUIMICA_INTEGRADO
-  TEC_AUTOMACAO_SUBSEQUENTE
-  TEC_ELETRO_CONCOMITANTE
-  TEC_MECANICA_CONCOMITANTE
-  TEC_QUIMICA_CONCOMITANTE
 }
 
 enum InternshipModality {

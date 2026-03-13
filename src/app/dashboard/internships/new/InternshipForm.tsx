@@ -3,24 +3,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useNotification } from '@/contexts/NotificationContext';
-import { Course, Gender, InternshipModality, InternshipType, Internship } from '@prisma/client';
+import { Gender, InternshipModality, InternshipType, Internship } from '@prisma/client';
 
 type PrefilledData = { name: string; email: string; matricula: string; } | null;
 type FormErrors = { [key: string]: string; };
 type FormData = { [key: string]: string | number };
-
-const courseLabels: { [key in Course]: string } = {
-  [Course.BSI]: 'Bacharelado em Sistemas de Informação',
-  [Course.LIC_QUIMICA]: 'Licenciatura em Química',
-  [Course.ENG_MECANICA]: 'Bacharelado em Engenharia Mecânica',
-  [Course.TEC_ADM_INTEGRADO]: 'Técnico em Administração Integrado',
-  [Course.TEC_ELETRO_INTEGRADO]: 'Técnico em Eletrotécnica Integrado',
-  [Course.TEC_INFO_INTEGRADO]: 'Técnico em Informática Integrado',
-  [Course.TEC_QUIMICA_INTEGRADO]: 'Técnico em Química Integrado',
-  [Course.TEC_AUTOMACAO_SUBSEQUENTE]: 'Técnico em Automação Industrial Subsequente',
-  [Course.TEC_ELETRO_CONCOMITANTE]: 'Técnico em Eletrotécnica Concomitante',
-  [Course.TEC_MECANICA_CONCOMITANTE]: 'Técnico em Mecânica Concomitante',
-  [Course.TEC_QUIMICA_CONCOMITANTE]: 'Técnico em Química Concomitante',
+type CourseOption = {
+  code: string;
+  name: string;
 };
 
 export default function InternshipForm({ 
@@ -41,6 +31,7 @@ export default function InternshipForm({
   const [insuranceFile, setInsuranceFile] = useState<File | null>(null);
   const tceInputRef = useRef<HTMLInputElement>(null);
   const insuranceInputRef = useRef<HTMLInputElement>(null);
+  const [courses, setCourses] = useState<CourseOption[]>([]);
   
   const [formData, setFormData] = useState<FormData>({
     studentGender: '',
@@ -86,6 +77,22 @@ export default function InternshipForm({
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await fetch('/api/courses');
+        const data = await response.json();
+        if (response.ok && Array.isArray(data)) {
+          setCourses(data);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar cursos:', error);
+      }
+    };
+
+    fetchCourses();
+  }, []);
 
   // --- Funções de Máscara ---
   const maskCPF = (value: string) => value.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').slice(0, 14);
@@ -563,8 +570,8 @@ export default function InternshipForm({
             <label htmlFor="studentCourse" className="block text-sm font-medium text-gray-700">Curso</label>
             <select name="studentCourse" id="studentCourse" value={formData.studentCourse as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('studentCourse')}>
               <option value="">Selecione o seu curso</option>
-              {Object.entries(courseLabels).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
+              {courses.map((course) => (
+                <option key={course.code} value={course.code}>{course.name}</option>
               ))}
             </select>
             {errors.studentCourse && <p className="mt-1 text-xs text-red-600">{errors.studentCourse}</p>}

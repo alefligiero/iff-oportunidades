@@ -1,7 +1,7 @@
 'use client';
 
-import { Course, VacancyType, VacancyModality } from '@prisma/client';
-import { useState } from 'react';
+import { VacancyType, VacancyModality } from '@prisma/client';
+import { useEffect, useState } from 'react';
 
 interface VacancyFiltersProps {
   onFilter: (filters: FilterState) => void;
@@ -10,32 +10,40 @@ interface VacancyFiltersProps {
 
 export interface FilterState {
   search: string;
-  course: Course | '';
+  course: string;
   type: VacancyType | '';
   modality: VacancyModality | '';
 }
 
-const courseOptions: { value: Course; label: string }[] = [
-  { value: 'BSI', label: 'Bacharelado em Sistemas de Informação' },
-  { value: 'LIC_QUIMICA', label: 'Licenciatura em Química' },
-  { value: 'ENG_MECANICA', label: 'Engenharia Mecânica' },
-  { value: 'TEC_ADM_INTEGRADO', label: 'Técnico em Administração Integrado' },
-  { value: 'TEC_ELETRO_INTEGRADO', label: 'Técnico em Eletrônica Integrado' },
-  { value: 'TEC_INFO_INTEGRADO', label: 'Técnico em Informática Integrado' },
-  { value: 'TEC_QUIMICA_INTEGRADO', label: 'Técnico em Química Integrado' },
-  { value: 'TEC_AUTOMACAO_SUBSEQUENTE', label: 'Técnico em Automação Subsequente' },
-  { value: 'TEC_ELETRO_CONCOMITANTE', label: 'Técnico em Eletrônica Concomitante' },
-  { value: 'TEC_MECANICA_CONCOMITANTE', label: 'Técnico em Mecânica Concomitante' },
-  { value: 'TEC_QUIMICA_CONCOMITANTE', label: 'Técnico em Química Concomitante' },
-];
+type CourseOption = {
+  code: string;
+  name: string;
+};
 
 export default function VacancyFilters({ onFilter, onClear }: VacancyFiltersProps) {
+  const [courseOptions, setCourseOptions] = useState<CourseOption[]>([]);
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     course: '',
     type: '',
     modality: '',
   });
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await fetch('/api/courses');
+        const data = await response.json();
+        if (response.ok && Array.isArray(data)) {
+          setCourseOptions(data);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar cursos:', error);
+      }
+    };
+
+    fetchCourses();
+  }, []);
 
   const handleFilterChange = (key: keyof FilterState, value: any) => {
     const newFilters = { ...filters, [key]: value };
@@ -78,8 +86,8 @@ export default function VacancyFilters({ onFilter, onClear }: VacancyFiltersProp
           >
             <option value="">Todos</option>
             {courseOptions.map((course) => (
-              <option key={course.value} value={course.value}>
-                {course.label}
+              <option key={course.code} value={course.code}>
+                {course.name}
               </option>
             ))}
           </select>

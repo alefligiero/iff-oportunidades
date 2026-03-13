@@ -116,6 +116,7 @@ export async function PATCH(
       updateData.earlyTerminationHandledAt = new Date();
       updateData.earlyTerminationRequested = false;
       updateData.earlyTerminationApproved = true;
+      updateData.earlyTerminationRejectionReason = null;
     }
 
     const updatedInternship = await prisma.internship.update({

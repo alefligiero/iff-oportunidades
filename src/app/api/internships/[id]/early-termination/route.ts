@@ -55,6 +55,7 @@ export async function POST(
         earlyTerminationReason: reason,
         earlyTerminationApproved: null,
         earlyTerminationHandledAt: null,
+        earlyTerminationRejectionReason: null,
       },
     });
 
