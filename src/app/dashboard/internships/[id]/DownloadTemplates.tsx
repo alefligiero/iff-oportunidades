@@ -30,8 +30,8 @@ export default function DownloadTemplates({ showTRE = true, showRFE = true }: Do
                 </p>
               </div>
               <a
-                href="/templates/tre-template.pdf"
-                download="TRE-Modelo.pdf"
+                href="/templates/tre-template.docx"
+                download="TRE-Modelo.docx"
                 className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors whitespace-nowrap"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

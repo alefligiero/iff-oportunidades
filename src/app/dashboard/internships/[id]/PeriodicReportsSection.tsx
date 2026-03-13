@@ -135,7 +135,9 @@ export default function PeriodicReportsSection({
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `modelo-relatorio-periodico-${periodNumber}.pdf`;
+      const contentDisposition = response.headers.get("Content-Disposition");
+      const match = contentDisposition?.match(/filename="?([^";]+)"?/i);
+      a.download = match?.[1] ?? `modelo-relatorio-periodico-${periodNumber}.docx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

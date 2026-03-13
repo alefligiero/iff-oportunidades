@@ -43,3 +43,5 @@ next-env.d.ts
 /src/generated/prisma
 # PDF templates (not committed, user provides locally)
 /public/templates/*.pdf
+# WORD templates (not committed, user provides locally)
+/public/templates/*.docx

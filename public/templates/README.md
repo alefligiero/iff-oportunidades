@@ -4,9 +4,9 @@ Esta pasta contém os modelos de documentos que os alunos podem baixar para pree
 
 ## Arquivos Necessários
 
-Para que o sistema funcione corretamente, você precisa adicionar os seguintes arquivos PDF nesta pasta:
+Para que o sistema funcione corretamente, você precisa adicionar os seguintes arquivos de template nesta pasta:
 
-### 1. `tre-template.pdf`
+### 1. `tre-template.docx`
 **Termo de Realização de Estágio (TRE)**
 - Documento que deve ser preenchido e assinado pelo representante da Empresa Concedente
 - Utilizado ao final do estágio para comprovar sua realização
@@ -19,14 +19,27 @@ Para que o sistema funcione corretamente, você precisa adicionar os seguintes a
 - Deve incluir informações sobre formatação, conteúdo esperado e assinaturas necessárias
 - Este template será disponibilizado para download quando o estágio estiver com status `FINISHED`
 
+### 3. `modelo-relatorio-periodico.docx`
+**Modelo de Relatório Periódico de Estágio**
+- Documento utilizado pelo aluno para elaboração dos relatórios periódicos
+- O sistema prioriza este arquivo em formato DOCX para download
+- Disponível conforme a janela de liberação de cada período (30 dias antes do vencimento)
+
+### 4. `modelo-relatorio-periodico.pdf` (opcional)
+**Fallback de compatibilidade**
+- Se o arquivo DOCX não existir, o sistema tenta servir esta versão em PDF
+- Recomendado manter enquanto houver usuários/processos legados
+
 ## Como Adicionar os Templates
 
 1. Coloque os arquivos PDF nesta pasta (`/public/templates/`)
 2. Certifique-se de usar exatamente os nomes especificados acima:
-   - `tre-template.pdf`
+   - `tre-template.docx`
    - `rfe-orientacoes.pdf`
+   - `modelo-relatorio-periodico.docx`
+   - `modelo-relatorio-periodico.pdf` (opcional)
 3. Os arquivos estarão automaticamente disponíveis em:
-   - `/templates/tre-template.pdf`
+   - `/templates/tre-template.docx`
    - `/templates/rfe-orientacoes.pdf`
 
 ## Fluxo de Uso

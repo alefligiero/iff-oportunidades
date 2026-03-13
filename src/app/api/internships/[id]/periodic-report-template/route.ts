@@ -4,7 +4,7 @@ import { createSuccessResponse, createErrorResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/prisma';
 import { generatePeriodicReportsSchedule } from '@/lib/periodic-reports';
 import { addDays, isBefore, startOfDay } from 'date-fns';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 
 /**
@@ -100,11 +100,31 @@ export async function GET(
       );
     }
 
-    // Ler arquivo do modelo (deve estar em public/templates/)
-    const templatePath = join(
+    // Prioriza DOCX e mantém fallback para PDF para compatibilidade.
+    const docxTemplatePath = join(
+      process.cwd(),
+      'public/templates/modelo-relatorio-periodico.docx'
+    );
+    const pdfTemplatePath = join(
       process.cwd(),
       'public/templates/modelo-relatorio-periodico.pdf'
     );
+
+    let templatePath: string;
+    let contentType: string;
+    let extension: '.docx' | '.pdf';
+
+    if (existsSync(docxTemplatePath)) {
+      templatePath = docxTemplatePath;
+      contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      extension = '.docx';
+    } else if (existsSync(pdfTemplatePath)) {
+      templatePath = pdfTemplatePath;
+      contentType = 'application/pdf';
+      extension = '.pdf';
+    } else {
+      return createErrorResponse('Modelo não encontrado no servidor', 500);
+    }
 
     let fileBuffer: Buffer;
     try {
@@ -117,8 +137,8 @@ export async function GET(
     // Retornar arquivo
     return new Response(Buffer.from(fileBuffer) as any, {
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="modelo-relatorio-periodico-${periodNumber}.pdf"`,
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="modelo-relatorio-periodico-${periodNumber}${extension}"`,
         'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
     });
