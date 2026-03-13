@@ -145,7 +145,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
 
   const finishedSubstatus =
     internship?.status === InternshipStatus.FINISHED
-      ? getFinishedSubstatus(internship.documents)
+      ? getFinishedSubstatus(internship.documents, internship.earlyTerminationApproved)
       : null;
 
   if (error) {
@@ -235,6 +235,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
           status={internship.status}
           documents={initialDocuments}
           insuranceRequired={internship.insuranceRequired}
+          earlyTerminationApproved={internship.earlyTerminationApproved}
         />
 
         {internship.insuranceRequired && <InsuranceDataForm
@@ -255,6 +256,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
           internshipId={internship.id}
           internshipType={internship.type}
           status={internship.status}
+          earlyTerminationApproved={internship.earlyTerminationApproved}
           initialDocuments={initialDocuments}
         />
 

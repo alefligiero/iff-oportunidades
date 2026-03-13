@@ -12,6 +12,7 @@ interface Internship {
   studentCourse: string;
   modality: string;
   earlyTerminationRequested: boolean;
+  earlyTerminationApproved: boolean | null;
   insuranceRequired: boolean;
   startDate: string;
   endDate: string;

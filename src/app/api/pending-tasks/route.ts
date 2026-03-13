@@ -20,6 +20,7 @@ const adminDocumentLabels: Record<DocumentType, string> = {
   PERIODIC_REPORT: 'do Relatorio Periodico',
   TRE: 'do TRE',
   RFE: 'do RFE',
+  TERMINATION_TERM: 'do Termo de Cancelamento',
   SIGNED_CONTRACT: 'do TCE + PAE assinados',
   LIFE_INSURANCE: 'do comprovante do Seguro de Vida',
 };
@@ -287,6 +288,36 @@ export async function GET(request: NextRequest) {
             description: `Envie o relatorio final do estagio na empresa ${internship.companyName}.`,
             href: `/dashboard/internships/${internship.id}#documents-section`,
           });
+        }
+
+        if (internship.earlyTerminationApproved === true) {
+          const terminationTermLatest = getLatestDocumentByType(
+            documents,
+            DocumentType.TERMINATION_TERM
+          );
+          const terminationTermApproved = documents.some(
+            (doc) =>
+              doc.type === DocumentType.TERMINATION_TERM &&
+              APPROVED_DOCUMENT_STATUSES.includes(doc.status)
+          );
+          const terminationTermPending = documents.some(
+            (doc) =>
+              doc.type === DocumentType.TERMINATION_TERM &&
+              doc.status === DocumentStatus.PENDING_ANALYSIS
+          );
+
+          if (!terminationTermApproved && !terminationTermPending) {
+            const terminationTermRejected =
+              terminationTermLatest?.status === DocumentStatus.REJECTED;
+            tasks.push({
+              id: `${internship.id}-termination-term`,
+              title: terminationTermRejected
+                ? 'Reenviar Termo de Cancelamento'
+                : 'Enviar Termo de Cancelamento',
+              description: `Envie o termo de cancelamento do estagio na empresa ${internship.companyName}.`,
+              href: `/dashboard/internships/${internship.id}#documents-section`,
+            });
+          }
         }
       }
 

@@ -11,6 +11,7 @@ interface AdminDocumentAlertsProps {
   status: string; // InternshipStatus
   documents: DocumentItem[];
   insuranceRequired: boolean;
+  earlyTerminationApproved: boolean | null;
 }
 
 const documentTypeLabels: Record<string, string> = {
@@ -19,11 +20,17 @@ const documentTypeLabels: Record<string, string> = {
   PERIODIC_REPORT: 'Relatório Periódico',
   TRE: 'TRE',
   RFE: 'Relatório Final (RFE)',
+  TERMINATION_TERM: 'Termo de Cancelamento',
   SIGNED_CONTRACT: 'TCE/PAE assinados',
   LIFE_INSURANCE: 'Seguro de Vida',
 };
 
-export default function AdminDocumentAlerts({ status, documents, insuranceRequired }: AdminDocumentAlertsProps) {
+export default function AdminDocumentAlerts({
+  status,
+  documents,
+  insuranceRequired,
+  earlyTerminationApproved,
+}: AdminDocumentAlertsProps) {
   const pendingDocuments = documents.filter(
     (doc) => doc.status === 'PENDING_ANALYSIS' && Boolean(doc.fileUrl)
   );
@@ -38,8 +45,20 @@ export default function AdminDocumentAlerts({ status, documents, insuranceRequir
   const signedContractPending = documents.some(
     (doc) => doc.type === 'SIGNED_CONTRACT' && doc.status === 'PENDING_ANALYSIS' && Boolean(doc.fileUrl)
   );
+  const terminationTermExists = documents.some(
+    (doc) => doc.type === 'TERMINATION_TERM' && Boolean(doc.fileUrl)
+  );
+  const showMissingTerminationTermAlert =
+    status === 'FINISHED' &&
+    earlyTerminationApproved === true &&
+    !terminationTermExists;
 
-  if (pendingDocuments.length === 0 && (!insuranceRequired || hasLifeInsurance) && (status !== 'APPROVED' || signedContractExists)) {
+  if (
+    pendingDocuments.length === 0 &&
+    (!insuranceRequired || hasLifeInsurance) &&
+    (status !== 'APPROVED' || signedContractExists) &&
+    !showMissingTerminationTermAlert
+  ) {
     return null;
   }
 
@@ -77,6 +96,15 @@ export default function AdminDocumentAlerts({ status, documents, insuranceRequir
           <p className="text-sm text-indigo-800 font-medium">🔎 Assinaturas pendentes de validação</p>
           <p className="text-sm text-indigo-700 mt-1">
             Há documentos assinados aguardando sua análise.
+          </p>
+        </div>
+      )}
+
+      {showMissingTerminationTermAlert && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+          <p className="text-sm text-purple-800 font-medium">📄 Termo de Cancelamento pendente</p>
+          <p className="text-sm text-purple-700 mt-1">
+            O estágio teve encerramento antecipado aprovado e ainda falta o envio do Termo de Cancelamento.
           </p>
         </div>
       )}

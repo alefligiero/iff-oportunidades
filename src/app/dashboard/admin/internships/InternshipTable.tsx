@@ -41,7 +41,8 @@ const getStatusLabel = (
   status: InternshipStatus,
   documents: DocumentSummary[],
   startDate: string,
-  insuranceRequired: boolean
+  insuranceRequired: boolean,
+  earlyTerminationApproved: boolean | null
 ) => {
   const baseStatus = statusBadgeMap[status].text;
   
@@ -56,7 +57,7 @@ const getStatusLabel = (
   }
   
   if (status === InternshipStatus.FINISHED) {
-    const substatus = getFinishedSubstatus(documents);
+    const substatus = getFinishedSubstatus(documents, earlyTerminationApproved);
     return `${baseStatus} - ${substatus}`;
   }
   
@@ -75,6 +76,7 @@ interface Internship {
   startDate: string;
   endDate: string;
   earlyTerminationRequested: boolean;
+  earlyTerminationApproved: boolean | null;
   insuranceRequired: boolean;
   documents: DocumentSummary[];
 }
@@ -162,7 +164,8 @@ export default function InternshipTable({ internships, loading = false }: Intern
                         internship.status,
                         internship.documents,
                         internship.startDate,
-                        internship.insuranceRequired
+                        internship.insuranceRequired,
+                        internship.earlyTerminationApproved
                       )}
                     </span>
                     {internship.earlyTerminationRequested && (

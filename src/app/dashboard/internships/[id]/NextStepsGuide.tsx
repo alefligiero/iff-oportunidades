@@ -11,9 +11,15 @@ interface NextStepsGuideProps {
   status: string; // InternshipStatus
   documents: Document[];
   insuranceRequired: boolean;
+  earlyTerminationApproved: boolean | null;
 }
 
-export default function NextStepsGuide({ status, documents, insuranceRequired }: NextStepsGuideProps) {
+export default function NextStepsGuide({
+  status,
+  documents,
+  insuranceRequired,
+  earlyTerminationApproved,
+}: NextStepsGuideProps) {
   const getNextSteps = () => {
     // Estágio em andamento
     if (status === 'IN_PROGRESS') {
@@ -43,9 +49,20 @@ export default function NextStepsGuide({ status, documents, insuranceRequired }:
       const rfePending = documents.some(
         (doc) => doc.type === 'RFE' && doc.status === 'PENDING_ANALYSIS'
       );
+      const requiresTerminationTerm = earlyTerminationApproved === true;
+      const terminationTermApproved = documents.some(
+        (doc) => doc.type === 'TERMINATION_TERM' && doc.status === 'APPROVED'
+      );
+      const terminationTermPending = documents.some(
+        (doc) => doc.type === 'TERMINATION_TERM' && doc.status === 'PENDING_ANALYSIS'
+      );
 
       // Todos os documentos finais aprovados
-      if (treApproved && rfeApproved) {
+      if (
+        treApproved &&
+        rfeApproved &&
+        (!requiresTerminationTerm || terminationTermApproved)
+      ) {
         return {
           title: '🎉 Estágio Concluído com Sucesso!',
           steps: [
@@ -59,10 +76,13 @@ export default function NextStepsGuide({ status, documents, insuranceRequired }:
       }
 
       // Documentos pendentes de análise
-      if (trePending || rfePending) {
+      if (trePending || rfePending || (requiresTerminationTerm && terminationTermPending)) {
         const pendingDocs = [];
         if (trePending) pendingDocs.push('TRE (Termo de Realização de Estágio)');
         if (rfePending) pendingDocs.push('RFE (Relatório Final de Estágio)');
+        if (requiresTerminationTerm && terminationTermPending) {
+          pendingDocs.push('Termo de Cancelamento de Estágio');
+        }
 
         return {
           title: '⏳ Aguardando Aprovação dos Documentos Finais',
@@ -80,16 +100,28 @@ export default function NextStepsGuide({ status, documents, insuranceRequired }:
       const missingDocs = [];
       if (!treApproved && !trePending) missingDocs.push('TRE');
       if (!rfeApproved && !rfePending) missingDocs.push('RFE');
+      if (requiresTerminationTerm && !terminationTermApproved && !terminationTermPending) {
+        missingDocs.push('Termo de Cancelamento de Estágio');
+      }
+
+      const templateLine = requiresTerminationTerm
+        ? '1️⃣ Baixe os templates de TRE, RFE e Termo de Cancelamento na seção "Documentos Finais" abaixo'
+        : '1️⃣ Baixe os templates de TRE e RFE na seção "Documentos Finais" abaixo';
+
+      const terminationLine = requiresTerminationTerm
+        ? '4️⃣ Termo de Cancelamento: Preencha, colete as assinaturas e envie junto com os demais documentos'
+        : null;
 
       return {
         title: '📋 Enviar Documentos Finais',
         steps: [
           'Seu estágio foi finalizado! Agora você precisa enviar os documentos finais:',
-          '1️⃣ Baixe os templates de TRE e RFE na seção "Documentos Finais" abaixo',
+          templateLine,
           '2️⃣ TRE: Preencha e solicite assinatura do representante da Empresa',
           '3️⃣ RFE: Produza o relatório com seu Supervisor e Professor-Orientador',
-          '4️⃣ Faça o upload dos documentos preenchidos e assinados',
-          '5️⃣ Aguarde a aprovação da Agência de Oportunidades',
+          ...(terminationLine ? [terminationLine] : []),
+          `${terminationLine ? '5️⃣' : '4️⃣'} Faça o upload dos documentos preenchidos e assinados`,
+          `${terminationLine ? '6️⃣' : '5️⃣'} Aguarde a aprovação da Agência de Oportunidades`,
         ],
         color: 'bg-blue-50 border-blue-200',
         textColor: 'text-blue-900',

@@ -18,6 +18,7 @@ interface Internship {
   startDate: string;
   endDate: string;
   earlyTerminationRequested: boolean;
+  earlyTerminationApproved: boolean | null;
   insuranceRequired: boolean;
   documents: {
     type: string;

@@ -20,6 +20,7 @@ interface DocumentsSectionProps {
   internshipId: string;
   internshipType: InternshipType;
   status: InternshipStatus;
+  earlyTerminationApproved: boolean | null;
   initialDocuments: DocumentItem[];
 }
 
@@ -35,7 +36,13 @@ const normalizeDocuments = (docs: Array<DocumentItem | (Partial<DocumentItem> & 
   }));
 };
 
-export default function DocumentsSection({ internshipId, internshipType, status, initialDocuments }: DocumentsSectionProps) {
+export default function DocumentsSection({
+  internshipId,
+  internshipType,
+  status,
+  earlyTerminationApproved,
+  initialDocuments,
+}: DocumentsSectionProps) {
   const [documents, setDocuments] = useState<DocumentItem[]>(normalizeDocuments(initialDocuments));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +89,25 @@ export default function DocumentsSection({ internshipId, internshipType, status,
   const canUploadRfe =
     status !== InternshipStatus.CANCELED &&
     status === InternshipStatus.FINISHED && !rfeApproved && !rfePending;
+
+  // Termo de Cancelamento (obrigatório apenas para encerramento antecipado aprovado)
+  const terminationTermDocs = useMemo(
+    () => documents.filter((doc) => doc.type === DocumentType.TERMINATION_TERM),
+    [documents]
+  );
+  const terminationTermApproved = terminationTermDocs.some(
+    (doc) => doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED
+  );
+  const terminationTermPending = terminationTermDocs.some(
+    (doc) => doc.status === DocumentStatus.PENDING_ANALYSIS
+  );
+  const requiresTerminationTerm = earlyTerminationApproved === true;
+  const canUploadTerminationTerm =
+    requiresTerminationTerm &&
+    status !== InternshipStatus.CANCELED &&
+    status === InternshipStatus.FINISHED &&
+    !terminationTermApproved &&
+    !terminationTermPending;
 
   // LIFE_INSURANCE (Comprovante de Seguro de Vida)
   const lifeInsuranceDocs = useMemo(
@@ -234,7 +260,7 @@ export default function DocumentsSection({ internshipId, internshipType, status,
           </div>
 
           {/* Templates para Download */}
-          <DownloadTemplates showTRE={true} showRFE={true} />
+          <DownloadTemplates showTRE={true} showRFE={true} showTerminationTerm={requiresTerminationTerm} />
 
           {/* Seção TRE */}
           <div className="border-t pt-4">
@@ -291,6 +317,35 @@ export default function DocumentsSection({ internshipId, internshipType, status,
               showAlerts={false}
             />
           </div>
+
+          {requiresTerminationTerm && (
+            <div className="border-t pt-4">
+              <div className="mb-3">
+                <h4 className="text-sm font-semibold text-gray-900">Enviar Termo de Cancelamento de Estágio</h4>
+                <p className="text-xs text-gray-600">
+                  Como seu encerramento antecipado foi aprovado, este termo é obrigatório para concluir o processo.
+                </p>
+              </div>
+
+              {canUploadTerminationTerm && (
+                <DocumentUpload
+                  internshipId={internshipId}
+                  documentType={DocumentType.TERMINATION_TERM}
+                  onUploadSuccess={refreshDocuments}
+                  disabled={false}
+                />
+              )}
+
+              <DocumentList
+                internshipId={internshipId}
+                documents={terminationTermDocs}
+                onRefresh={refreshDocuments}
+                showUploadButton={true}
+                title="Termos de Cancelamento enviados"
+                showAlerts={false}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

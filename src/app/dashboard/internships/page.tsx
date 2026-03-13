@@ -19,7 +19,8 @@ const getStatusLabel = (
   status: InternshipStatus,
   documents: DocumentSummary[] = [],
   startDate?: string | Date,
-  insuranceRequired: boolean = true
+  insuranceRequired: boolean = true,
+  earlyTerminationApproved: boolean | null = false
 ) => {
   const baseStatus = statusMap[status]?.text ?? 'Desconhecido';
   
@@ -35,7 +36,7 @@ const getStatusLabel = (
   }
   
   if (status === InternshipStatus.FINISHED) {
-    const substatus = getFinishedSubstatus(documents);
+    const substatus = getFinishedSubstatus(documents, earlyTerminationApproved);
     return `${baseStatus} - ${substatus}`;
   }
   
@@ -77,7 +78,9 @@ async function getStudentInternships() {
       orderBy: { createdAt: 'desc' },
     });
 
-    const hasActiveInternship = internships.some((i) => isInternshipBlocking(i.status, i.documents));
+    const hasActiveInternship = internships.some((i) =>
+      isInternshipBlocking(i.status, i.documents, i.earlyTerminationApproved)
+    );
 
     return { data: internships, hasActiveInternship, error: null };
 
@@ -133,7 +136,8 @@ export default async function MyInternshipsPage() {
                         internship.status,
                         internship.documents,
                         internship.startDate,
-                        (internship as { insuranceRequired?: boolean }).insuranceRequired ?? true
+                        (internship as { insuranceRequired?: boolean }).insuranceRequired ?? true,
+                        internship.earlyTerminationApproved
                       )}
                     </span>
                     <Link

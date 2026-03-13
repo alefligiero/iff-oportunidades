@@ -73,56 +73,75 @@ export function getInProgressSubstatus(documents: DocumentSummary[]): string | n
 }
 
 /**
- * Calcula o substatus de um estágio com status FINISHED
+ * Calcula o substatus de um estágio com status FINISHED.
+ * Para encerramento antecipado aprovado, o Termo de Cancelamento também é obrigatório.
  */
-export function getFinishedSubstatus(documents: DocumentSummary[]): string {
-  // Verificar status do TRE
-  const tre = documents.find((doc) => doc.type === DocumentType.TRE);
-  const hasTreApproved = tre?.status === DocumentStatus.APPROVED;
-  const hasTrePending = tre?.status === DocumentStatus.PENDING_ANALYSIS;
-  
-  // Verificar status do RFE
-  const rfe = documents.find((doc) => doc.type === DocumentType.RFE);
-  const hasRfeApproved = rfe?.status === DocumentStatus.APPROVED;
-  const hasRfePending = rfe?.status === DocumentStatus.PENDING_ANALYSIS;
+export function getFinishedSubstatus(
+  documents: DocumentSummary[],
+  earlyTerminationApproved: boolean | null = false
+): string {
+  const requiredDocuments: Array<{ type: DocumentType; label: string }> = [
+    { type: DocumentType.TRE, label: 'TRE' },
+    { type: DocumentType.RFE, label: 'RFE' },
+  ];
 
-  // Se ambos aprovados
-  if (hasTreApproved && hasRfeApproved) {
+  if (earlyTerminationApproved === true) {
+    requiredDocuments.push({
+      type: DocumentType.TERMINATION_TERM,
+      label: 'Termo de Cancelamento',
+    });
+  }
+
+  const approvedLabels = requiredDocuments
+    .filter(({ type }) =>
+      documents.some((doc) => doc.type === type && doc.status === DocumentStatus.APPROVED)
+    )
+    .map(({ label }) => label);
+
+  const pendingLabels = requiredDocuments
+    .filter(({ type }) =>
+      documents.some((doc) => doc.type === type && doc.status === DocumentStatus.PENDING_ANALYSIS)
+    )
+    .map(({ label }) => label);
+
+  const missingLabels = requiredDocuments
+    .filter(({ label }) => !approvedLabels.includes(label) && !pendingLabels.includes(label))
+    .map(({ label }) => label);
+
+  if (approvedLabels.length === requiredDocuments.length) {
     return 'Concluído';
   }
 
-  // Se ambos em análise
-  if (hasTrePending && hasRfePending) {
+  if (pendingLabels.length === requiredDocuments.length) {
     return 'Documentos finais em análise';
   }
 
-  // Se apenas um em análise
-  if (hasTrePending && !hasRfePending) {
-    return 'TRE em análise';
-  }
-  if (hasRfePending && !hasTrePending) {
-    return 'RFE em análise';
+  if (pendingLabels.length > 0 && missingLabels.length === 0) {
+    if (pendingLabels.length === 1) {
+      return `${pendingLabels[0]} em análise`;
+    }
+
+    return 'Documentos finais em análise';
   }
 
-  // Se ambos não enviados
-  if (!tre && !rfe) {
+  if (missingLabels.length === requiredDocuments.length) {
     return 'Aguardando documentos finais';
   }
 
-  // Se apenas um não enviado
-  if (!tre || (tre && tre.status === DocumentStatus.REJECTED)) {
-    return 'Aguardando TRE';
-  }
-  if (!rfe || (rfe && rfe.status === DocumentStatus.REJECTED)) {
-    return 'Aguardando RFE';
+  if (missingLabels.length === 1) {
+    return `Aguardando ${missingLabels[0]}`;
   }
 
-  // Caso um aprovado e outro pendente
-  if (hasTreApproved && !hasRfeApproved) {
-    return hasRfePending ? 'RFE em análise' : 'Aguardando RFE';
+  if (missingLabels.length > 1) {
+    return 'Aguardando documentos finais';
   }
-  if (hasRfeApproved && !hasTreApproved) {
-    return hasTrePending ? 'TRE em análise' : 'Aguardando TRE';
+
+  if (pendingLabels.length === 1) {
+    return `${pendingLabels[0]} em análise`;
+  }
+
+  if (pendingLabels.length > 1) {
+    return 'Documentos finais em análise';
   }
 
   return 'Aguardando documentos finais';
@@ -135,13 +154,14 @@ export function getFinishedSubstatus(documents: DocumentSummary[]): string {
  */
 export function isInternshipBlocking(
   status: string,
-  documents: DocumentSummary[]
+  documents: DocumentSummary[],
+  earlyTerminationApproved: boolean | null = false
 ): boolean {
   if (['IN_ANALYSIS', 'APPROVED', 'IN_PROGRESS'].includes(status)) {
     return true;
   }
   if (status === 'FINISHED') {
-    return getFinishedSubstatus(documents) !== 'Concluído';
+    return getFinishedSubstatus(documents, earlyTerminationApproved) !== 'Concluído';
   }
   return false;
 }
@@ -153,7 +173,8 @@ export function getStatusWithSubstatus(
   status: string,
   documents: DocumentSummary[],
   startDate?: string | Date,
-  insuranceRequired: boolean = true
+  insuranceRequired: boolean = true,
+  earlyTerminationApproved: boolean | null = false
 ): string {
   switch (status) {
     case 'APPROVED':
@@ -168,7 +189,7 @@ export function getStatusWithSubstatus(
       return inProgressSubstatus ? `Em Andamento - ${inProgressSubstatus}` : 'Em Andamento';
 
     case 'FINISHED':
-      const finishedSubstatus = getFinishedSubstatus(documents);
+      const finishedSubstatus = getFinishedSubstatus(documents, earlyTerminationApproved);
       return `Finalizado - ${finishedSubstatus}`;
 
     default:

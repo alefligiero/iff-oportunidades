@@ -127,7 +127,7 @@ export default async function InternshipDetailPage({ params }: { params: Promise
 
   const finishedSubstatus =
     internship?.status === InternshipStatus.FINISHED
-      ? getFinishedSubstatus(internship.documents)
+      ? getFinishedSubstatus(internship.documents, internship.earlyTerminationApproved)
       : null;
 
   if (!internship) {
@@ -167,7 +167,12 @@ export default async function InternshipDetailPage({ params }: { params: Promise
           earlyTerminationRequested={internship.earlyTerminationRequested}
         />
         <AdminActionGuide status={internship.status} />
-        <AdminDocumentAlerts status={internship.status} documents={initialDocuments} insuranceRequired={internship.insuranceRequired} />
+        <AdminDocumentAlerts
+          status={internship.status}
+          documents={initialDocuments}
+          insuranceRequired={internship.insuranceRequired}
+          earlyTerminationApproved={internship.earlyTerminationApproved}
+        />
 
         {/* Admin-finished message */}
         {internship.status === InternshipStatus.FINISHED &&

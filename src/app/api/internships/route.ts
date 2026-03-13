@@ -38,7 +38,7 @@ async function createInternship(request: NextRequest) {
   });
 
   const blockingInternship = allInternships.find((i) =>
-    isInternshipBlocking(i.status, i.documents)
+    isInternshipBlocking(i.status, i.documents, i.earlyTerminationApproved)
   );
 
   if (blockingInternship) {

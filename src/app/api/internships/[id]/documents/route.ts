@@ -87,6 +87,7 @@ export async function POST(
       PERIODIC_REPORT: 'Relatorio Periodico',
       TRE: 'TRE',
       RFE: 'RFE',
+      TERMINATION_TERM: 'Termo de Cancelamento',
       SIGNED_CONTRACT: 'TCE + PAE assinados',
       LIFE_INSURANCE: 'comprovante do Seguro de Vida',
     };

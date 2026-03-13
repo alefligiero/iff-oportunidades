@@ -19,6 +19,7 @@ const documentTypeLabels: Record<DocumentType, string> = {
   PERIODIC_REPORT: 'Relatorio Periodico',
   TRE: 'TRE',
   RFE: 'RFE',
+  TERMINATION_TERM: 'Termo de Cancelamento',
   SIGNED_CONTRACT: 'TCE + PAE assinados',
   LIFE_INSURANCE: 'Seguro de Vida',
 };
