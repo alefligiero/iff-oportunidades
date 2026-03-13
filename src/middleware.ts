@@ -4,9 +4,13 @@ import { jwtVerify } from 'jose';
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value;
+  const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
+  const isAuthRoute = request.nextUrl.pathname.startsWith('/api/auth/');
+  const isCronRoute = request.nextUrl.pathname.startsWith('/api/cron/');
 
-  // Para rotas da API (exceto auth), verificar token
-  if (request.nextUrl.pathname.startsWith('/api/') && !request.nextUrl.pathname.startsWith('/api/auth/')) {
+  // Para rotas da API (exceto auth e cron), verificar token
+  // Rotas de cron possuem validação própria via CRON_SECRET.
+  if (isApiRoute && !isAuthRoute && !isCronRoute) {
     if (!token) {
       return new NextResponse(JSON.stringify({ error: 'Autenticação necessária.' }), { 
         status: 401, 

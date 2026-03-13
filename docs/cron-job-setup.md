@@ -3,19 +3,28 @@
 ## O que são?
 
 Cron jobs automatizados que gerenciam o ciclo de vida dos estágios:
-1. **Início automático**: Inicia estágios aprovados quando a data de início chega
+1. **Início/cancelamento automático**: Inicia estágios aptos e cancela estágios com pendências quando a data de início chega
 2. **Finalização automática**: Finaliza estágios em andamento quando a data de fim chega ou quando encerramento precoce é aprovado
 
 ## Como funcionam?
 
 ### 1. Rota API: `/api/cron/start-internships`
 
-Esta rota **inicia estágios**:
-- Busca todos os estágios com status `APPROVED` cuja `startDate <= hoje`
-- Para cada um, verifica se os documentos necessários estão aprovados:
-  - `SIGNED_CONTRACT` (TCE + PAE assinados)
-  - `LIFE_INSURANCE` (Comprovante de Seguro)
-- Se ambos estiverem aprovados, atualiza o status para `IN_PROGRESS`
+Esta rota **inicia ou cancela estágios automaticamente**:
+- Busca todos os estágios com status `APPROVED` ou `IN_ANALYSIS` cuja `startDate <= hoje`
+- Para cada estágio:
+  - Se estiver `APPROVED` e com documentos obrigatórios aprovados, atualiza para `IN_PROGRESS`
+  - Caso contrário, atualiza para `CANCELED` e salva motivo detalhado em `rejectionReason`
+
+Regras de documentos obrigatórios:
+- `SIGNED_CONTRACT` é sempre obrigatório
+- `LIFE_INSURANCE` é obrigatório apenas quando `insuranceRequired = true`
+
+Condições que geram cancelamento automático:
+- Estágio ainda em `IN_ANALYSIS` na data de início
+- Documento obrigatório ausente
+- Documento obrigatório em `PENDING_ANALYSIS`
+- Documento obrigatório em `REJECTED`
 
 ### 2. Rota API: `/api/cron/finish-internships`
 
@@ -102,8 +111,16 @@ curl -H "Authorization: Bearer SEU_SECRET" http://localhost:3000/api/cron/finish
 {
   "success": true,
   "data": {
-    "message": "X estágio(s) iniciado(s) automaticamente",
+    "message": "X estágio(s) iniciado(s) automaticamente e Y cancelado(s) por pendências",
     "internships": ["id1", "id2"],
+    "canceledInternships": [
+      {
+        "id": "id3",
+        "reason": "Cancelado automaticamente na data de início por pendências: ..."
+      }
+    ],
+    "startedCount": 2,
+    "canceledCount": 1,
     "checkedCount": 10
   }
 }
@@ -122,7 +139,10 @@ curl -H "Authorization: Bearer SEU_SECRET" http://localhost:3000/api/cron/finish
 ```
 
 Onde:
-- `internships`: IDs dos estágios que foram processados
+- `internships`: IDs dos estágios iniciados
+- `canceledInternships`: IDs dos estágios cancelados e seus motivos
+- `startedCount`: Total de estágios iniciados
+- `canceledCount`: Total de estágios cancelados
 - `checkedCount`: Total de estágios verificados
 
 ## Fluxo de Documentos Finais
