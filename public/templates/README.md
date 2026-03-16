@@ -36,6 +36,98 @@ Para que o sistema funcione corretamente, você precisa adicionar os seguintes a
 - Deve ser preenchido e assinado pelas partes responsáveis
 - O aluno envia este documento junto com TRE e RFE para concluir o processo
 
+### 6. `TCE PAE.docx`
+**Modelo oficial de TCE/PAE para estágios aprovados**
+- Documento fonte usado para manter a redação oficial do termo
+- Utilizado como fonte única para gerar o DOCX preenchido e o PDF oficial
+- Os placeholders devem permanecer em formato `<campo>` para compatibilidade com a geração backend
+
+## Placeholders esperados no `TCE PAE.docx`
+
+Para preenchimento automático fiel ao DOCX oficial, o modelo deve usar placeholders como texto simples no formato `<campo>`.
+
+Campos suportados atualmente:
+
+- `<empresa>`
+- `<cnpj>`
+- `<endereco empresa>`
+- `<num empresa>`
+- `<bairro empresa>`
+- `<cidade/estado empresa>`
+- `<cep empresa>`
+- `<representante>`
+- `<cargo/funcao>`
+- `<nome do aluno>`
+- `<endereco aluno>`
+- `<num end aluno>`
+- `<bairro aluno>`
+- `<cidade/estado aluno>`
+- `<cep aluno>`
+- `<tel aluno>`
+- `<email do aluno>`
+- `<curso>`
+- `<matricula aluno>`
+- `<serie/período>`
+- `<semestre letivo>`
+- `<inicio>`
+- `<final>`
+- `<tipo estagio>`
+- `<ch semanal>`
+- `<jornada diaria>`
+- `<valor bolsa>`
+- `<valor aux transp>`
+- `<seguradora>`
+- `<cnpj seguradora>`
+- `<apolice>`
+- `<vig seguro>`
+- `<orientador>`
+- `<matricula orientador>`
+- `<supervisor>`
+- `<cargo supervisor>`
+- `<setor estagio>`
+- `<plano de atividades>`
+- `<data emissao>`
+- `<is_remote>` (flag booleana para condicional de modalidade remota)
+
+Regras de preenchimento relevantes:
+
+- `<cnpj>` e `<cnpj seguradora>`:
+   - São enviados já formatados no padrão brasileiro (ex.: `12.345.678/0001-90`)
+- `<valor aux transp>`:
+   - Estágio presencial: valor monetário formatado (ex.: `120,00`)
+   - Estágio remoto: texto fixo `( Estágio 100% Remoto )`
+   - Não deixe `R$` fixo no DOCX antes de `<valor aux transp>`, pois em estágio remoto o campo recebe texto não monetário
+- `<data emissao>`:
+   - Usa a data de aprovação do estágio pelo Admin
+   - Fallback para data atual apenas quando não houver data de aprovação registrada
+
+## Bloco condicional para estágio remoto
+
+Para exibir um trecho apenas quando o estágio for remoto, envolva o bloco com as tags de seção do template:
+
+- `<#is_remote>`
+- `</is_remote>`
+
+Exemplo para o trecho de validação remota:
+
+```text
+<#is_remote>
+Validação Estágio Remoto*
+Declaro que as atividades descritas neste documento são compatíveis com o estágio remoto.
+_____________________________________________
+Coordenador do Curso
+*Assinatura necessária apenas nos casos de estágio remoto
+</is_remote>
+```
+
+Importante:
+
+- Mantenha `<#is_remote>` e `</is_remote>` em linhas próprias (parágrafos separados) no Word/LibreOffice.
+- Não coloque outros placeholders dentro do nome da tag de seção.
+- Se o estágio não for remoto, o bloco inteiro será removido automaticamente.
+
+Substitua os valores literais fixos do modelo, como `0` em matrículas, número da empresa e valor da bolsa, pelos placeholders acima para que o documento final seja preenchido integralmente.
+
 ## Como Adicionar os Templates
 
 1. Coloque os arquivos de template nesta pasta (`/public/templates/`)
@@ -45,6 +137,7 @@ Para que o sistema funcione corretamente, você precisa adicionar os seguintes a
    - `modelo-relatorio-periodico.docx`
    - `modelo-relatorio-periodico.pdf` (opcional)
    - `termination-term-template.docx`
+   - `TCE PAE.docx`
 3. Os arquivos estarão automaticamente disponíveis em:
    - `/templates/tre-template.docx`
    - `/templates/rfe-orientacoes.pdf`
@@ -79,4 +172,4 @@ Quando você adicionar os templates, remova ou atualize este aviso.
 
 ---
 
-**Última atualização**: 13 de março de 2026
+**Última atualização**: 16 de março de 2026

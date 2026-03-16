@@ -103,12 +103,18 @@ export async function PATCH(
     if (status === InternshipStatus.REJECTED) {
       updateData.rejectionReason = trimmedReason;
       updateData.rejectedAt = new Date();
+      updateData.approvedAt = null;
     } else if (status === InternshipStatus.CANCELED) {
       updateData.rejectionReason = trimmedReason;
       updateData.rejectedAt = null;
+      updateData.approvedAt = null;
     } else {
       updateData.rejectionReason = null;
       updateData.rejectedAt = null;
+
+      if (status === InternshipStatus.APPROVED) {
+        updateData.approvedAt = new Date();
+      }
     }
 
     if (status === InternshipStatus.FINISHED) {

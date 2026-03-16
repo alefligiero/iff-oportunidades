@@ -82,6 +82,9 @@ async function createInternship(request: NextRequest) {
   }
 
   const validatedData = validation.data;
+  const normalizedTransportationGrant = validatedData.modality === 'REMOTO'
+    ? 0
+    : validatedData.transportationGrant;
 
   const isValidCourse = await isActiveCourseCode(validatedData.studentCourse);
   if (!isValidCourse) {
@@ -132,6 +135,7 @@ async function createInternship(request: NextRequest) {
       const internship = await tx.internship.create({
         data: {
           ...validatedData,
+          transportationGrant: normalizedTransportationGrant,
           type: InternshipType.INTEGRATOR,
           studentId: studentProfile.id,
           hasDetailedInfo: true,
@@ -197,6 +201,7 @@ async function createInternship(request: NextRequest) {
       const internship = await tx.internship.create({
         data: {
           ...validatedData,
+          transportationGrant: normalizedTransportationGrant,
           type: InternshipType.DIRECT,
           studentId: studentProfile.id,
           hasDetailedInfo: true,

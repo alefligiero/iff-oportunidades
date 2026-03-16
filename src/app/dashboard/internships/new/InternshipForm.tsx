@@ -169,7 +169,17 @@ export default function InternshipForm({
     else if (name === 'studentPhone' || name === 'companyPhone') finalValue = maskPhone(value);
     else if (name === 'companyCnpj' || name === 'insuranceCompanyCnpj') finalValue = maskCNPJ(value);
     else if (name === 'monthlyGrant' || name === 'transportationGrant') finalValue = maskCurrency(value);
-    
+
+    if (name === 'modality' && value === InternshipModality.REMOTO) {
+      setFormData(prev => ({
+        ...prev,
+        [name]: finalValue,
+        transportationGrant: 'R$ 0,00',
+      }));
+      setErrors(prev => ({ ...prev, transportationGrant: '' }));
+      return;
+    }
+
     setFormData(prev => ({ ...prev, [name]: finalValue }));
   };
 
@@ -182,6 +192,10 @@ export default function InternshipForm({
       'insuranceStartDate',
       'insuranceEndDate'
     ];
+
+    if (name === 'transportationGrant' && formData.modality === InternshipModality.REMOTO) {
+      return '';
+    }
     
     if (optionalFields.includes(name)) {
       return '';
@@ -297,7 +311,12 @@ export default function InternshipForm({
       formDataToSend.append('type', internshipType);
 
       // Montar payload completo (igual para ambos os tipos — a API usa o mesmo schema)
-      const unmaskCurrency = (value: string) => parseFloat(value.replace('R$ ', '').replace(/\./g, '').replace(',', '.'));
+      const unmaskCurrency = (value: string) => {
+        const normalized = value.replace('R$ ', '').replace(/\./g, '').replace(',', '.').trim();
+        if (!normalized) return 0;
+        const parsed = parseFloat(normalized);
+        return Number.isNaN(parsed) ? 0 : parsed;
+      };
       const unmaskNumbers = (value: string) => value.replace(/\D/g, '');
 
       const apiData = {
@@ -310,7 +329,9 @@ export default function InternshipForm({
         companyPhone: unmaskNumbers(formData.companyPhone as string),
         insuranceCompanyCnpj: unmaskNumbers(formData.insuranceCompanyCnpj as string),
         monthlyGrant: unmaskCurrency(formData.monthlyGrant as string),
-        transportationGrant: unmaskCurrency(formData.transportationGrant as string),
+        transportationGrant: formData.modality === InternshipModality.REMOTO
+          ? 0
+          : unmaskCurrency(formData.transportationGrant as string),
         weeklyHours: parseInt(formData.weeklyHours as string, 10),
       };
 
@@ -707,11 +728,17 @@ export default function InternshipForm({
             <input type="text" name="monthlyGrant" id="monthlyGrant" value={formData.monthlyGrant as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('monthlyGrant')} placeholder="R$ 0,00" />
             {errors.monthlyGrant && <p className="mt-1 text-xs text-red-600">{errors.monthlyGrant}</p>}
           </div>
-          <div>
-            <label htmlFor="transportationGrant" className="block text-sm font-medium text-gray-700">Auxílio Transporte Mensal</label>
-            <input type="text" name="transportationGrant" id="transportationGrant" value={formData.transportationGrant as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('transportationGrant')} placeholder="R$ 0,00" />
-            {errors.transportationGrant && <p className="mt-1 text-xs text-red-600">{errors.transportationGrant}</p>}
-          </div>
+          {formData.modality !== InternshipModality.REMOTO ? (
+            <div>
+              <label htmlFor="transportationGrant" className="block text-sm font-medium text-gray-700">Auxílio Transporte Mensal</label>
+              <input type="text" name="transportationGrant" id="transportationGrant" value={formData.transportationGrant as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('transportationGrant')} placeholder="R$ 0,00" />
+              {errors.transportationGrant && <p className="mt-1 text-xs text-red-600">{errors.transportationGrant}</p>}
+            </div>
+          ) : (
+            <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+              Estágio remoto: o auxílio transporte não é obrigatório e será registrado como R$ 0,00.
+            </div>
+          )}
         </div>
 
         <div className="pt-4">

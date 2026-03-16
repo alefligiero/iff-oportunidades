@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { jwtVerify } from 'jose';
-import { PrismaClient, Role, Gender, InternshipStatus } from '@prisma/client';
+import { PrismaClient, Role, Gender, InternshipStatus, InternshipType } from '@prisma/client';
 import { getApprovedSubstatus, getInProgressSubstatus, getFinishedSubstatus, type DocumentSummary } from '@/lib/internship-substatus';
 import ActionButtons from './ActionButtons';
 import DocumentsModeration from './DocumentsModeration';
@@ -135,6 +135,14 @@ export default async function InternshipDetailPage({ params }: { params: Promise
           <span className={`px-4 py-2 text-sm font-medium rounded-full ${statusMap[internship.status]?.color}`}>
             {statusMap[internship.status]?.text}
           </span>
+          {internship.status === InternshipStatus.APPROVED && internship.type !== InternshipType.INTEGRATOR && (
+            <Link
+              href={`/dashboard/internships/${internship.id}/document`}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
+            >
+              Baixar TCE/PAE oficial (PDF)
+            </Link>
+          )}
           {approvedSubstatus && (
             <span className="text-xs text-gray-600">Aprovado - {approvedSubstatus}</span>
           )}

@@ -87,6 +87,7 @@ model Internship {
   weeklyHours               Int
   insuranceEndDate          DateTime?
   insuranceStartDate        DateTime?
+  approvedAt                DateTime?
   rejectionReason           String?
   rejectedAt                DateTime?
   earlyTerminationApproved  Boolean?

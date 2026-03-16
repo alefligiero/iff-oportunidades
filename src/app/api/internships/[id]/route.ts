@@ -34,7 +34,10 @@ const updateInternshipSchema = z.object({
   weeklyHours: z.coerce.number().min(10).max(30, 'A carga horária semanal deve ser entre 10 e 30 horas.'),
   dailyHours: z.string().min(1, 'A jornada diária é obrigatória.'),
   monthlyGrant: z.coerce.number().min(0, 'O valor da bolsa não pode ser negativo.'),
-  transportationGrant: z.coerce.number().min(0, 'O valor do auxílio não pode ser negativo.'),
+  transportationGrant: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : val),
+    z.coerce.number().min(0, 'O valor do auxílio não pode ser negativo.').optional()
+  ),
   advisorProfessorName: z.string().min(1, 'O nome do professor orientador é obrigatório.'),
   advisorProfessorId: z.string().min(1, 'A matrícula do professor é obrigatória.'),
   supervisorName: z.string().min(1, 'O nome do supervisor é obrigatório.'),
@@ -52,6 +55,14 @@ const updateInternshipSchema = z.object({
     (val) => (val === '' || val === null || val === undefined ? null : val),
     z.coerce.date().nullable().optional()
   ),
+}).superRefine((data, ctx) => {
+  if (data.modality === InternshipModality.PRESENCIAL && data.transportationGrant === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'O auxílio transporte é obrigatório para estágios presenciais.',
+      path: ['transportationGrant'],
+    });
+  }
 });
 
 export async function GET(
@@ -156,6 +167,9 @@ export async function PUT(
     }
 
     const updatedData = validation.data;
+    const normalizedTransportationGrant = updatedData.modality === InternshipModality.REMOTO
+      ? 0
+      : updatedData.transportationGrant;
 
     const isValidCourse = await isActiveCourseCode(updatedData.studentCourse);
     if (!isValidCourse) {
@@ -233,6 +247,7 @@ export async function PUT(
       // Limpar dados de seguro se todos estiverem vazios
       const cleanedData = {
         ...updatedData,
+        transportationGrant: normalizedTransportationGrant,
         insuranceCompany: insuranceCompany || null,
         insurancePolicyNumber: insurancePolicyNumber || null,
         insuranceCompanyCnpj: insuranceCompanyCnpj || null,

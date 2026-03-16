@@ -95,7 +95,7 @@ export const changePasswordSchema = z.object({
 
 // ===== SCHEMAS DE ESTÁGIO =====
 
-const internshipBaseSchema = z.object({
+const internshipBaseSchemaFields = {
   studentGender: z.nativeEnum(Gender, { message: 'Gênero inválido' }),
   studentAddressStreet: z.string().min(1, 'O endereço é obrigatório.'),
   studentAddressNumber: z.string().min(1, 'O número é obrigatório.'),
@@ -124,7 +124,10 @@ const internshipBaseSchema = z.object({
   weeklyHours: z.coerce.number().min(10).max(30, 'A carga horária semanal deve ser entre 10 e 30 horas.'),
   dailyHours: z.string().min(1, 'A jornada diária é obrigatória.'),
   monthlyGrant: z.coerce.number().min(0, 'O valor da bolsa não pode ser negativo.'),
-  transportationGrant: z.coerce.number().min(0, 'O valor do auxílio não pode ser negativo.'),
+  transportationGrant: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : val),
+    z.coerce.number().min(0, 'O valor do auxílio não pode ser negativo.').optional()
+  ),
   advisorProfessorName: z.string().min(1, 'O nome do professor orientador é obrigatório.'),
   advisorProfessorId: z.string().min(1, 'A matrícula do professor é obrigatória.'),
   supervisorName: z.string().min(1, 'O nome do supervisor é obrigatório.'),
@@ -142,9 +145,24 @@ const internshipBaseSchema = z.object({
     (val) => (val === '' || val === null || val === undefined ? null : val),
     z.coerce.date().nullable().optional()
   ),
-});
+};
 
-export const createInternshipSchema = internshipBaseSchema.superRefine(validateInternshipDates);
+const addTransportationGrantValidation = (data: any, ctx: any) => {
+  if (data.modality === InternshipModality.PRESENCIAL && data.transportationGrant === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'O auxílio transporte é obrigatório para estágios presenciais.',
+      path: ['transportationGrant'],
+    });
+  }
+};
+
+const internshipBaseSchema = z.object(internshipBaseSchemaFields);
+
+export const createInternshipSchema = internshipBaseSchema.superRefine((data, ctx) => {
+  validateInternshipDates(data, ctx);
+  addTransportationGrantValidation(data, ctx);
+});
 
 export const updateInternshipStatusSchema = z.object({
   status: z.nativeEnum(InternshipStatus, { message: 'Status inválido' }),
@@ -168,7 +186,10 @@ export const decideEarlyTerminationSchema = z.object({
   }
 });
 
-export const updateInternshipSchema = internshipBaseSchema.partial().superRefine(validateInternshipDates);
+export const updateInternshipSchema = z.object(internshipBaseSchemaFields).partial().superRefine((data, ctx) => {
+  validateInternshipDates(data, ctx);
+  addTransportationGrantValidation(data, ctx);
+});
 
 export const updateSystemConfigSchema = z.object({
   requireLifeInsuranceForNewInternships: z.boolean({
