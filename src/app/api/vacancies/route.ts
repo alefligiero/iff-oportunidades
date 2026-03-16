@@ -1,9 +1,8 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { createSuccessResponse } from '@/lib/validations/utils';
 import { withErrorHandling, withLogging, withAuth } from '@/lib/validations/middleware';
 import { prisma } from '@/lib/prisma';
 
-async function getVacancies(request: NextRequest) {
+async function getVacancies() {
   const approvedVacancies = await prisma.jobVacancy.findMany({
     where: {
       status: 'APPROVED',

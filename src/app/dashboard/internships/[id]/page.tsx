@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { PrismaClient, InternshipStatus, InternshipType, InternshipModality, Gender, DocumentType } from '@prisma/client';
 import { redirect } from 'next/navigation';
-import { getApprovedSubstatus, getInProgressSubstatus, getFinishedSubstatus, type DocumentSummary } from '@/lib/internship-substatus';
+import { getApprovedSubstatus, getInProgressSubstatus, getFinishedSubstatus } from '@/lib/internship-substatus';
 import RequestEarlyTermination from './RequestEarlyTermination';
 import DocumentsSection from './DocumentsSection';
 import NextStepsGuide from './NextStepsGuide';
@@ -94,7 +94,7 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
-const isDefaultValue = (value: any): boolean => {
+const isDefaultValue = (value: string | number): boolean => {
   return value === '-' || value === 0 || value === '00000000000' || value === '00000000000000' || value === '00000000';
 };
 

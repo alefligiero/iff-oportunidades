@@ -42,7 +42,6 @@ interface VacancyTableProps {
   loading?: boolean;
 }
 
-const formatDate = (date: string) => new Date(date).toLocaleDateString('pt-BR');
 const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
 export default function VacancyTable({ vacancies, loading = false }: VacancyTableProps) {

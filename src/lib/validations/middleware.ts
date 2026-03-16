@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { validateRequest } from './utils';
 
+type RouteHandler = (request: NextRequest, ...args: unknown[]) => Promise<Response | undefined> | Response | undefined;
+
 // ===== MIDDLEWARE DE VALIDAÇÃO =====
 
 /**
  * Middleware para validar autenticação
  */
-export function withAuth(handler: Function) {
-  return async (request: NextRequest, ...args: any[]) => {
+export function withAuth(handler: RouteHandler): RouteHandler {
+  return async (request: NextRequest, ...args: unknown[]) => {
     const userId = request.headers.get('x-user-id');
     const userRole = request.headers.get('x-user-role');
 
@@ -27,8 +29,8 @@ export function withAuth(handler: Function) {
  * Middleware para validar role específico
  */
 export function withRole(allowedRoles: string[]) {
-  return function(handler: Function) {
-    return async (request: NextRequest, ...args: any[]) => {
+  return function(handler: RouteHandler): RouteHandler {
+    return async (request: NextRequest, ...args: unknown[]) => {
       const userRole = request.headers.get('x-user-role');
 
       if (!userRole || !allowedRoles.includes(userRole)) {
@@ -47,8 +49,8 @@ export function withRole(allowedRoles: string[]) {
  * Middleware para validar corpo da requisição
  */
 export function withBodyValidation<T>(schema: z.ZodSchema<T>) {
-  return function(handler: Function) {
-    return async (request: NextRequest, ...args: any[]) => {
+  return function(handler: RouteHandler): RouteHandler {
+    return async (request: NextRequest, ...args: unknown[]) => {
       const validation = await validateRequest(request, {
         bodySchema: schema,
         requiredHeaders: ['x-user-id', 'x-user-role']
@@ -67,8 +69,8 @@ export function withBodyValidation<T>(schema: z.ZodSchema<T>) {
  * Middleware para validar parâmetros da URL
  */
 export function withParamValidation<T>(schema: z.ZodSchema<T>) {
-  return function(handler: Function) {
-    return async (request: NextRequest, ...args: any[]) => {
+  return function(handler: RouteHandler): RouteHandler {
+    return async (request: NextRequest, ...args: unknown[]) => {
       const validation = await validateRequest(request, {
         paramSchema: schema,
         requiredHeaders: ['x-user-id', 'x-user-role']
@@ -87,8 +89,8 @@ export function withParamValidation<T>(schema: z.ZodSchema<T>) {
  * Middleware para validar query parameters
  */
 export function withQueryValidation<T>(schema: z.ZodSchema<T>) {
-  return function(handler: Function) {
-    return async (request: NextRequest, ...args: any[]) => {
+  return function(handler: RouteHandler): RouteHandler {
+    return async (request: NextRequest, ...args: unknown[]) => {
       const validation = await validateRequest(request, {
         querySchema: schema,
         requiredHeaders: ['x-user-id', 'x-user-role']
@@ -112,8 +114,8 @@ export function withValidation<TBody, TParams, TQuery>(options: {
   querySchema?: z.ZodSchema<TQuery>;
   allowedRoles?: string[];
 }) {
-  return function(handler: Function) {
-    return async (request: NextRequest, ...args: any[]) => {
+  return function(handler: RouteHandler): RouteHandler {
+    return async (request: NextRequest, ...args: unknown[]) => {
       const validation = await validateRequest(request, {
         bodySchema: options.bodySchema,
         paramSchema: options.paramSchema,
@@ -144,8 +146,8 @@ export function withValidation<TBody, TParams, TQuery>(options: {
 /**
  * Middleware para tratamento de erros
  */
-export function withErrorHandling(handler: Function) {
-  return async (request: NextRequest, ...args: any[]) => {
+export function withErrorHandling(handler: RouteHandler): RouteHandler {
+  return async (request: NextRequest, ...args: unknown[]) => {
     try {
       return await handler(request, ...args);
     } catch (error) {
@@ -169,8 +171,8 @@ export function withErrorHandling(handler: Function) {
 /**
  * Middleware para logging de requisições
  */
-export function withLogging(handler: Function) {
-  return async (request: NextRequest, ...args: any[]) => {
+export function withLogging(handler: RouteHandler): RouteHandler {
+  return async (request: NextRequest, ...args: unknown[]) => {
     const start = Date.now();
     const method = request.method;
     const url = request.url;
@@ -193,8 +195,8 @@ export function withLogging(handler: Function) {
 export function withRateLimit(maxRequests: number = 100, windowMs: number = 15 * 60 * 1000) {
   const requests = new Map<string, { count: number; resetTime: number }>();
 
-  return function(handler: Function) {
-    return async (request: NextRequest, ...args: any[]) => {
+  return function(handler: RouteHandler): RouteHandler {
+    return async (request: NextRequest, ...args: unknown[]) => {
       const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
       const now = Date.now();
       const windowStart = now - windowMs;

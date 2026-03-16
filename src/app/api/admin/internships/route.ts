@@ -1,9 +1,8 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { createSuccessResponse, createErrorResponse } from '@/lib/validations/utils';
+import { createSuccessResponse } from '@/lib/validations/utils';
 import { withErrorHandling, withLogging, withRole } from '@/lib/validations/middleware';
 import { prisma } from '@/lib/prisma';
 
-async function getPendingInternships(request: NextRequest) {
+async function getPendingInternships() {
   const pendingInternships = await prisma.internship.findMany({
     where: {
       status: 'IN_ANALYSIS',

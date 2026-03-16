@@ -1,9 +1,8 @@
 import { NextRequest } from 'next/server';
 import { getUserFromToken } from '@/lib/get-user-from-token';
-import { createSuccessResponse, createErrorResponse } from '@/lib/api-response';
+import { createErrorResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/prisma';
 import { generatePeriodicReportsSchedule } from '@/lib/periodic-reports';
-import { addDays, isBefore, startOfDay } from 'date-fns';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -135,7 +134,7 @@ export async function GET(
     }
 
     // Retornar arquivo
-    return new Response(Buffer.from(fileBuffer) as any, {
+    return new Response(fileBuffer, {
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `attachment; filename="modelo-relatorio-periodico-${periodNumber}${extension}"`,

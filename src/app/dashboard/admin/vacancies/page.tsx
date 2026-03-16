@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { AuthGuard } from '@/components/AuthGuard';
 import VacanciesPageContent from './VacanciesPageContent';
 
@@ -19,7 +18,7 @@ interface Vacancy {
   company: {
     name: string;
   };
-  eligibleCourses: any[];
+  eligibleCourses: string[];
 }
 
 function VacanciesPageLoader() {

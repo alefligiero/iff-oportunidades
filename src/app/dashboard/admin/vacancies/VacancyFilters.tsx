@@ -45,7 +45,7 @@ export default function VacancyFilters({ onFilter, onClear }: VacancyFiltersProp
     fetchCourses();
   }, []);
 
-  const handleFilterChange = (key: keyof FilterState, value: any) => {
+  const handleFilterChange = (key: keyof FilterState, value: FilterState[keyof FilterState]) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
     onFilter(newFilters);

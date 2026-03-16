@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { Role, InternshipType, NotificationType } from '@prisma/client';
+import { type NextRequest } from 'next/server';
+import { Role, InternshipType, NotificationType, Prisma } from '@prisma/client';
 import { createInternshipSchema } from '@/lib/validations/schemas';
 import { isInternshipBlocking } from '@/lib/internship-substatus';
 import { validateRequestBody, createErrorResponse, createSuccessResponse } from '@/lib/validations/utils';
@@ -67,7 +67,7 @@ async function createInternship(request: NextRequest) {
   let internshipData: Record<string, unknown>;
   try {
     internshipData = JSON.parse(dataString);
-  } catch (error) {
+  } catch {
     return createErrorResponse('Dados do formulário inválidos. Por favor, tente novamente.', 400);
   }
   
@@ -132,15 +132,17 @@ async function createInternship(request: NextRequest) {
 
     // Criar internship com dados completos
     const newInternship = await prisma.$transaction(async (tx) => {
+      const internshipCreateData: Prisma.InternshipUncheckedCreateInput = {
+        ...validatedData,
+        transportationGrant: normalizedTransportationGrant,
+        type: InternshipType.INTEGRATOR,
+        studentId: studentProfile.id,
+        hasDetailedInfo: true,
+        insuranceRequired,
+      };
+
       const internship = await tx.internship.create({
-        data: {
-          ...validatedData,
-          transportationGrant: normalizedTransportationGrant,
-          type: InternshipType.INTEGRATOR,
-          studentId: studentProfile.id,
-          hasDetailedInfo: true,
-          insuranceRequired,
-        } as any,
+        data: internshipCreateData,
       });
 
       // Upload TCE
@@ -198,15 +200,17 @@ async function createInternship(request: NextRequest) {
   } else {
     // Estágio Direto - dados já foram validados acima
     const newInternship = await prisma.$transaction(async (tx) => {
+      const internshipCreateData: Prisma.InternshipUncheckedCreateInput = {
+        ...validatedData,
+        transportationGrant: normalizedTransportationGrant,
+        type: InternshipType.DIRECT,
+        studentId: studentProfile.id,
+        hasDetailedInfo: true,
+        insuranceRequired,
+      };
+
       const internship = await tx.internship.create({
-        data: {
-          ...validatedData,
-          transportationGrant: normalizedTransportationGrant,
-          type: InternshipType.DIRECT,
-          studentId: studentProfile.id,
-          hasDetailedInfo: true,
-          insuranceRequired,
-        } as any,
+        data: internshipCreateData,
       });
 
       // Criar documento de seguro somente se houver arquivo enviado

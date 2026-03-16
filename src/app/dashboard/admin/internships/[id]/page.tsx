@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { jwtVerify } from 'jose';
 import { PrismaClient, Role, Gender, InternshipStatus, InternshipType } from '@prisma/client';
-import { getApprovedSubstatus, getInProgressSubstatus, getFinishedSubstatus, type DocumentSummary } from '@/lib/internship-substatus';
+import { getApprovedSubstatus, getInProgressSubstatus, getFinishedSubstatus } from '@/lib/internship-substatus';
 import ActionButtons from './ActionButtons';
 import DocumentsModeration from './DocumentsModeration';
 import PeriodicReportsModeration from './PeriodicReportsModeration';
@@ -217,17 +217,13 @@ export default async function InternshipDetailPage({ params }: { params: Promise
         <DocumentsModeration
           internshipId={internship.id}
           internshipStatus={internship.status}
-          internshipType={internship.type}
           insuranceRequired={internship.insuranceRequired}
           initialDocuments={initialDocuments}
         />
 
         <PeriodicReportsModeration
           internshipId={internship.id}
-          internshipStatus={internship.status}
           initialDocuments={initialDocuments}
-          internshipStartDate={internship.startDate}
-          internshipEndDate={internship.endDate}
         />
 
         <div className="border-t border-gray-200 pt-6">

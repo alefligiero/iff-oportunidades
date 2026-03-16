@@ -17,7 +17,6 @@ interface DocumentItem {
 interface DocumentsModerationProps {
   internshipId: string;
   internshipStatus: InternshipStatus;
-  internshipType: string;
   insuranceRequired: boolean;
   initialDocuments: DocumentItem[];
 }
@@ -42,7 +41,6 @@ const statusConfig: Record<DocumentStatus, { text: string; color: string }> = {
 export default function DocumentsModeration({
   internshipId,
   internshipStatus,
-  internshipType,
   insuranceRequired,
   initialDocuments,
 }: DocumentsModerationProps) {

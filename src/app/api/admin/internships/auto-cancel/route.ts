@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { InternshipStatus, Role } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
 const DAYS_TO_CANCEL = 7;
 const CANCELED_NOTE = 'Cancelado automaticamente apos 7 dias em recusado sem correcoes.';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   const headersList = headers();
   const userId = (await headersList).get('x-user-id');
   const userRole = (await headersList).get('x-user-role');

@@ -21,9 +21,13 @@ export async function GET(request: NextRequest) {
     try {
       const verified = await jwtVerify(token, secret);
       payload = verified.payload;
-    } catch (jwtError: any) {
+    } catch (jwtError: unknown) {
       // Token expirado ou inválido é uma situação normal, não um erro
-      if (jwtError.code === 'ERR_JWT_EXPIRED') {
+      if (
+        jwtError instanceof Error &&
+        'code' in jwtError &&
+        (jwtError as Error & { code?: string }).code === 'ERR_JWT_EXPIRED'
+      ) {
         return NextResponse.json({ error: 'Token expirado. Por favor, faça login novamente.' }, { status: 401 });
       }
       return NextResponse.json({ error: 'Token inválido.' }, { status: 401 });

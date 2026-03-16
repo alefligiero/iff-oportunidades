@@ -9,11 +9,6 @@ const typeMap: { [key in InternshipType]: string } = {
   INTEGRATOR: 'Agente Integrador',
 };
 
-const modalityMap: { [key in InternshipModality]: string } = {
-  PRESENCIAL: 'Presencial',
-  REMOTO: 'Remoto',
-};
-
 const statusBadgeMap: { [key in InternshipStatus]: { text: string; color: string } } = {
   IN_ANALYSIS: { text: 'Em Análise', color: 'bg-yellow-100 text-yellow-800' },
   APPROVED: { text: 'Aprovado', color: 'bg-blue-100 text-blue-800' },

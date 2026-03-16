@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { NextRequest } from 'next/server';
 import mime from 'mime-types';
 
 // Configurações de upload

@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     }
 
     let name: string | null = null;
-    let additionalData: Record<string, string> = {};
+    const additionalData: Record<string, string> = {};
 
     if (userRole === 'STUDENT') {
       const studentProfile = await prisma.student.findUnique({

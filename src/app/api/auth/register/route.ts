@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
 import { registerSchema } from '@/lib/validations/schemas';
 import { validateRequestBody, createErrorResponse, createSuccessResponse } from '@/lib/validations/utils';

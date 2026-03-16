@@ -45,7 +45,7 @@ export default function InternshipFilters({ onFilter, onClear }: InternshipFilte
     fetchCourses();
   }, []);
 
-  const handleFilterChange = (key: keyof FilterState, value: any) => {
+  const handleFilterChange = (key: keyof FilterState, value: FilterState[keyof FilterState]) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
     onFilter(newFilters);

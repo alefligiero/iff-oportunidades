@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
-import { PrismaClient, Role, VacancyStatus, VacancyType, Prisma } from '@prisma/client';
+import { PrismaClient, Role, VacancyStatus, VacancyType, VacancyModality, Prisma } from '@prisma/client';
 import VacancyFilters from '@/app/dashboard/vacancies/VacancyFilters';
 import CloseVacancyButton from '@/app/dashboard/vacancies/CloseVacancyButton';
 
@@ -74,13 +74,13 @@ async function getVacancies(searchParams: Awaited<VacanciesParams['searchParams'
 
       // Modality filter (PRESENCIAL, HIBRIDO, REMOTO)
       if (searchParams.modality && ['PRESENCIAL', 'HIBRIDO', 'REMOTO'].includes(searchParams.modality)) {
-        where.modality = searchParams.modality as any;
+        where.modality = searchParams.modality as VacancyModality;
       }
 
       // Course filter (check if vacancy has this course in eligibleCourses array)
       if (searchParams.course) {
         where.eligibleCourses = {
-          has: searchParams.course as any,
+          has: searchParams.course,
         };
       }
 
@@ -97,15 +97,16 @@ async function getVacancies(searchParams: Awaited<VacanciesParams['searchParams'
 
       // Workload range filter (hours per week)
       if (searchParams.minWorkload || searchParams.maxWorkload) {
-        where.workload = {} as any;
+        const workloadFilter: Prisma.IntFilter = {};
         if (searchParams.minWorkload) {
           const v = parseInt(searchParams.minWorkload, 10);
-          if (!Number.isNaN(v)) (where.workload as any).gte = v;
+          if (!Number.isNaN(v)) workloadFilter.gte = v;
         }
         if (searchParams.maxWorkload) {
           const v = parseInt(searchParams.maxWorkload, 10);
-          if (!Number.isNaN(v)) (where.workload as any).lte = v;
+          if (!Number.isNaN(v)) workloadFilter.lte = v;
         }
+        where.workload = workloadFilter;
       }
 
       // Sorting

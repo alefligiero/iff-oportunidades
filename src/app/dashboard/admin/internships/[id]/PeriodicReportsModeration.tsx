@@ -1,8 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { DocumentStatus, DocumentType, InternshipStatus } from '@prisma/client';
+import { DocumentStatus, DocumentType } from '@prisma/client';
 
 interface DocumentItem {
   id: string;
@@ -16,10 +15,7 @@ interface DocumentItem {
 
 interface PeriodicReportsModerationProps {
   internshipId: string;
-  internshipStatus: InternshipStatus;
   initialDocuments: DocumentItem[];
-  internshipStartDate: Date;
-  internshipEndDate: Date;
 }
 
 const statusConfig: Record<DocumentStatus, { text: string; color: string }> = {
@@ -40,12 +36,8 @@ interface PeriodicReport {
 
 export default function PeriodicReportsModeration({
   internshipId,
-  internshipStatus,
   initialDocuments,
-  internshipStartDate,
-  internshipEndDate,
 }: PeriodicReportsModerationProps) {
-  const router = useRouter();
   const [documents, setDocuments] = useState<DocumentItem[]>(initialDocuments);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +70,7 @@ export default function PeriodicReportsModeration({
     }, {});
 
     return Object.entries(grouped)
-      .map(([_, reports]) => ({
+      .map(([, reports]) => ({
         reports,
         periodNumber: reports[0]?.periodNumber || 0,
       }))
@@ -255,7 +247,7 @@ export default function PeriodicReportsModeration({
                 </h4>
               </div>
 
-              {group.reports.map((report, idx) => (
+              {group.reports.map((report) => (
                 <div key={report.documentId} className="bg-gray-50 p-3 rounded flex items-center justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">

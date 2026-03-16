@@ -111,12 +111,12 @@ export function validateHeaders(request: NextRequest, requiredHeaders: string[])
  */
 export async function validateRequest<T>(request: NextRequest, options: {
   bodySchema?: z.ZodSchema<T>;
-  paramSchema?: z.ZodSchema<any>;
-  querySchema?: z.ZodSchema<any>;
+  paramSchema?: z.ZodSchema<unknown>;
+  querySchema?: z.ZodSchema<unknown>;
   requiredHeaders?: string[];
 }) {
   const { bodySchema, paramSchema, querySchema, requiredHeaders } = options;
-  const result: any = {};
+  const result: Record<string, unknown> = {};
 
   // Validar headers se especificados
   if (requiredHeaders) {
@@ -169,7 +169,7 @@ export async function validateRequest<T>(request: NextRequest, options: {
 /**
  * Cria uma resposta de erro padronizada
  */
-export function createErrorResponse(message: string, status: number = 400, details?: any) {
+export function createErrorResponse(message: string, status: number = 400, details?: unknown) {
   return NextResponse.json(
     { 
       error: message,
@@ -182,7 +182,7 @@ export function createErrorResponse(message: string, status: number = 400, detai
 /**
  * Cria uma resposta de sucesso padronizada
  */
-export function createSuccessResponse(data: any, status: number = 200) {
+export function createSuccessResponse<T>(data: T, status: number = 200) {
   return NextResponse.json(data, { status });
 }
 

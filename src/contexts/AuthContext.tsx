@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import Cookies from 'js-cookie';
-import { AuthContextType, AuthState, LoginCredentials, User, AuthError } from '@/types/auth';
+import { AuthContextType, AuthState, LoginCredentials, User } from '@/types/auth';
 
 // Estado inicial
 const initialState: AuthState = {

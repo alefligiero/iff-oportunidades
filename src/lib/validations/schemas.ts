@@ -3,7 +3,14 @@ import { Gender, InternshipModality, VacancyType, InternshipStatus, DocumentType
 
 // ===== FUNÇÕES AUXILIARES DE VALIDAÇÃO =====
 
-const validateInternshipDates = (data: any, ctx: any) => {
+type InternshipValidationInput = {
+  startDate?: Date;
+  endDate?: Date;
+  modality?: InternshipModality;
+  transportationGrant?: number;
+};
+
+const validateInternshipDates = (data: InternshipValidationInput, ctx: z.RefinementCtx) => {
   // Skip if dates are not provided
   if (!data.startDate || !data.endDate) return;
 
@@ -147,7 +154,7 @@ const internshipBaseSchemaFields = {
   ),
 };
 
-const addTransportationGrantValidation = (data: any, ctx: any) => {
+const addTransportationGrantValidation = (data: InternshipValidationInput, ctx: z.RefinementCtx) => {
   if (data.modality === InternshipModality.PRESENCIAL && data.transportationGrant === undefined) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

@@ -8,7 +8,7 @@
  * - Fluxo: Download modelo → Enviar para análise → Admin aprova → Enviar assinado → Admin valida
  */
 
-import { DocumentStatus, DocumentType, InternshipType } from '@prisma/client';
+import { DocumentStatus, DocumentType } from '@prisma/client';
 import { addMonths, differenceInMonths, isBefore, isAfter, addDays, startOfDay } from 'date-fns';
 
 export interface PeriodicReportPeriod {

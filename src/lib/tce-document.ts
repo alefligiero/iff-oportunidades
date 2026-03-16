@@ -13,6 +13,56 @@ const execFileAsync = promisify(execFile);
 const TEMPLATE_PATH = join(process.cwd(), 'public/templates/TCE PAE.docx');
 type TemplateValue = string | boolean;
 
+type StudentData = {
+  name?: string | null;
+  matricula?: string | null;
+  user?: {
+    email?: string | null;
+  } | null;
+};
+
+type InternshipTemplateData = {
+  type?: string | null;
+  student?: StudentData | null;
+  advisorProfessorName?: string | null;
+  advisorProfessorId?: string | null;
+  approvedAt?: Date | string | null;
+  insuranceStartDate?: Date | string | null;
+  insuranceEndDate?: Date | string | null;
+  studentCourse?: string | null;
+  modality?: string | null;
+  transportationGrant?: number | null;
+  companyName?: string | null;
+  companyCnpj?: string | null;
+  companyAddressStreet?: string | null;
+  companyAddressDistrict?: string | null;
+  companyAddressCityState?: string | null;
+  companyAddressCep?: string | null;
+  companyRepresentativeName?: string | null;
+  companyRepresentativeRole?: string | null;
+  companyAddressNumber?: string | null;
+  studentAddressStreet?: string | null;
+  studentAddressNumber?: string | null;
+  studentAddressDistrict?: string | null;
+  studentAddressCityState?: string | null;
+  studentAddressCep?: string | null;
+  studentPhone?: string | null;
+  studentCoursePeriod?: string | null;
+  studentSchoolYear?: string | null;
+  startDate?: Date | string | null;
+  endDate?: Date | string | null;
+  weeklyHours?: number | null;
+  dailyHours?: string | null;
+  monthlyGrant?: number | null;
+  insuranceCompany?: string | null;
+  insuranceCompanyCnpj?: string | null;
+  insurancePolicyNumber?: string | null;
+  supervisorName?: string | null;
+  supervisorRole?: string | null;
+  internshipSector?: string | null;
+  technicalActivities?: string | null;
+};
+
 export class PdfConversionUnavailableError extends Error {
   constructor(message = 'Conversão para PDF indisponível no servidor.') {
     super(message);
@@ -46,7 +96,7 @@ function formatCNPJ(value: string | null | undefined) {
   return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
 }
 
-function getInternshipTypeLabel(internship: Record<string, any>) {
+function getInternshipTypeLabel(internship: InternshipTemplateData) {
   if (internship.type === 'INTEGRATOR') {
     return 'Agente Integrador';
   }
@@ -55,7 +105,7 @@ function getInternshipTypeLabel(internship: Record<string, any>) {
 }
 
 export async function buildTceTemplateData(
-  internship: Record<string, any>,
+  internship: InternshipTemplateData,
   courseNameMap: Record<string, string>
 ) {
   const studentName = internship.student?.name ?? '';
@@ -172,8 +222,9 @@ export async function convertDocxBufferToPdf(docxBuffer: Buffer, baseFileName: s
         await tryConvertWithBinary(binary, docxPath, workingDir);
         converted = true;
         break;
-      } catch (error: any) {
-        if (error?.code !== 'ENOENT') {
+      } catch (error: unknown) {
+        const err = error as NodeJS.ErrnoException;
+        if (err?.code !== 'ENOENT') {
           throw error;
         }
       }

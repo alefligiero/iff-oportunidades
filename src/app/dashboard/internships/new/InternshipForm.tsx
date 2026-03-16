@@ -720,7 +720,7 @@ export default function InternshipForm({
           </div>
           <div>
             <label htmlFor="dailyHours" className="block text-sm font-medium text-gray-700">Jornada Diária</label>
-            <input type="text" name="dailyHours" id="dailyHours" value={formData.dailyHours as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('dailyHours')} placeholder="Ex: 08:00 às 12:00" />
+            <input type="text" name="dailyHours" id="dailyHours" value={formData.dailyHours as string} onChange={handleInputChange} onBlur={handleBlur} className={getInputClassName('dailyHours')} placeholder="Ex: 08:00 às 14:00 com 1 hora de almoço" />
             {errors.dailyHours && <p className="mt-1 text-xs text-red-600">{errors.dailyHours}</p>}
           </div>
           <div>

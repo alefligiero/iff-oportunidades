@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PeriodicReportsSchedule } from "@/lib/periodic-reports";
 import { DocumentStatus, InternshipStatus } from "@prisma/client";
 
@@ -84,11 +84,7 @@ export default function PeriodicReportsSection({
   const [submitFile, setSubmitFile] = useState<File | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchSchedule();
-  }, [internshipId]);
-
-  const fetchSchedule = async () => {
+  const fetchSchedule = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -116,7 +112,11 @@ export default function PeriodicReportsSection({
     } finally {
       setLoading(false);
     }
-  };
+  }, [internshipId]);
+
+  useEffect(() => {
+    fetchSchedule();
+  }, [fetchSchedule]);
 
   const downloadTemplate = async (periodNumber: number) => {
     try {
@@ -324,7 +324,7 @@ export default function PeriodicReportsSection({
             Nenhum relatório para exibir nesta visualização.
           </p>
         ) : (
-          filteredPeriods.map((period, index) => {
+          filteredPeriods.map((period) => {
             const colors = statusColors[period.status];
             const isActive = ["available", "pending_submission", "pending_analysis", "rejected", "overdue"].includes(period.status);
             // Verificar se já existe documento pendente ou aprovado

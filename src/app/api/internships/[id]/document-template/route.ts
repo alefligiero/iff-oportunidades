@@ -3,7 +3,6 @@ import { prisma } from '@/lib/prisma';
 import fs from 'fs';
 import path from 'path';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { getCourseNameMap } from '@/lib/courses';
 
 export async function GET(

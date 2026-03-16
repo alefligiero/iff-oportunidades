@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface UserData {
   email: string;
@@ -63,18 +63,7 @@ export default function SettingsPage() {
     confirmPassword: '',
   });
 
-  useEffect(() => {
-    fetchUserData();
-  }, []);
-
-  useEffect(() => {
-    if (user?.role === 'ADMIN') {
-      fetchAdminSettings();
-      fetchAdminCourses();
-    }
-  }, [user?.role]);
-
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     try {
       const response = await fetch('/api/users/me');
       if (response.ok) {
@@ -91,7 +80,18 @@ export default function SettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchUserData();
+  }, [fetchUserData]);
+
+  useEffect(() => {
+    if (user?.role === 'ADMIN') {
+      fetchAdminSettings();
+      fetchAdminCourses();
+    }
+  }, [user?.role]);
 
   const fetchAdminSettings = async () => {
     setLoadingAdminSettings(true);
@@ -319,7 +319,7 @@ export default function SettingsPage() {
       } else {
         setError(data.error || 'Erro ao atualizar dados.');
       }
-    } catch (err) {
+    } catch {
       setError('Erro ao conectar com o servidor.');
     } finally {
       setSaving(false);
@@ -361,7 +361,7 @@ export default function SettingsPage() {
       } else {
         setError(data.error || 'Erro ao alterar senha.');
       }
-    } catch (err) {
+    } catch {
       setError('Erro ao conectar com o servidor.');
     } finally {
       setChangingPassword(false);

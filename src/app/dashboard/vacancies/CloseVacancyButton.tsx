@@ -59,7 +59,7 @@ export default function CloseVacancyButton({ vacancyId, vacancyTitle, status }: 
         addNotification('error', data.error || 'Erro ao fechar a vaga.');
         setIsClosing(false);
       }
-    } catch (error) {
+    } catch {
       addNotification('error', 'Erro ao conectar com o servidor.');
       setIsClosing(false);
     }

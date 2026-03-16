@@ -128,6 +128,7 @@ export default function DocumentList({
   title = 'Documentos Enviados',
   showAlerts = true,
 }: DocumentListProps) {
+  void internshipId;
   const [downloading, setDownloading] = useState<string | null>(null);
   const { addNotification } = useNotification();
 
