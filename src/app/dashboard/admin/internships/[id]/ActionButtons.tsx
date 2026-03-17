@@ -5,6 +5,15 @@ import { useRouter } from 'next/navigation';
 import { InternshipStatus } from '@prisma/client';
 import { useNotification } from '@/contexts/NotificationContext';
 
+const maskCNPJ = (value: string) =>
+  value
+    .replace(/\D/g, '')
+    .replace(/(\d{2})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1/$2')
+    .replace(/(\d{4})(\d)/, '$1-$2')
+    .slice(0, 18);
+
 interface Document {
   type: string;
   status: string;
@@ -18,6 +27,12 @@ interface Props {
   earlyTerminationApproved: boolean | null;
   earlyTerminationReason: string | null;
   documents?: Document[];
+  requireLifeInsuranceForNewInternships: boolean;
+  initialInsuranceCompany?: string | null;
+  initialInsuranceCompanyCnpj?: string | null;
+  initialInsurancePolicyNumber?: string | null;
+  initialInsuranceStartDate?: string | null;
+  initialInsuranceEndDate?: string | null;
 }
 
 export default function ActionButtons({
@@ -27,6 +42,12 @@ export default function ActionButtons({
   earlyTerminationApproved,
   earlyTerminationReason,
   documents = [],
+  requireLifeInsuranceForNewInternships,
+  initialInsuranceCompany = null,
+  initialInsuranceCompanyCnpj = null,
+  initialInsurancePolicyNumber = null,
+  initialInsuranceStartDate = null,
+  initialInsuranceEndDate = null,
 }: Props) {
   const router = useRouter();
   const { addNotification } = useNotification();
@@ -40,6 +61,12 @@ export default function ActionButtons({
   const [terminationModalOpen, setTerminationModalOpen] = useState(false);
   const [terminationReason, setTerminationReason] = useState('');
   const [terminationStatus, setTerminationStatus] = useState<InternshipStatus>(InternshipStatus.CANCELED);
+  const [insuranceModalOpen, setInsuranceModalOpen] = useState(false);
+  const [insuranceCompany, setInsuranceCompany] = useState(initialInsuranceCompany ?? '');
+  const [insuranceCompanyCnpj, setInsuranceCompanyCnpj] = useState(maskCNPJ(initialInsuranceCompanyCnpj ?? ''));
+  const [insurancePolicyNumber, setInsurancePolicyNumber] = useState(initialInsurancePolicyNumber ?? '');
+  const [insuranceStartDate, setInsuranceStartDate] = useState(initialInsuranceStartDate ?? '');
+  const [insuranceEndDate, setInsuranceEndDate] = useState(initialInsuranceEndDate ?? '');
 
   const canModerateFormalization = internshipStatus === InternshipStatus.IN_ANALYSIS;
   
@@ -51,14 +78,37 @@ export default function ActionButtons({
   const canForceClose = ![InternshipStatus.FINISHED, InternshipStatus.CANCELED].includes(internshipStatus);
   const canSelectFinishOrCancel = internshipStatus === InternshipStatus.IN_PROGRESS;
 
-  const handleUpdateStatus = async (status: InternshipStatus, reason?: string) => {
+  const handleUpdateStatus = async (
+    status: InternshipStatus,
+    reason?: string,
+    insuranceData?: {
+      insuranceCompany: string;
+      insuranceCompanyCnpj: string;
+      insurancePolicyNumber: string;
+      insuranceStartDate: string;
+      insuranceEndDate: string;
+    }
+  ) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const body: { status: InternshipStatus; rejectionReason?: string } = { status };
+      const body: {
+        status: InternshipStatus;
+        rejectionReason?: string;
+        insuranceData?: {
+          insuranceCompany: string;
+          insuranceCompanyCnpj: string;
+          insurancePolicyNumber: string;
+          insuranceStartDate: string;
+          insuranceEndDate: string;
+        };
+      } = { status };
       if (reason?.trim()) {
         body.rejectionReason = reason.trim();
+      }
+      if (insuranceData) {
+        body.insuranceData = insuranceData;
       }
 
       const response = await fetch(`/api/admin/internships/${internshipId}/status`, {
@@ -91,7 +141,52 @@ export default function ActionButtons({
     } finally {
       setIsLoading(false);
       setIsModalOpen(false);
+      setInsuranceModalOpen(false);
     }
+  };
+
+  const openInsuranceApprovalModal = () => {
+    setInsuranceCompany(initialInsuranceCompany ?? '');
+    setInsuranceCompanyCnpj(maskCNPJ(initialInsuranceCompanyCnpj ?? ''));
+    setInsurancePolicyNumber(initialInsurancePolicyNumber ?? '');
+    setInsuranceStartDate(initialInsuranceStartDate ?? '');
+    setInsuranceEndDate(initialInsuranceEndDate ?? '');
+    setInsuranceModalOpen(true);
+  };
+
+  const handleApproveClick = () => {
+    if (requireLifeInsuranceForNewInternships) {
+      handleUpdateStatus(InternshipStatus.APPROVED);
+      return;
+    }
+
+    openInsuranceApprovalModal();
+  };
+
+  const confirmApprovalWithInsurance = () => {
+    if (
+      !insuranceCompany.trim() ||
+      !insuranceCompanyCnpj.trim() ||
+      !insurancePolicyNumber.trim() ||
+      !insuranceStartDate ||
+      !insuranceEndDate
+    ) {
+      addNotification('warning', 'Preencha todos os dados do seguro para aprovar a formalização.');
+      return;
+    }
+
+    if (insuranceEndDate < insuranceStartDate) {
+      addNotification('warning', 'A vigência final deve ser igual ou posterior à vigência inicial.');
+      return;
+    }
+
+    handleUpdateStatus(InternshipStatus.APPROVED, undefined, {
+      insuranceCompany: insuranceCompany.trim(),
+      insuranceCompanyCnpj: insuranceCompanyCnpj.trim(),
+      insurancePolicyNumber: insurancePolicyNumber.trim(),
+      insuranceStartDate,
+      insuranceEndDate,
+    });
   };
 
   const handleEarlyTermination = async (action: 'APPROVE' | 'REJECT', reason?: string) => {
@@ -171,7 +266,7 @@ export default function ActionButtons({
           ) : (
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => handleUpdateStatus(InternshipStatus.APPROVED)}
+                onClick={handleApproveClick}
                 disabled={isLoading}
                 className="button-primary px-4 py-2 text-sm bg-green-600 hover:bg-green-700 disabled:bg-green-300"
               >
@@ -280,6 +375,90 @@ export default function ActionButtons({
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:bg-red-300"
               >
                 {isLoading ? 'A enviar...' : 'Confirmar Recusa'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {insuranceModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity animate-fadeIn">
+          <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-lg transform animate-scaleIn">
+            <h3 className="text-lg font-bold text-gray-900">Dados do seguro para aprovação</h3>
+            <p className="text-sm text-gray-600 mt-2 mb-4">
+              Para aprovar a formalização, preencha os dados do seguro de vida. O comprovante não é enviado nesta etapa.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <label className="text-sm text-gray-700 md:col-span-2">
+                Seguradora
+                <input
+                  type="text"
+                  value={insuranceCompany}
+                  onChange={(e) => setInsuranceCompany(e.target.value)}
+                  className="mt-1 input-form w-full text-gray-800"
+                  placeholder="Nome da seguradora"
+                />
+              </label>
+
+              <label className="text-sm text-gray-700">
+                CNPJ da seguradora
+                <input
+                  type="text"
+                  value={insuranceCompanyCnpj}
+                  onChange={(e) => setInsuranceCompanyCnpj(maskCNPJ(e.target.value))}
+                  className="mt-1 input-form w-full text-gray-800"
+                  placeholder="00.000.000/0000-00"
+                  inputMode="numeric"
+                  maxLength={18}
+                />
+              </label>
+
+              <label className="text-sm text-gray-700">
+                N° da apólice
+                <input
+                  type="text"
+                  value={insurancePolicyNumber}
+                  onChange={(e) => setInsurancePolicyNumber(e.target.value)}
+                  className="mt-1 input-form w-full text-gray-800"
+                  placeholder="Número da apólice"
+                />
+              </label>
+
+              <label className="text-sm text-gray-700">
+                Vigência inicial
+                <input
+                  type="date"
+                  value={insuranceStartDate}
+                  onChange={(e) => setInsuranceStartDate(e.target.value)}
+                  className="mt-1 input-form w-full text-gray-800"
+                />
+              </label>
+
+              <label className="text-sm text-gray-700">
+                Vigência final
+                <input
+                  type="date"
+                  value={insuranceEndDate}
+                  onChange={(e) => setInsuranceEndDate(e.target.value)}
+                  className="mt-1 input-form w-full text-gray-800"
+                />
+              </label>
+            </div>
+
+            <div className="mt-4 flex justify-end space-x-2">
+              <button
+                onClick={() => setInsuranceModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmApprovalWithInsurance}
+                disabled={isLoading}
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg disabled:bg-green-300"
+              >
+                {isLoading ? 'A enviar...' : 'Confirmar aprovação'}
               </button>
             </div>
           </div>

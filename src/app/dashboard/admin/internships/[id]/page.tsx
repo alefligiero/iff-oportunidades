@@ -11,6 +11,7 @@ import AdminStatusProgress from './AdminStatusProgress';
 import AdminActionGuide from './AdminActionGuide';
 import AdminDocumentAlerts from './AdminDocumentAlerts';
 import { getCourseNameMap } from '@/lib/courses';
+import { getSystemConfig } from '@/lib/system-config';
 
 const prisma = new PrismaClient();
 
@@ -90,8 +91,11 @@ const formatInsuranceValidity = (startDate?: Date | null, endDate?: Date | null)
 
 export default async function InternshipDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const internship = await getInternshipDetails(id);
-  const courseNameMap = await getCourseNameMap(true);
+  const [internship, courseNameMap, systemConfig] = await Promise.all([
+    getInternshipDetails(id),
+    getCourseNameMap(true),
+    getSystemConfig(),
+  ]);
 
   const initialDocuments = internship?.documents.map((doc) => ({
     id: doc.id,
@@ -126,6 +130,13 @@ export default async function InternshipDetailPage({ params }: { params: Promise
       </div>
     );
   }
+
+  const hasInsuranceData =
+    Boolean(internship.insuranceCompany?.trim()) ||
+    Boolean(internship.insuranceCompanyCnpj?.trim()) ||
+    Boolean(internship.insurancePolicyNumber?.trim()) ||
+    Boolean(internship.insuranceStartDate) ||
+    Boolean(internship.insuranceEndDate);
 
   return (
     <div>
@@ -211,6 +222,12 @@ export default async function InternshipDetailPage({ params }: { params: Promise
               earlyTerminationApproved={internship.earlyTerminationApproved}
               earlyTerminationReason={internship.earlyTerminationReason}
               documents={initialDocuments}
+              requireLifeInsuranceForNewInternships={systemConfig.requireLifeInsuranceForNewInternships}
+              initialInsuranceCompany={internship.insuranceCompany}
+              initialInsuranceCompanyCnpj={internship.insuranceCompanyCnpj}
+              initialInsurancePolicyNumber={internship.insurancePolicyNumber}
+              initialInsuranceStartDate={internship.insuranceStartDate?.toISOString().slice(0, 10) ?? null}
+              initialInsuranceEndDate={internship.insuranceEndDate?.toISOString().slice(0, 10) ?? null}
             />
         </div>
 
@@ -282,7 +299,7 @@ export default async function InternshipDetailPage({ params }: { params: Promise
             </div>
         </div>
         
-        {internship.insuranceRequired && (
+        {hasInsuranceData && (
           <div className="border-t border-gray-200 pt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Dados do Seguro</h3>
               <dl className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-8">

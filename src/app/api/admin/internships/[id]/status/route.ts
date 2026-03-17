@@ -3,17 +3,10 @@ import { InternshipStatus, Role, NotificationType } from '@prisma/client';
 import { z } from 'zod';
 import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
+import { getSystemConfig } from '@/lib/system-config';
+import { adminUpdateInternshipStatusSchema } from '@/lib/validations/schemas';
 
-const updateStatusSchema = z.object({
-  status: z.enum([
-    InternshipStatus.APPROVED,
-    InternshipStatus.REJECTED,
-    InternshipStatus.IN_PROGRESS,
-    InternshipStatus.FINISHED,
-    InternshipStatus.CANCELED,
-  ]),
-  rejectionReason: z.string().optional(),
-});
+const parseDateOnlyToUtc = (value: string) => new Date(`${value}T00:00:00.000Z`);
 
 export async function PATCH(
   request: NextRequest,
@@ -31,14 +24,16 @@ export async function PATCH(
     const { id: internshipId } = await params;
 
     const body = await request.json();
-    const validation = updateStatusSchema.safeParse(body);
+    const validation = adminUpdateInternshipStatusSchema.safeParse(body);
 
     if (!validation.success) {
       return NextResponse.json({ error: 'Dados inválidos.', details: validation.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const { status, rejectionReason } = validation.data;
+    const { status, rejectionReason, insuranceData } = validation.data;
     const trimmedReason = rejectionReason?.trim();
+    const systemConfig = await getSystemConfig();
+    const shouldRequireAdminInsuranceData = status === InternshipStatus.APPROVED && !systemConfig.requireLifeInsuranceForNewInternships;
 
     const internship = await prisma.internship.findUnique({
       where: { id: internshipId },
@@ -62,6 +57,25 @@ export async function PATCH(
 
     if (isReasonRequired && !trimmedReason) {
       return NextResponse.json({ error: 'É obrigatório fornecer um motivo.' }, { status: 400 });
+    }
+
+    if (shouldRequireAdminInsuranceData && !insuranceData) {
+      return NextResponse.json(
+        { error: 'Preencha os dados do seguro para aprovar a formalização.' },
+        { status: 400 }
+      );
+    }
+
+    if (shouldRequireAdminInsuranceData && insuranceData) {
+      const insuranceStartDate = parseDateOnlyToUtc(insuranceData.insuranceStartDate);
+      const insuranceEndDate = parseDateOnlyToUtc(insuranceData.insuranceEndDate);
+
+      if (insuranceEndDate < insuranceStartDate) {
+        return NextResponse.json(
+          { error: 'A vigência final do seguro deve ser igual ou posterior à vigência inicial.' },
+          { status: 400 }
+        );
+      }
     }
 
     if (status === InternshipStatus.FINISHED) {
@@ -114,6 +128,14 @@ export async function PATCH(
 
       if (status === InternshipStatus.APPROVED) {
         updateData.approvedAt = new Date();
+
+        if (shouldRequireAdminInsuranceData && insuranceData) {
+          updateData.insuranceCompany = insuranceData.insuranceCompany.trim();
+          updateData.insuranceCompanyCnpj = insuranceData.insuranceCompanyCnpj.trim();
+          updateData.insurancePolicyNumber = insuranceData.insurancePolicyNumber.trim();
+          updateData.insuranceStartDate = parseDateOnlyToUtc(insuranceData.insuranceStartDate);
+          updateData.insuranceEndDate = parseDateOnlyToUtc(insuranceData.insuranceEndDate);
+        }
       }
     }
 

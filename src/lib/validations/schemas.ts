@@ -176,6 +176,26 @@ export const updateInternshipStatusSchema = z.object({
   rejectionReason: z.string().optional(),
 });
 
+const adminApprovalInsuranceDataSchema = z.object({
+  insuranceCompany: z.string().trim().min(1, 'A seguradora é obrigatória.'),
+  insuranceCompanyCnpj: z.string().trim().min(1, 'O CNPJ da seguradora é obrigatório.'),
+  insurancePolicyNumber: z.string().trim().min(1, 'O número da apólice é obrigatório.'),
+  insuranceStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data de início do seguro inválida.'),
+  insuranceEndDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data de término do seguro inválida.'),
+});
+
+export const adminUpdateInternshipStatusSchema = z.object({
+  status: z.enum([
+    InternshipStatus.APPROVED,
+    InternshipStatus.REJECTED,
+    InternshipStatus.IN_PROGRESS,
+    InternshipStatus.FINISHED,
+    InternshipStatus.CANCELED,
+  ]),
+  rejectionReason: z.string().optional(),
+  insuranceData: adminApprovalInsuranceDataSchema.optional(),
+});
+
 export const requestEarlyTerminationSchema = z.object({
   reason: z.string().min(5, 'A justificativa deve ter pelo menos 5 caracteres.'),
 });

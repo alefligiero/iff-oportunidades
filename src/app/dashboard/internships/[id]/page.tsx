@@ -164,6 +164,13 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
     );
   }
 
+  const hasInsuranceData =
+    Boolean(internship.insuranceCompany?.trim()) ||
+    Boolean(internship.insuranceCompanyCnpj?.trim()) ||
+    Boolean(internship.insurancePolicyNumber?.trim()) ||
+    Boolean(internship.insuranceStartDate) ||
+    Boolean(internship.insuranceEndDate);
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -449,7 +456,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
         </div>
 
         {/* Seguro */}
-        {internship.insuranceRequired && <div className="bg-white p-6 rounded-lg shadow-md">
+        {hasInsuranceData && <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Seguro de Vida</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
