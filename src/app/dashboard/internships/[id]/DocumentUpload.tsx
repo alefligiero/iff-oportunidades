@@ -16,6 +16,7 @@ const documentTypeLabels: Record<DocumentType, string> = {
   PERIODIC_REPORT: 'Relatório Periódico',
   TRE: 'Termo de Realização de Estágio (TRE)',
   RFE: 'Relatório Final de Estágio (RFE)',
+  PARECER_AVALIATIVO: 'Parecer Avaliativo',
   TERMINATION_TERM: 'Termo de Cancelamento de Estágio',
   FINAL_DECLARATION: 'Declaração Final',
   SIGNED_CONTRACT: 'TCE + PAE assinados (PDF único)',

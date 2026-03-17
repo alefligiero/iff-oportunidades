@@ -90,6 +90,23 @@ export default function DocumentsSection({
     status !== InternshipStatus.CANCELED &&
     status === InternshipStatus.FINISHED && !rfeApproved && !rfePending;
 
+  // Parecer Avaliativo (apenas se internship está finalizado)
+  const parecerAvaliativoDocs = useMemo(
+    () => documents.filter((doc) => doc.type === DocumentType.PARECER_AVALIATIVO),
+    [documents]
+  );
+  const parecerAvaliativoApproved = parecerAvaliativoDocs.some(
+    (doc) => doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED
+  );
+  const parecerAvaliativoPending = parecerAvaliativoDocs.some(
+    (doc) => doc.status === DocumentStatus.PENDING_ANALYSIS
+  );
+  const canUploadParecerAvaliativo =
+    status !== InternshipStatus.CANCELED &&
+    status === InternshipStatus.FINISHED &&
+    !parecerAvaliativoApproved &&
+    !parecerAvaliativoPending;
+
   // Termo de Cancelamento (obrigatório apenas para encerramento antecipado aprovado)
   const terminationTermDocs = useMemo(
     () => documents.filter((doc) => doc.type === DocumentType.TERMINATION_TERM),
@@ -265,7 +282,12 @@ export default function DocumentsSection({
           </div>
 
           {/* Templates para Download */}
-          <DownloadTemplates showTRE={true} showRFE={true} showTerminationTerm={requiresTerminationTerm} />
+          <DownloadTemplates
+            showTRE={true}
+            showRFE={true}
+            showParecerAvaliativo={true}
+            showTerminationTerm={requiresTerminationTerm}
+          />
 
           {/* Seção TRE */}
           <div className="border-t pt-4">
@@ -319,6 +341,34 @@ export default function DocumentsSection({
               onRefresh={refreshDocuments}
               showUploadButton={true}
               title="RFE enviados"
+              showAlerts={false}
+            />
+          </div>
+
+          {/* Seção Parecer Avaliativo */}
+          <div className="border-t pt-4">
+            <div className="mb-3">
+              <h4 className="text-sm font-semibold text-gray-900">Enviar Parecer Avaliativo</h4>
+              <p className="text-xs text-gray-600">
+                Após o Professor-Orientador preencher e assinar o parecer, faça o upload do documento completo.
+              </p>
+            </div>
+
+            {canUploadParecerAvaliativo && (
+              <DocumentUpload
+                internshipId={internshipId}
+                documentType={DocumentType.PARECER_AVALIATIVO}
+                onUploadSuccess={refreshDocuments}
+                disabled={false}
+              />
+            )}
+
+            <DocumentList
+              internshipId={internshipId}
+              documents={parecerAvaliativoDocs}
+              onRefresh={refreshDocuments}
+              showUploadButton={true}
+              title="Pareceres Avaliativos enviados"
               showAlerts={false}
             />
           </div>

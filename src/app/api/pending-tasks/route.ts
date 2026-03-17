@@ -20,6 +20,7 @@ const adminDocumentLabels: Record<DocumentType, string> = {
   PERIODIC_REPORT: 'do Relatorio Periodico',
   TRE: 'do TRE',
   RFE: 'do RFE',
+  PARECER_AVALIATIVO: 'do Parecer Avaliativo',
   TERMINATION_TERM: 'do Termo de Cancelamento',
   FINAL_DECLARATION: 'da Declaração Final',
   SIGNED_CONTRACT: 'do TCE + PAE assinados',
@@ -146,8 +147,13 @@ export async function GET(request: NextRequest) {
         const rfeApproved = internship.documents.some(
           (doc) => doc.type === DocumentType.RFE && APPROVED_DOCUMENT_STATUSES.includes(doc.status)
         );
+        const parecerAvaliativoApproved = internship.documents.some(
+          (doc) =>
+            doc.type === DocumentType.PARECER_AVALIATIVO &&
+            APPROVED_DOCUMENT_STATUSES.includes(doc.status)
+        );
 
-        if (!treApproved || !rfeApproved) {
+        if (!treApproved || !rfeApproved || !parecerAvaliativoApproved) {
           return;
         }
 
@@ -345,6 +351,34 @@ export async function GET(request: NextRequest) {
             id: `${internship.id}-rfe`,
             title: rfeRejected ? 'Reenviar RFE' : 'Enviar RFE',
             description: `Envie o relatorio final do estagio na empresa ${internship.companyName}.`,
+            href: `/dashboard/internships/${internship.id}#documents-section`,
+          });
+        }
+
+        const parecerAvaliativoLatest = getLatestDocumentByType(
+          documents,
+          DocumentType.PARECER_AVALIATIVO
+        );
+        const parecerAvaliativoApproved = documents.some(
+          (doc) =>
+            doc.type === DocumentType.PARECER_AVALIATIVO &&
+            APPROVED_DOCUMENT_STATUSES.includes(doc.status)
+        );
+        const parecerAvaliativoPending = documents.some(
+          (doc) =>
+            doc.type === DocumentType.PARECER_AVALIATIVO &&
+            doc.status === DocumentStatus.PENDING_ANALYSIS
+        );
+
+        if (!parecerAvaliativoApproved && !parecerAvaliativoPending) {
+          const parecerAvaliativoRejected =
+            parecerAvaliativoLatest?.status === DocumentStatus.REJECTED;
+          tasks.push({
+            id: `${internship.id}-parecer-avaliativo`,
+            title: parecerAvaliativoRejected
+              ? 'Reenviar Parecer Avaliativo'
+              : 'Enviar Parecer Avaliativo',
+            description: `Envie o parecer avaliativo do estagio na empresa ${internship.companyName}.`,
             href: `/dashboard/internships/${internship.id}#documents-section`,
           });
         }

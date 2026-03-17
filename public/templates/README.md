@@ -19,24 +19,31 @@ Para que o sistema funcione corretamente, você precisa adicionar os seguintes a
 - Deve incluir informações sobre formatação, conteúdo esperado e assinaturas necessárias
 - Este template será disponibilizado para download quando o estágio estiver com status `FINISHED`
 
-### 3. `modelo-relatorio-periodico.docx`
+### 3. `parecer-avaliativo-template.docx`
+**Parecer Avaliativo**
+- Documento adicional obrigatório no encerramento do estágio
+- Deve ser preenchido e assinado pelo Professor-Orientador
+- Após a assinatura, o aluno deve enviar o arquivo no sistema para análise da Agência de Oportunidades
+- Este template será disponibilizado para download quando o estágio estiver com status `FINISHED`
+
+### 4. `modelo-relatorio-periodico.docx`
 **Modelo de Relatório Periódico de Estágio**
 - Documento utilizado pelo aluno para elaboração dos relatórios periódicos
 - O sistema prioriza este arquivo em formato DOCX para download
 - Disponível conforme a janela de liberação de cada período (30 dias antes do vencimento)
 
-### 4. `modelo-relatorio-periodico.pdf` (opcional)
+### 5. `modelo-relatorio-periodico.pdf` (opcional)
 **Fallback de compatibilidade**
 - Se o arquivo DOCX não existir, o sistema tenta servir esta versão em PDF
 - Recomendado manter enquanto houver usuários/processos legados
 
-### 5. `termination-term-template.docx`
+### 6. `termination-term-template.docx`
 **Termo de Cancelamento de Estágio**
 - Obrigatório quando o encerramento antecipado do estágio for aprovado
 - Deve ser preenchido e assinado pelas partes responsáveis
 - O aluno envia este documento junto com TRE e RFE para concluir o processo
 
-### 6. `TCE PAE.docx`
+### 7. `TCE PAE.docx`
 **Modelo oficial de TCE/PAE para estágios aprovados**
 - Documento fonte usado para manter a redação oficial do termo
 - Utilizado como fonte única para gerar o DOCX preenchido e o PDF oficial
@@ -134,6 +141,7 @@ Substitua os valores literais fixos do modelo, como `0` em matrículas, número 
 2. Certifique-se de usar exatamente os nomes especificados acima:
    - `tre-template.docx`
    - `rfe-orientacoes.pdf`
+   - `parecer-avaliativo-template.docx`
    - `modelo-relatorio-periodico.docx`
    - `modelo-relatorio-periodico.pdf` (opcional)
    - `termination-term-template.docx`
@@ -141,27 +149,30 @@ Substitua os valores literais fixos do modelo, como `0` em matrículas, número 
 3. Os arquivos estarão automaticamente disponíveis em:
    - `/templates/tre-template.docx`
    - `/templates/rfe-orientacoes.pdf`
+   - `/templates/parecer-avaliativo-template.docx`
    - `/templates/termination-term-template.docx`
 
 ## Fluxo de Uso
 
 1. **Estágio finalizado** (status = `FINISHED`):
    - Sistema mostra box "Documentos Finais de Estágio"
-   - Aluno pode baixar os templates TRE e RFE
+   - Aluno pode baixar os templates TRE, RFE e Parecer Avaliativo
    - Se o encerramento antecipado foi aprovado, também baixa o Termo de Cancelamento
    
 2. **Aluno preenche e coleta assinaturas**:
    - TRE: Assinado pela empresa
    - RFE: Produzido com Supervisor e Professor-Orientador
+   - Parecer Avaliativo: Preenchido e assinado pelo Professor-Orientador
    
 3. **Upload dos documentos preenchidos**:
    - Aluno envia TRE preenchido
    - Aluno envia RFE completo
+   - Aluno envia Parecer Avaliativo assinado
    - Em encerramento antecipado aprovado, também envia o Termo de Cancelamento
    
 4. **Aprovação pelo Admin**:
    - Admin analisa e aprova/rejeita os documentos
-   - No fluxo padrão, após aprovação de TRE e RFE, processo é concluído
+   - No fluxo padrão, após aprovação de TRE, RFE e Parecer Avaliativo, a Declaração Final pode ser enviada
    - No fluxo de encerramento antecipado, também é necessária aprovação do Termo de Cancelamento
 
 ## Status Atual

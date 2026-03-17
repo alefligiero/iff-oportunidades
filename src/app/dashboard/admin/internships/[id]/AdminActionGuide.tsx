@@ -47,6 +47,11 @@ export default function AdminActionGuide({
     const rfeApproved = documents.some(
       (doc) => doc.type === 'RFE' && APPROVED_DOCUMENT_STATUSES.includes(doc.status as DocumentStatus)
     );
+    const parecerAvaliativoApproved = documents.some(
+      (doc) =>
+        doc.type === 'PARECER_AVALIATIVO' &&
+        APPROVED_DOCUMENT_STATUSES.includes(doc.status as DocumentStatus)
+    );
     const terminationTermApproved = documents.some(
       (doc) =>
         doc.type === 'TERMINATION_TERM' &&
@@ -61,6 +66,7 @@ export default function AdminActionGuide({
     const allFinalDocumentsApproved =
       treApproved &&
       rfeApproved &&
+      parecerAvaliativoApproved &&
       (!earlyTerminationApproved || terminationTermApproved);
 
     if (allFinalDocumentsApproved && !finalDeclarationApproved) {
@@ -88,7 +94,7 @@ export default function AdminActionGuide({
         <h3 className="text-sm font-semibold text-blue-800 mb-2">Ações do Admin (Em andamento)</h3>
         <ul className="text-sm text-blue-700 space-y-1 list-disc pl-5">
           <li>Acompanhar relatórios periódicos (quando aplicável)</li>
-          <li>Validar documentos finais (TRE/RFE) quando enviados</li>
+          <li>Validar documentos finais (TRE, RFE e Parecer Avaliativo) quando enviados</li>
           <li>Gerenciar pedido de encerramento antecipado, se houver</li>
         </ul>
       </div>

@@ -43,11 +43,17 @@ export default function NextStepsGuide({
       const rfeApproved = documents.some(
         (doc) => doc.type === 'RFE' && doc.status === 'APPROVED'
       );
+      const parecerAvaliativoApproved = documents.some(
+        (doc) => doc.type === 'PARECER_AVALIATIVO' && doc.status === 'APPROVED'
+      );
       const trePending = documents.some(
         (doc) => doc.type === 'TRE' && doc.status === 'PENDING_ANALYSIS'
       );
       const rfePending = documents.some(
         (doc) => doc.type === 'RFE' && doc.status === 'PENDING_ANALYSIS'
+      );
+      const parecerAvaliativoPending = documents.some(
+        (doc) => doc.type === 'PARECER_AVALIATIVO' && doc.status === 'PENDING_ANALYSIS'
       );
       const requiresTerminationTerm = earlyTerminationApproved === true;
       const terminationTermApproved = documents.some(
@@ -65,6 +71,7 @@ export default function NextStepsGuide({
       const allFinalDocsApproved =
         treApproved &&
         rfeApproved &&
+        parecerAvaliativoApproved &&
         (!requiresTerminationTerm || terminationTermApproved);
 
       // Todos os documentos finais aprovados
@@ -97,10 +104,11 @@ export default function NextStepsGuide({
       }
 
       // Documentos pendentes de análise
-      if (trePending || rfePending || (requiresTerminationTerm && terminationTermPending)) {
+      if (trePending || rfePending || parecerAvaliativoPending || (requiresTerminationTerm && terminationTermPending)) {
         const pendingDocs = [];
         if (trePending) pendingDocs.push('TRE (Termo de Realização de Estágio)');
         if (rfePending) pendingDocs.push('RFE (Relatório Final de Estágio)');
+        if (parecerAvaliativoPending) pendingDocs.push('Parecer Avaliativo');
         if (requiresTerminationTerm && terminationTermPending) {
           pendingDocs.push('Termo de Cancelamento de Estágio');
         }
@@ -121,17 +129,22 @@ export default function NextStepsGuide({
       const missingDocs = [];
       if (!treApproved && !trePending) missingDocs.push('TRE');
       if (!rfeApproved && !rfePending) missingDocs.push('RFE');
+      if (!parecerAvaliativoApproved && !parecerAvaliativoPending) {
+        missingDocs.push('Parecer Avaliativo');
+      }
       if (requiresTerminationTerm && !terminationTermApproved && !terminationTermPending) {
         missingDocs.push('Termo de Cancelamento de Estágio');
       }
 
       const templateLine = requiresTerminationTerm
-        ? '1️⃣ Baixe os templates de TRE, RFE e Termo de Cancelamento na seção "Documentos Finais" abaixo'
-        : '1️⃣ Baixe os templates de TRE e RFE na seção "Documentos Finais" abaixo';
+        ? '1️⃣ Baixe os templates de TRE, RFE, Parecer Avaliativo e Termo de Cancelamento na seção "Documentos Finais" abaixo'
+        : '1️⃣ Baixe os templates de TRE, RFE e Parecer Avaliativo na seção "Documentos Finais" abaixo';
 
       const terminationLine = requiresTerminationTerm
         ? '4️⃣ Termo de Cancelamento: Preencha, colete as assinaturas e envie junto com os demais documentos'
         : null;
+
+      const parecerLine = '4️⃣ Parecer Avaliativo: Solicite ao Professor-Orientador o preenchimento e assinatura e envie o documento';
 
       return {
         title: '📋 Enviar Documentos Finais',
@@ -140,9 +153,10 @@ export default function NextStepsGuide({
           templateLine,
           '2️⃣ TRE: Preencha e solicite assinatura do representante da Empresa',
           '3️⃣ RFE: Produza o relatório com seu Supervisor e Professor-Orientador',
+          parecerLine,
           ...(terminationLine ? [terminationLine] : []),
-          `${terminationLine ? '5️⃣' : '4️⃣'} Faça o upload dos documentos preenchidos e assinados`,
-          `${terminationLine ? '6️⃣' : '5️⃣'} Aguarde a aprovação da Agência de Oportunidades`,
+          `${terminationLine ? '6️⃣' : '5️⃣'} Faça o upload dos documentos preenchidos e assinados`,
+          `${terminationLine ? '7️⃣' : '6️⃣'} Aguarde a aprovação da Agência de Oportunidades`,
         ],
         color: 'bg-blue-50 border-blue-200',
         textColor: 'text-blue-900',

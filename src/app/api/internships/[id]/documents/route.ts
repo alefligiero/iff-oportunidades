@@ -94,6 +94,7 @@ export async function POST(
       PERIODIC_REPORT: 'Relatorio Periodico',
       TRE: 'TRE',
       RFE: 'RFE',
+      PARECER_AVALIATIVO: 'Parecer Avaliativo',
       TERMINATION_TERM: 'Termo de Cancelamento',
       FINAL_DECLARATION: 'Declaração Final',
       SIGNED_CONTRACT: 'TCE + PAE assinados',

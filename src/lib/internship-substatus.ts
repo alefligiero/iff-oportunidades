@@ -83,6 +83,7 @@ export function getFinishedSubstatus(
   const requiredDocuments: Array<{ type: DocumentType; label: string }> = [
     { type: DocumentType.TRE, label: 'TRE' },
     { type: DocumentType.RFE, label: 'RFE' },
+    { type: DocumentType.PARECER_AVALIATIVO, label: 'Parecer Avaliativo' },
   ];
 
   if (earlyTerminationApproved === true) {

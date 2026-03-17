@@ -12,6 +12,7 @@ import { adminFinalDeclarationUploadSchema } from '@/lib/validations/schemas';
 import { prisma } from '@/lib/prisma';
 
 const FINAL_DECLARATION_TYPE = 'FINAL_DECLARATION' as DocumentType;
+const PARECER_AVALIATIVO_TYPE = 'PARECER_AVALIATIVO' as DocumentType;
 
 const isApprovedDocumentStatus = (status: DocumentStatus) =>
   status === DocumentStatus.APPROVED || status === DocumentStatus.SIGNED_VALIDATED;
@@ -64,12 +65,18 @@ export async function POST(
     const hasRfeApproved = internship.documents.some(
       (doc) => doc.type === DocumentType.RFE && isApprovedDocumentStatus(doc.status)
     );
+    const hasParecerAvaliativoApproved = internship.documents.some(
+      (doc) => doc.type === PARECER_AVALIATIVO_TYPE && isApprovedDocumentStatus(doc.status)
+    );
     const hasTerminationTermApproved = internship.documents.some(
       (doc) => doc.type === DocumentType.TERMINATION_TERM && isApprovedDocumentStatus(doc.status)
     );
 
-    if (!hasTreApproved || !hasRfeApproved) {
-      return createErrorResponse('TRE e RFE devem estar aprovados antes do envio da Declaração Final', 400);
+    if (!hasTreApproved || !hasRfeApproved || !hasParecerAvaliativoApproved) {
+      return createErrorResponse(
+        'TRE, RFE e Parecer Avaliativo devem estar aprovados antes do envio da Declaração Final',
+        400
+      );
     }
 
     if (internship.earlyTerminationApproved === true && !hasTerminationTermApproved) {

@@ -20,6 +20,7 @@ const documentTypeLabels: Record<string, string> = {
   PERIODIC_REPORT: 'Relatório Periódico',
   TRE: 'TRE',
   RFE: 'Relatório Final (RFE)',
+  PARECER_AVALIATIVO: 'Parecer Avaliativo',
   TERMINATION_TERM: 'Termo de Cancelamento',
   FINAL_DECLARATION: 'Declaração Final',
   SIGNED_CONTRACT: 'TCE/PAE assinados',
@@ -60,6 +61,11 @@ export default function AdminDocumentAlerts({
   const rfeApproved = documents.some(
     (doc) => doc.type === 'RFE' && (doc.status === 'APPROVED' || doc.status === 'SIGNED_VALIDATED')
   );
+  const parecerAvaliativoApproved = documents.some(
+    (doc) =>
+      doc.type === 'PARECER_AVALIATIVO' &&
+      (doc.status === 'APPROVED' || doc.status === 'SIGNED_VALIDATED')
+  );
   const terminationTermApproved = documents.some(
     (doc) =>
       doc.type === 'TERMINATION_TERM' &&
@@ -72,6 +78,7 @@ export default function AdminDocumentAlerts({
     status === 'FINISHED' &&
     treApproved &&
     rfeApproved &&
+    parecerAvaliativoApproved &&
     (!earlyTerminationApproved || terminationTermApproved) &&
     !finalDeclarationExists;
 

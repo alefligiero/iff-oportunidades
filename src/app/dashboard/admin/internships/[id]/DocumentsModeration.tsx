@@ -28,6 +28,7 @@ const documentTypeLabels: Record<DocumentType, string> = {
   PERIODIC_REPORT: 'Relatório Periódico',
   TRE: 'Termo de Realização (TRE)',
   RFE: 'Relatório Final (RFE)',
+  PARECER_AVALIATIVO: 'Parecer Avaliativo',
   TERMINATION_TERM: 'Termo de Cancelamento de Estágio',
   FINAL_DECLARATION: 'Declaração Final',
   SIGNED_CONTRACT: 'TCE + PAE assinados (PDF único)',
@@ -77,6 +78,11 @@ export default function DocumentsModeration({
       doc.type === DocumentType.RFE &&
       (doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED)
   );
+  const hasParecerAvaliativoApproved = documents.some(
+    (doc) =>
+      doc.type === DocumentType.PARECER_AVALIATIVO &&
+      (doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED)
+  );
   const hasTerminationTermApproved = documents.some(
     (doc) =>
       doc.type === DocumentType.TERMINATION_TERM &&
@@ -88,6 +94,7 @@ export default function DocumentsModeration({
     internshipStatus === InternshipStatus.FINISHED &&
     hasTreApproved &&
     hasRfeApproved &&
+    hasParecerAvaliativoApproved &&
     (!requiresTerminationTerm || hasTerminationTermApproved);
 
   const refreshDocuments = async () => {
@@ -409,7 +416,7 @@ export default function DocumentsModeration({
 
           {!canUploadFinalDeclaration ? (
             <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-              Para liberar o envio da Declaração Final, TRE e RFE devem estar aprovados
+              Para liberar o envio da Declaração Final, TRE, RFE e Parecer Avaliativo devem estar aprovados
               {requiresTerminationTerm ? ' e o Termo de Cancelamento também deve estar aprovado.' : '.'}
             </p>
           ) : (
