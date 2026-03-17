@@ -320,6 +320,10 @@ export const updateDocumentStatusSchema = z.object({
   rejectionComments: z.string().optional(),
 });
 
+export const adminFinalDeclarationUploadSchema = z.object({
+  internshipId: z.string().min(1, { message: 'ID do estágio é obrigatório' }),
+});
+
 // ===== SCHEMAS DE PARÂMETROS =====
 
 export const idParamSchema = z.object({

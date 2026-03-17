@@ -108,8 +108,23 @@ export function getFinishedSubstatus(
     .filter(({ label }) => !approvedLabels.includes(label) && !pendingLabels.includes(label))
     .map(({ label }) => label);
 
+  const finalDeclarationApproved = documents.some(
+    (doc) => doc.type === DocumentType.FINAL_DECLARATION && doc.status === DocumentStatus.APPROVED
+  );
+  const finalDeclarationPending = documents.some(
+    (doc) => doc.type === DocumentType.FINAL_DECLARATION && doc.status === DocumentStatus.PENDING_ANALYSIS
+  );
+
   if (approvedLabels.length === requiredDocuments.length) {
-    return 'Concluído';
+    if (finalDeclarationApproved) {
+      return 'Concluído';
+    }
+
+    if (finalDeclarationPending) {
+      return 'Declaração Final em análise';
+    }
+
+    return 'Aguardando Declaração Final';
   }
 
   if (pendingLabels.length === requiredDocuments.length) {
@@ -144,13 +159,21 @@ export function getFinishedSubstatus(
     return 'Documentos finais em análise';
   }
 
+  if (finalDeclarationPending) {
+    return 'Declaração Final em análise';
+  }
+
+  if (finalDeclarationApproved) {
+    return 'Concluído';
+  }
+
   return 'Aguardando documentos finais';
 }
 
 /**
  * Verifica se um estágio bloqueia a criação de um novo estágio pelo aluno.
  * Bloqueia se: IN_ANALYSIS, APPROVED, IN_PROGRESS, ou FINISHED sem todos os documentos finais aprovados.
- * Não bloqueia se: REJECTED, CANCELED, ou FINISHED com TRE e RFE aprovados ("Concluído").
+ * Não bloqueia se: REJECTED, CANCELED, ou FINISHED com docs finais + Declaração Final aprovados ("Concluído").
  */
 export function isInternshipBlocking(
   status: string,

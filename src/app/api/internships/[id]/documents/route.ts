@@ -64,6 +64,13 @@ export async function POST(
       return createErrorResponse('Tipo de documento inválido', 400);
     }
 
+    if (documentType === DocumentType.FINAL_DECLARATION) {
+      return createErrorResponse(
+        'A Declaração Final deve ser enviada pelo Admin no painel administrativo',
+        403
+      );
+    }
+
     if (documentType === DocumentType.LIFE_INSURANCE) {
       const hasAllInsuranceData = Boolean(
         internship.insuranceCompany &&
@@ -88,6 +95,7 @@ export async function POST(
       TRE: 'TRE',
       RFE: 'RFE',
       TERMINATION_TERM: 'Termo de Cancelamento',
+      FINAL_DECLARATION: 'Declaração Final',
       SIGNED_CONTRACT: 'TCE + PAE assinados',
       LIFE_INSURANCE: 'comprovante do Seguro de Vida',
     };

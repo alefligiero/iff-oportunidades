@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "DocumentType" ADD VALUE 'FINAL_DECLARATION';

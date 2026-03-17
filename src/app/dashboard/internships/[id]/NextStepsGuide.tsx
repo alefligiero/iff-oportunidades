@@ -56,22 +56,43 @@ export default function NextStepsGuide({
       const terminationTermPending = documents.some(
         (doc) => doc.type === 'TERMINATION_TERM' && doc.status === 'PENDING_ANALYSIS'
       );
-
-      // Todos os documentos finais aprovados
-      if (
+      const finalDeclarationApproved = documents.some(
+        (doc) => doc.type === 'FINAL_DECLARATION' && doc.status === 'APPROVED'
+      );
+      const finalDeclarationPending = documents.some(
+        (doc) => doc.type === 'FINAL_DECLARATION' && doc.status === 'PENDING_ANALYSIS'
+      );
+      const allFinalDocsApproved =
         treApproved &&
         rfeApproved &&
-        (!requiresTerminationTerm || terminationTermApproved)
-      ) {
+        (!requiresTerminationTerm || terminationTermApproved);
+
+      // Todos os documentos finais aprovados
+      if (allFinalDocsApproved && finalDeclarationApproved) {
         return {
           title: '🎉 Estágio Concluído com Sucesso!',
           steps: [
             '✅ Todos os documentos finais foram aprovados',
             'Parabéns pela conclusão do seu estágio!',
-            'Em breve você receberá a Declaração de Realização de Estágio por e-mail',
+            'A Declaração Final está disponível na seção de documentos deste estágio',
           ],
           color: 'bg-green-50 border-green-200',
           textColor: 'text-green-900',
+        };
+      }
+
+      if (allFinalDocsApproved && !finalDeclarationApproved) {
+        return {
+          title: '📌 Aguardando Declaração Final',
+          steps: [
+            '✅ Seus documentos finais já foram aprovados',
+            finalDeclarationPending
+              ? 'A Declaração Final está em processamento pela Agência de Oportunidades'
+              : 'A Agência de Oportunidades irá enviar a Declaração Final no seu detalhe de estágio',
+            'Você será notificado quando a Declaração Final estiver disponível para download',
+          ],
+          color: 'bg-emerald-50 border-emerald-200',
+          textColor: 'text-emerald-900',
         };
       }
 

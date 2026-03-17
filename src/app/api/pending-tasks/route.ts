@@ -21,6 +21,7 @@ const adminDocumentLabels: Record<DocumentType, string> = {
   TRE: 'do TRE',
   RFE: 'do RFE',
   TERMINATION_TERM: 'do Termo de Cancelamento',
+  FINAL_DECLARATION: 'da Declaração Final',
   SIGNED_CONTRACT: 'do TCE + PAE assinados',
   LIFE_INSURANCE: 'do comprovante do Seguro de Vida',
 };
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (userPayload.role === 'ADMIN') {
-      const [pendingInternships, pendingDocuments, pendingVacancies] = await Promise.all([
+      const [pendingInternships, pendingDocuments, pendingVacancies, finishedInternships] = await Promise.all([
         prisma.internship.findMany({
           where: { status: InternshipStatus.IN_ANALYSIS },
           select: {
@@ -88,6 +89,24 @@ export async function GET(request: NextRequest) {
           },
           orderBy: { createdAt: 'desc' },
         }),
+        prisma.internship.findMany({
+          where: { status: InternshipStatus.FINISHED },
+          select: {
+            id: true,
+            companyName: true,
+            earlyTerminationApproved: true,
+            student: {
+              select: { name: true },
+            },
+            documents: {
+              select: {
+                type: true,
+                status: true,
+              },
+            },
+          },
+          orderBy: { updatedAt: 'desc' },
+        }),
       ]);
 
       const tasks: PendingTask[] = [];
@@ -118,6 +137,46 @@ export async function GET(request: NextRequest) {
           description: `Empresa ${vacancy.company.name} - ${vacancy.title}.`,
           href: `/dashboard/admin/vacancies/${vacancy.id}`,
         });
+      });
+
+      finishedInternships.forEach((internship) => {
+        const treApproved = internship.documents.some(
+          (doc) => doc.type === DocumentType.TRE && APPROVED_DOCUMENT_STATUSES.includes(doc.status)
+        );
+        const rfeApproved = internship.documents.some(
+          (doc) => doc.type === DocumentType.RFE && APPROVED_DOCUMENT_STATUSES.includes(doc.status)
+        );
+
+        if (!treApproved || !rfeApproved) {
+          return;
+        }
+
+        if (internship.earlyTerminationApproved === true) {
+          const terminationTermApproved = internship.documents.some(
+            (doc) =>
+              doc.type === DocumentType.TERMINATION_TERM &&
+              APPROVED_DOCUMENT_STATUSES.includes(doc.status)
+          );
+
+          if (!terminationTermApproved) {
+            return;
+          }
+        }
+
+        const finalDeclarationApproved = internship.documents.some(
+          (doc) =>
+            doc.type === DocumentType.FINAL_DECLARATION &&
+            APPROVED_DOCUMENT_STATUSES.includes(doc.status)
+        );
+
+        if (!finalDeclarationApproved) {
+          tasks.push({
+            id: `${internship.id}-final-declaration`,
+            title: 'Enviar Declaração Final',
+            description: `Aluno ${internship.student.name} - Empresa ${internship.companyName}.`,
+            href: `/dashboard/admin/internships/${internship.id}#final-declaration-section`,
+          });
+        }
       });
 
       return createSuccessResponse({ tasks, total: tasks.length });

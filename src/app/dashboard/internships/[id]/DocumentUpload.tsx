@@ -17,6 +17,7 @@ const documentTypeLabels: Record<DocumentType, string> = {
   TRE: 'Termo de Realização de Estágio (TRE)',
   RFE: 'Relatório Final de Estágio (RFE)',
   TERMINATION_TERM: 'Termo de Cancelamento de Estágio',
+  FINAL_DECLARATION: 'Declaração Final',
   SIGNED_CONTRACT: 'TCE + PAE assinados (PDF único)',
   LIFE_INSURANCE: 'Comprovante de Seguro de Vida',
 };

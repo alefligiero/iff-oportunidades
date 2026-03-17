@@ -109,6 +109,11 @@ export default function DocumentsSection({
     !terminationTermApproved &&
     !terminationTermPending;
 
+  const finalDeclarationDocs = useMemo(
+    () => documents.filter((doc) => doc.type === DocumentType.FINAL_DECLARATION),
+    [documents]
+  );
+
   // LIFE_INSURANCE (Comprovante de Seguro de Vida)
   const lifeInsuranceDocs = useMemo(
     () => documents.filter((doc) => doc.type === DocumentType.LIFE_INSURANCE),
@@ -342,6 +347,26 @@ export default function DocumentsSection({
                 onRefresh={refreshDocuments}
                 showUploadButton={true}
                 title="Termos de Cancelamento enviados"
+                showAlerts={false}
+              />
+            </div>
+          )}
+
+          {finalDeclarationDocs.length > 0 && (
+            <div className="border-t pt-4" id="final-declaration-section">
+              <div className="mb-3">
+                <h4 className="text-sm font-semibold text-gray-900">Declaração Final</h4>
+                <p className="text-xs text-gray-600">
+                  Documento enviado pela Agência de Oportunidades após aprovação dos documentos finais.
+                </p>
+              </div>
+
+              <DocumentList
+                internshipId={internshipId}
+                documents={finalDeclarationDocs}
+                onRefresh={refreshDocuments}
+                showUploadButton={false}
+                title="Declarações Finais"
                 showAlerts={false}
               />
             </div>

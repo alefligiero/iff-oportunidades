@@ -173,7 +173,11 @@ export default async function InternshipDetailPage({ params }: { params: Promise
           earlyTerminationReason={internship.earlyTerminationReason}
           earlyTerminationRequested={internship.earlyTerminationRequested}
         />
-        <AdminActionGuide status={internship.status} />
+        <AdminActionGuide
+          status={internship.status}
+          documents={initialDocuments}
+          earlyTerminationApproved={internship.earlyTerminationApproved}
+        />
         <AdminDocumentAlerts
           status={internship.status}
           documents={initialDocuments}
@@ -235,6 +239,7 @@ export default async function InternshipDetailPage({ params }: { params: Promise
           internshipId={internship.id}
           internshipStatus={internship.status}
           insuranceRequired={internship.insuranceRequired}
+          earlyTerminationApproved={internship.earlyTerminationApproved}
           initialDocuments={initialDocuments}
         />
 

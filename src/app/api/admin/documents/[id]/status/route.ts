@@ -20,6 +20,7 @@ const documentTypeLabels: Record<DocumentType, string> = {
   TRE: 'TRE',
   RFE: 'RFE',
   TERMINATION_TERM: 'Termo de Cancelamento',
+  FINAL_DECLARATION: 'Declaração Final',
   SIGNED_CONTRACT: 'TCE + PAE assinados',
   LIFE_INSURANCE: 'Seguro de Vida',
 };

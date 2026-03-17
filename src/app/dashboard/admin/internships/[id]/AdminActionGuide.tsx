@@ -1,10 +1,23 @@
 'use client';
 
+import { DocumentStatus } from '@prisma/client';
+
 interface AdminActionGuideProps {
   status: string; // InternshipStatus
+  documents: Array<{
+    type: string;
+    status: string;
+  }>;
+  earlyTerminationApproved: boolean | null;
 }
 
-export default function AdminActionGuide({ status }: AdminActionGuideProps) {
+const APPROVED_DOCUMENT_STATUSES = [DocumentStatus.APPROVED, DocumentStatus.SIGNED_VALIDATED];
+
+export default function AdminActionGuide({
+  status,
+  documents,
+  earlyTerminationApproved,
+}: AdminActionGuideProps) {
   if (status === 'REJECTED') {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-5">
@@ -28,6 +41,39 @@ export default function AdminActionGuide({ status }: AdminActionGuideProps) {
   }
 
   if (status === 'FINISHED') {
+    const treApproved = documents.some(
+      (doc) => doc.type === 'TRE' && APPROVED_DOCUMENT_STATUSES.includes(doc.status as DocumentStatus)
+    );
+    const rfeApproved = documents.some(
+      (doc) => doc.type === 'RFE' && APPROVED_DOCUMENT_STATUSES.includes(doc.status as DocumentStatus)
+    );
+    const terminationTermApproved = documents.some(
+      (doc) =>
+        doc.type === 'TERMINATION_TERM' &&
+        APPROVED_DOCUMENT_STATUSES.includes(doc.status as DocumentStatus)
+    );
+    const finalDeclarationApproved = documents.some(
+      (doc) =>
+        doc.type === 'FINAL_DECLARATION' &&
+        APPROVED_DOCUMENT_STATUSES.includes(doc.status as DocumentStatus)
+    );
+
+    const allFinalDocumentsApproved =
+      treApproved &&
+      rfeApproved &&
+      (!earlyTerminationApproved || terminationTermApproved);
+
+    if (allFinalDocumentsApproved && !finalDeclarationApproved) {
+      return (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-5">
+          <h3 className="text-sm font-semibold text-emerald-800 mb-2">Ação pendente do Admin</h3>
+          <p className="text-sm text-emerald-700">
+            Todos os documentos finais do aluno foram aprovados. Envie a Declaração Final para concluir o fluxo.
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
         <h3 className="text-sm font-semibold text-gray-800 mb-2">Processo finalizado</h3>

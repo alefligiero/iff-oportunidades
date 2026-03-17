@@ -18,6 +18,7 @@ interface DocumentsModerationProps {
   internshipId: string;
   internshipStatus: InternshipStatus;
   insuranceRequired: boolean;
+  earlyTerminationApproved: boolean | null;
   initialDocuments: DocumentItem[];
 }
 
@@ -28,6 +29,7 @@ const documentTypeLabels: Record<DocumentType, string> = {
   TRE: 'Termo de Realização (TRE)',
   RFE: 'Relatório Final (RFE)',
   TERMINATION_TERM: 'Termo de Cancelamento de Estágio',
+  FINAL_DECLARATION: 'Declaração Final',
   SIGNED_CONTRACT: 'TCE + PAE assinados (PDF único)',
   LIFE_INSURANCE: 'Seguro de Vida',
 };
@@ -42,6 +44,7 @@ export default function DocumentsModeration({
   internshipId,
   internshipStatus,
   insuranceRequired,
+  earlyTerminationApproved,
   initialDocuments,
 }: DocumentsModerationProps) {
   const router = useRouter();
@@ -53,9 +56,39 @@ export default function DocumentsModeration({
   const [rejectionReason, setRejectionReason] = useState('');
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [pendingApprovalDocId, setPendingApprovalDocId] = useState<string | null>(null);
+  const [finalDeclarationFile, setFinalDeclarationFile] = useState<File | null>(null);
+  const [finalDeclarationMessage, setFinalDeclarationMessage] = useState<string | null>(null);
   const visibleDocuments = documents.filter((doc) => Boolean(doc.fileUrl));
   const signedContractDocs = visibleDocuments.filter((doc) => doc.type === DocumentType.SIGNED_CONTRACT);
-  const otherDocs = visibleDocuments.filter((doc) => doc.type !== DocumentType.SIGNED_CONTRACT);
+  const finalDeclarationDocs = visibleDocuments.filter(
+    (doc) => doc.type === DocumentType.FINAL_DECLARATION
+  );
+  const otherDocs = visibleDocuments.filter(
+    (doc) => doc.type !== DocumentType.SIGNED_CONTRACT && doc.type !== DocumentType.FINAL_DECLARATION
+  );
+
+  const hasTreApproved = documents.some(
+    (doc) =>
+      doc.type === DocumentType.TRE &&
+      (doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED)
+  );
+  const hasRfeApproved = documents.some(
+    (doc) =>
+      doc.type === DocumentType.RFE &&
+      (doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED)
+  );
+  const hasTerminationTermApproved = documents.some(
+    (doc) =>
+      doc.type === DocumentType.TERMINATION_TERM &&
+      (doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED)
+  );
+
+  const requiresTerminationTerm = earlyTerminationApproved === true;
+  const canUploadFinalDeclaration =
+    internshipStatus === InternshipStatus.FINISHED &&
+    hasTreApproved &&
+    hasRfeApproved &&
+    (!requiresTerminationTerm || hasTerminationTermApproved);
 
   const refreshDocuments = async () => {
     setLoading(true);
@@ -110,6 +143,43 @@ export default function DocumentsModeration({
       setRejectionReason('');
       setConfirmModalOpen(false);
       setPendingApprovalDocId(null);
+    }
+  };
+
+  const handleFinalDeclarationUpload = async () => {
+    if (!finalDeclarationFile) {
+      setError('Selecione um arquivo para enviar a Declaração Final.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setFinalDeclarationMessage(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', finalDeclarationFile);
+
+      const response = await fetch(`/api/admin/internships/${internshipId}/final-declaration`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao enviar Declaração Final');
+      }
+
+      setFinalDeclarationFile(null);
+      setFinalDeclarationMessage(data.message || 'Declaração Final enviada com sucesso.');
+      await refreshDocuments();
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao enviar Declaração Final');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -199,6 +269,12 @@ export default function DocumentsModeration({
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 text-sm text-red-700 rounded">
           {error}
+        </div>
+      )}
+
+      {finalDeclarationMessage && (
+        <div className="p-3 bg-green-50 border border-green-200 text-sm text-green-700 rounded">
+          {finalDeclarationMessage}
         </div>
       )}
 
@@ -319,6 +395,68 @@ export default function DocumentsModeration({
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {internshipStatus === InternshipStatus.FINISHED && (
+        <div id="final-declaration-section" className="border border-gray-200 rounded-lg p-4 space-y-3">
+          <div>
+            <h4 className="text-sm font-semibold text-gray-800">Declaração Final</h4>
+            <p className="text-xs text-gray-600">
+              Envie a Declaração Final para disponibilizar o documento ao aluno.
+            </p>
+          </div>
+
+          {!canUploadFinalDeclaration ? (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+              Para liberar o envio da Declaração Final, TRE e RFE devem estar aprovados
+              {requiresTerminationTerm ? ' e o Termo de Cancelamento também deve estar aprovado.' : '.'}
+            </p>
+          ) : (
+            <div className="flex flex-col items-start gap-2">
+              <label className="inline-flex items-center gap-3 text-xs text-gray-700">
+                <span className="px-3 py-1.5 rounded bg-gray-100 border border-gray-200 font-medium cursor-pointer hover:bg-gray-200">
+                  Escolher arquivo
+                </span>
+                <span>{finalDeclarationFile ? finalDeclarationFile.name : 'Nenhum arquivo selecionado'}</span>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(event) => setFinalDeclarationFile(event.target.files?.[0] ?? null)}
+                  disabled={loading}
+                  className="hidden"
+                />
+              </label>
+              <button
+                onClick={handleFinalDeclarationUpload}
+                disabled={loading || !finalDeclarationFile}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-emerald-600 rounded hover:bg-emerald-700 disabled:bg-emerald-300"
+              >
+                {finalDeclarationDocs.length > 0 ? 'Substituir Declaração Final' : 'Enviar Declaração Final'}
+              </button>
+            </div>
+          )}
+
+          {finalDeclarationDocs.length > 0 && (
+            <div className="divide-y divide-gray-200 border border-gray-200 rounded-lg">
+              {finalDeclarationDocs.map((doc) => (
+                <div key={doc.id} className="py-3 px-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-900">Declaração Final enviada</span>
+                    <span className={`px-2 py-0.5 text-xs font-semibold rounded-full border ${statusConfig[doc.status].color}`}>
+                      {statusConfig[doc.status].text}
+                    </span>
+                  </div>
+                  <a
+                    href={`/api/documents/${doc.id}/download`}
+                    className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+                  >
+                    📥 Download
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

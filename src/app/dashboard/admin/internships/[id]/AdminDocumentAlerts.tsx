@@ -21,6 +21,7 @@ const documentTypeLabels: Record<string, string> = {
   TRE: 'TRE',
   RFE: 'Relatório Final (RFE)',
   TERMINATION_TERM: 'Termo de Cancelamento',
+  FINAL_DECLARATION: 'Declaração Final',
   SIGNED_CONTRACT: 'TCE/PAE assinados',
   LIFE_INSURANCE: 'Seguro de Vida',
 };
@@ -53,11 +54,33 @@ export default function AdminDocumentAlerts({
     earlyTerminationApproved === true &&
     !terminationTermExists;
 
+  const treApproved = documents.some(
+    (doc) => doc.type === 'TRE' && (doc.status === 'APPROVED' || doc.status === 'SIGNED_VALIDATED')
+  );
+  const rfeApproved = documents.some(
+    (doc) => doc.type === 'RFE' && (doc.status === 'APPROVED' || doc.status === 'SIGNED_VALIDATED')
+  );
+  const terminationTermApproved = documents.some(
+    (doc) =>
+      doc.type === 'TERMINATION_TERM' &&
+      (doc.status === 'APPROVED' || doc.status === 'SIGNED_VALIDATED')
+  );
+  const finalDeclarationExists = documents.some(
+    (doc) => doc.type === 'FINAL_DECLARATION' && Boolean(doc.fileUrl)
+  );
+  const showMissingFinalDeclarationAlert =
+    status === 'FINISHED' &&
+    treApproved &&
+    rfeApproved &&
+    (!earlyTerminationApproved || terminationTermApproved) &&
+    !finalDeclarationExists;
+
   if (
     pendingDocuments.length === 0 &&
     (!insuranceRequired || hasLifeInsurance) &&
     (status !== 'APPROVED' || signedContractExists) &&
-    !showMissingTerminationTermAlert
+    !showMissingTerminationTermAlert &&
+    !showMissingFinalDeclarationAlert
   ) {
     return null;
   }
@@ -105,6 +128,15 @@ export default function AdminDocumentAlerts({
           <p className="text-sm text-purple-800 font-medium">📄 Termo de Cancelamento pendente</p>
           <p className="text-sm text-purple-700 mt-1">
             O estágio teve encerramento antecipado aprovado e ainda falta o envio do Termo de Cancelamento.
+          </p>
+        </div>
+      )}
+
+      {showMissingFinalDeclarationAlert && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+          <p className="text-sm text-emerald-800 font-medium">📌 Declaração Final pendente</p>
+          <p className="text-sm text-emerald-700 mt-1">
+            Os documentos finais foram aprovados e falta enviar a Declaração Final para o aluno.
           </p>
         </div>
       )}
