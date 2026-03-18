@@ -1,14 +1,17 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/get-user-from-token';
-import { processUploadedFile } from '@/lib/file-upload';
+import { deleteFile, processUploadedFile } from '@/lib/file-upload';
 import { parseDateOnlyToUtc } from '@/lib/date-utils';
 import { NotificationType, Role } from '@prisma/client';
+import { insuranceUploadPayloadSchema } from '@/lib/validations/schemas';
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let uploadedFileUrl: string | null = null;
+
   try {
     const { id: internshipId } = await params;
     const userPayload = await getUserFromToken(request);
@@ -44,26 +47,28 @@ export async function PATCH(
 
     const formData = await request.formData();
     const insuranceFile = formData.get('insurance') as File | null;
-    const insuranceCompany = (formData.get('insuranceCompany') as string | null)?.trim() || '';
-    const insurancePolicyNumber = (formData.get('insurancePolicyNumber') as string | null)?.trim() || '';
-    const insuranceCompanyCnpj = (formData.get('insuranceCompanyCnpj') as string | null)?.trim() || '';
-    const insuranceStartDate = (formData.get('insuranceStartDate') as string | null) || '';
-    const insuranceEndDate = (formData.get('insuranceEndDate') as string | null) || '';
+    const payloadParse = insuranceUploadPayloadSchema.safeParse({
+      insuranceCompany: formData.get('insuranceCompany'),
+      insurancePolicyNumber: formData.get('insurancePolicyNumber'),
+      insuranceCompanyCnpj: formData.get('insuranceCompanyCnpj'),
+      insuranceStartDate: formData.get('insuranceStartDate'),
+      insuranceEndDate: formData.get('insuranceEndDate'),
+    });
 
-    const hasAllInsuranceFields = Boolean(
-      insuranceCompany &&
-      insurancePolicyNumber &&
-      insuranceCompanyCnpj &&
-      insuranceStartDate &&
-      insuranceEndDate
-    );
-
-    if (!insuranceFile || !hasAllInsuranceFields) {
+    if (!insuranceFile || !payloadParse.success) {
       return NextResponse.json(
         { error: 'Envie os dados do seguro e o comprovante no mesmo envio.' },
         { status: 400 }
       );
     }
+
+    const {
+      insuranceCompany,
+      insurancePolicyNumber,
+      insuranceCompanyCnpj,
+      insuranceStartDate,
+      insuranceEndDate,
+    } = payloadParse.data;
 
     const parsedInsuranceStartDate = parseDateOnlyToUtc(insuranceStartDate);
     const parsedInsuranceEndDate = parseDateOnlyToUtc(insuranceEndDate);
@@ -85,6 +90,15 @@ export async function PATCH(
       );
     }
 
+    const insuranceResult = await processUploadedFile(insuranceFile, internshipId, 'LIFE_INSURANCE');
+    if ('error' in insuranceResult) {
+      return NextResponse.json({ error: insuranceResult.error }, { status: 400 });
+    }
+    uploadedFileUrl = insuranceResult.file.url;
+
+    let previousFileUrl: string | null = null;
+    let replacedExistingDocument = false;
+
     const updatedInternship = await prisma.$transaction(async (tx) => {
       const internshipUpdated = await tx.internship.update({
         where: { id: internshipId },
@@ -105,27 +119,41 @@ export async function PATCH(
       });
 
       if (existingInsurance) {
-        await tx.document.delete({
+        if (existingInsurance.status === 'APPROVED' || existingInsurance.status === 'SIGNED_VALIDATED') {
+          throw new Error('INSURANCE_DOCUMENT_LOCKED');
+        }
+
+        previousFileUrl = existingInsurance.fileUrl;
+        replacedExistingDocument = true;
+
+        await tx.document.update({
           where: { id: existingInsurance.id },
+          data: {
+            fileUrl: insuranceResult.file.url,
+            status: 'PENDING_ANALYSIS',
+            rejectionComments: null,
+            updatedAt: new Date(),
+          },
+        });
+      } else {
+        await tx.document.create({
+          data: {
+            type: 'LIFE_INSURANCE',
+            fileUrl: insuranceResult.file.url,
+            status: 'PENDING_ANALYSIS',
+            internshipId,
+          },
         });
       }
 
-      const insuranceResult = await processUploadedFile(insuranceFile, internshipId, 'LIFE_INSURANCE');
-      if ('error' in insuranceResult) {
-        throw new Error(insuranceResult.error);
-      }
-
-      await tx.document.create({
-        data: {
-          type: 'LIFE_INSURANCE',
-          fileUrl: insuranceResult.file.url,
-          status: 'PENDING_ANALYSIS',
-          internshipId,
-        },
-      });
-
       return internshipUpdated;
     });
+
+    if (previousFileUrl) {
+      const oldFilePath = previousFileUrl.replace('/uploads/documents/', '');
+      const fullPath = `${process.cwd()}/public/uploads/documents/${oldFilePath}`;
+      deleteFile(fullPath);
+    }
 
     const admins = await prisma.user.findMany({
       where: { role: Role.ADMIN },
@@ -137,8 +165,10 @@ export async function PATCH(
         data: admins.map((admin) => ({
           userId: admin.id,
           type: NotificationType.DOCUMENT_SUBMITTED,
-          title: 'Documento enviado para analise',
-          message: `Aluno ${internship.student.name} enviou comprovante do Seguro de Vida para o estagio na empresa ${internship.companyName}.`,
+          title: replacedExistingDocument ? 'Documento reenviado para analise' : 'Documento enviado para analise',
+          message: replacedExistingDocument
+            ? `Aluno ${internship.student.name} reenviou comprovante do Seguro de Vida para o estagio na empresa ${internship.companyName}.`
+            : `Aluno ${internship.student.name} enviou comprovante do Seguro de Vida para o estagio na empresa ${internship.companyName}.`,
           href: `/dashboard/admin/internships/${internship.id}`,
         })),
       });
@@ -151,6 +181,26 @@ export async function PATCH(
 
   } catch (error) {
     console.error('Erro ao atualizar dados do seguro:', error);
+
+    if (error instanceof Error && error.message === 'INSURANCE_DOCUMENT_LOCKED') {
+      if (uploadedFileUrl) {
+        const uploadedFilename = uploadedFileUrl.replace('/uploads/documents/', '');
+        const uploadedFullPath = `${process.cwd()}/public/uploads/documents/${uploadedFilename}`;
+        deleteFile(uploadedFullPath);
+      }
+
+      return NextResponse.json(
+        { error: 'Comprovante de seguro já aprovado/validado e não pode mais ser substituído.' },
+        { status: 400 }
+      );
+    }
+
+    if (uploadedFileUrl) {
+      const uploadedFilename = uploadedFileUrl.replace('/uploads/documents/', '');
+      const uploadedFullPath = `${process.cwd()}/public/uploads/documents/${uploadedFilename}`;
+      deleteFile(uploadedFullPath);
+    }
+
     return NextResponse.json({ error: 'Erro interno do servidor.' }, { status: 500 });
   }
 }

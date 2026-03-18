@@ -119,9 +119,13 @@ export default function InsuranceDataForm({
 
   const hasData = currentData.insuranceCompany || currentData.insurancePolicyNumber;
   const isCanceled = status === 'CANCELED';
-  const showReuploadPrompt = lifeInsuranceStatus === 'REJECTED';
+  const canReplaceInsuranceProof =
+    lifeInsuranceStatus === 'PENDING_ANALYSIS' || lifeInsuranceStatus === 'REJECTED';
+  const isInsuranceLocked =
+    lifeInsuranceStatus === 'APPROVED' || lifeInsuranceStatus === 'SIGNED_VALIDATED';
+  const showReuploadPrompt = canReplaceInsuranceProof;
 
-  if (!isEditing && hasData && !showReuploadPrompt) {
+  if (!isEditing && hasData && !showReuploadPrompt && isInsuranceLocked) {
     return null;
   }
 
@@ -131,13 +135,17 @@ export default function InsuranceDataForm({
   }
 
   if (!isEditing && showReuploadPrompt) {
+    const isRejected = lifeInsuranceStatus === 'REJECTED';
+
     return (
       <div id="insurance-data" className="bg-orange-50 border border-orange-200 rounded-lg p-4">
         <p className="text-sm text-orange-800 font-medium mb-2">
-          ⚠️ Comprovante do seguro rejeitado
+          ⚠️ {isRejected ? 'Comprovante do seguro rejeitado' : 'Comprovante do seguro em análise'}
         </p>
         <p className="text-sm text-orange-700 mb-3">
-          Atualize os dados do seguro e reenvie o comprovante.
+          {isRejected
+            ? 'Atualize os dados do seguro e reenvie o comprovante.'
+            : 'Se precisar corrigir o arquivo antes da aprovação, você pode substituí-lo agora.'}
         </p>
         {lifeInsuranceRejectionComments && (
           <div className="mb-3 text-sm text-orange-700">
@@ -148,7 +156,7 @@ export default function InsuranceDataForm({
           onClick={() => setIsEditing(true)}
           className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium"
         >
-          Reenviar comprovante
+          {isRejected ? 'Reenviar comprovante' : 'Substituir comprovante'}
         </button>
       </div>
     );

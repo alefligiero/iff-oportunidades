@@ -56,14 +56,10 @@ export default function DocumentsSection({
   const signedContractApproved = signedContractDocs.some(
     (doc) => doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED
   );
-  const signedContractPending = signedContractDocs.some(
-    (doc) => doc.status === DocumentStatus.PENDING_ANALYSIS
-  );
   const canUploadSignedContract =
     status !== InternshipStatus.CANCELED &&
     (status === InternshipStatus.APPROVED || status === InternshipStatus.IN_PROGRESS || status === InternshipStatus.FINISHED) &&
-    !signedContractApproved &&
-    !signedContractPending;
+    !signedContractApproved;
 
   // TRE (apenas se internship está finalizado)
   const treDocs = useMemo(
@@ -73,10 +69,9 @@ export default function DocumentsSection({
   const treApproved = treDocs.some(
     (doc) => doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED
   );
-  const trePending = treDocs.some((doc) => doc.status === DocumentStatus.PENDING_ANALYSIS);
   const canUploadTre =
     status !== InternshipStatus.CANCELED &&
-    status === InternshipStatus.FINISHED && !treApproved && !trePending;
+    status === InternshipStatus.FINISHED && !treApproved;
 
   // RFE (apenas se internship está finalizado)
   const rfeDocs = useMemo(
@@ -86,10 +81,9 @@ export default function DocumentsSection({
   const rfeApproved = rfeDocs.some(
     (doc) => doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED
   );
-  const rfePending = rfeDocs.some((doc) => doc.status === DocumentStatus.PENDING_ANALYSIS);
   const canUploadRfe =
     status !== InternshipStatus.CANCELED &&
-    status === InternshipStatus.FINISHED && !rfeApproved && !rfePending;
+    status === InternshipStatus.FINISHED && !rfeApproved;
 
   // Parecer Avaliativo (apenas se internship está finalizado)
   const parecerAvaliativoDocs = useMemo(
@@ -99,14 +93,10 @@ export default function DocumentsSection({
   const parecerAvaliativoApproved = parecerAvaliativoDocs.some(
     (doc) => doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED
   );
-  const parecerAvaliativoPending = parecerAvaliativoDocs.some(
-    (doc) => doc.status === DocumentStatus.PENDING_ANALYSIS
-  );
   const canUploadParecerAvaliativo =
     status !== InternshipStatus.CANCELED &&
     status === InternshipStatus.FINISHED &&
-    !parecerAvaliativoApproved &&
-    !parecerAvaliativoPending;
+    !parecerAvaliativoApproved;
 
   // Termo de Cancelamento (obrigatório apenas para encerramento antecipado aprovado)
   const terminationTermDocs = useMemo(
@@ -116,16 +106,12 @@ export default function DocumentsSection({
   const terminationTermApproved = terminationTermDocs.some(
     (doc) => doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED
   );
-  const terminationTermPending = terminationTermDocs.some(
-    (doc) => doc.status === DocumentStatus.PENDING_ANALYSIS
-  );
   const requiresTerminationTerm = earlyTerminationApproved === true;
   const canUploadTerminationTerm =
     requiresTerminationTerm &&
     status !== InternshipStatus.CANCELED &&
     status === InternshipStatus.FINISHED &&
-    !terminationTermApproved &&
-    !terminationTermPending;
+    !terminationTermApproved;
 
   const finalDeclarationDocs = useMemo(
     () => documents.filter((doc) => doc.type === DocumentType.FINAL_DECLARATION),
@@ -143,16 +129,12 @@ export default function DocumentsSection({
     [documents]
   );
 
-  const tceRejected = tceDocs.some((doc) => doc.status === DocumentStatus.REJECTED);
-  const tcePending = tceDocs.some((doc) => doc.status === DocumentStatus.PENDING_ANALYSIS);
   const tceApproved = tceDocs.some(
     (doc) => doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED
   );
   const canUploadTce =
     internshipType === InternshipType.INTEGRATOR &&
     status !== InternshipStatus.CANCELED &&
-    tceRejected &&
-    !tcePending &&
     !tceApproved;
 
   const refreshDocuments = async () => {

@@ -310,6 +310,18 @@ export const createDocumentSchema = z.object({
   fileUrl: z.string().url({ message: 'URL do arquivo inválida' }).optional(),
 });
 
+export const documentUploadTypeSchema = z.object({
+  type: z.nativeEnum(DocumentType, { message: 'Tipo de documento inválido' }),
+});
+
+export const insuranceUploadPayloadSchema = z.object({
+  insuranceCompany: z.string().trim().min(1, 'A seguradora é obrigatória.'),
+  insurancePolicyNumber: z.string().trim().min(1, 'O número da apólice é obrigatório.'),
+  insuranceCompanyCnpj: z.string().trim().min(1, 'O CNPJ da seguradora é obrigatório.'),
+  insuranceStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data de início do seguro inválida.'),
+  insuranceEndDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data de término do seguro inválida.'),
+});
+
 export const updateDocumentStatusSchema = z.object({
   status: z.nativeEnum(DocumentStatus, { message: 'Status inválido' }),
   rejectionComments: z.string().optional(),
@@ -393,6 +405,8 @@ export type CreateVacancyInput = z.infer<typeof createVacancySchema>;
 export type UpdateVacancyInput = z.infer<typeof updateVacancySchema>;
 export type UpdateVacancyStatusInput = z.infer<typeof updateVacancyStatusSchema>;
 export type CreateDocumentInput = z.infer<typeof createDocumentSchema>;
+export type DocumentUploadTypeInput = z.infer<typeof documentUploadTypeSchema>;
+export type InsuranceUploadPayloadInput = z.infer<typeof insuranceUploadPayloadSchema>;
 export type UpdateDocumentStatusInput = z.infer<typeof updateDocumentStatusSchema>;
 export type IdParam = z.infer<typeof idParamSchema>;
 export type PaginationInput = z.infer<typeof paginationSchema>;

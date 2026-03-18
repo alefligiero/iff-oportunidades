@@ -118,6 +118,14 @@ function DocumentRow({
           </p>
         </div>
       )}
+
+      {doc.status === 'PENDING_ANALYSIS' && showUploadButton && (
+        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
+          <p className="text-yellow-800 text-sm">
+            ℹ️ <strong>Substituição disponível:</strong> Se precisar corrigir algo antes da análise do admin, reenvie e o arquivo atual será substituído.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

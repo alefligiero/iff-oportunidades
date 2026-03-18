@@ -160,7 +160,10 @@ export default function DocumentUpload({
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4">Enviar {documentTypeLabels[documentType]}</h3>
+      <h3 className="text-lg font-semibold text-gray-800 mb-1">Enviar {documentTypeLabels[documentType]}</h3>
+      <p className="text-xs text-gray-600 mb-4">
+        Se o documento ainda não foi aprovado, um novo envio substitui automaticamente o arquivo anterior.
+      </p>
 
       {/* Mensagens de erro e sucesso */}
       {error && (
@@ -253,7 +256,7 @@ export default function DocumentUpload({
           disabled={!selectedFile || uploading || disabled}
           className="flex-1 bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
         >
-          {uploading ? 'Enviando...' : 'Enviar Documento'}
+          {uploading ? 'Enviando...' : 'Enviar/Substituir Documento'}
         </button>
         
         {selectedFile && !uploading && (

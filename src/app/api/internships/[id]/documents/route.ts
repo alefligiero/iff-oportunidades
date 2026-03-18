@@ -4,6 +4,7 @@ import { getUserFromToken } from '@/lib/get-user-from-token';
 import { processUploadedFile, deleteFile } from '@/lib/file-upload';
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/prisma';
+import { documentUploadTypeSchema } from '@/lib/validations/schemas';
 
 /**
  * POST /api/internships/[id]/documents
@@ -48,20 +49,22 @@ export async function POST(
 
     // Obter tipo de documento e arquivo do FormData (leitura única)
     const formData = await request.formData();
-    const documentType = formData.get('type') as string;
+    const rawDocumentType = formData.get('type');
     const fileField = formData.get('file') as File | null;
 
-    if (!documentType) {
+    if (!rawDocumentType || typeof rawDocumentType !== 'string') {
       return createErrorResponse('Tipo de documento é obrigatório', 400);
     }
 
-    if (!fileField || !(fileField instanceof File)) {
-      return createErrorResponse('Nenhum arquivo foi enviado', 400);
+    const parsedDocumentType = documentUploadTypeSchema.safeParse({ type: rawDocumentType });
+    if (!parsedDocumentType.success) {
+      return createErrorResponse('Tipo de documento inválido', 400);
     }
 
-    // Validar tipo de documento
-    if (!Object.values(DocumentType).includes(documentType as DocumentType)) {
-      return createErrorResponse('Tipo de documento inválido', 400);
+    const documentType = parsedDocumentType.data.type;
+
+    if (!fileField || !(fileField instanceof File)) {
+      return createErrorResponse('Nenhum arquivo foi enviado', 400);
     }
 
     if (documentType === DocumentType.FINAL_DECLARATION) {
@@ -107,9 +110,16 @@ export async function POST(
     const existingDocument = await prisma.document.findFirst({
       where: {
         internshipId,
-        type: documentType as DocumentType,
+        type: documentType,
       },
     });
+
+    if (
+      existingDocument &&
+      (existingDocument.status === 'APPROVED' || existingDocument.status === 'SIGNED_VALIDATED')
+    ) {
+      return createErrorResponse('Documento já aprovado/validado e não pode mais ser substituído', 400);
+    }
 
     // Processar upload do arquivo
     const result = await processUploadedFile(
@@ -176,7 +186,7 @@ export async function POST(
     // Criar novo documento
     const newDocument = await prisma.document.create({
       data: {
-        type: documentType as DocumentType,
+        type: documentType,
         fileUrl: file.url,
         status: 'PENDING_ANALYSIS',
         internshipId,
