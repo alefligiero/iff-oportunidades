@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DocumentStatus, DocumentType, InternshipStatus } from '@prisma/client';
+import { getFinalDocumentsPolicy } from '@/lib/final-documents-policy';
 
 interface DocumentItem {
   id: string;
@@ -19,6 +20,9 @@ interface DocumentsModerationProps {
   internshipStatus: InternshipStatus;
   insuranceRequired: boolean;
   earlyTerminationApproved: boolean | null;
+  internshipStartDate: string;
+  internshipEndDate: string;
+  earlyTerminationRequestedAt: string | null;
   initialDocuments: DocumentItem[];
 }
 
@@ -46,8 +50,22 @@ export default function DocumentsModeration({
   internshipStatus,
   insuranceRequired,
   earlyTerminationApproved,
+  internshipStartDate,
+  internshipEndDate,
+  earlyTerminationRequestedAt,
   initialDocuments,
 }: DocumentsModerationProps) {
+    const finalDocumentsPolicy = useMemo(
+      () =>
+        getFinalDocumentsPolicy({
+          earlyTerminationApproved,
+          startDate: internshipStartDate,
+          endDate: internshipEndDate,
+          earlyTerminationRequestedAt,
+        }),
+      [earlyTerminationApproved, internshipStartDate, internshipEndDate, earlyTerminationRequestedAt]
+    );
+
   const router = useRouter();
   const [documents, setDocuments] = useState<DocumentItem[]>(initialDocuments);
   const [loading, setLoading] = useState(false);
@@ -91,12 +109,12 @@ export default function DocumentsModeration({
       (doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED)
   );
 
-  const requiresTerminationTerm = earlyTerminationApproved === true;
+  const requiresTerminationTerm = finalDocumentsPolicy.requiresTerminationTerm;
   const canUploadFinalDeclaration =
     internshipStatus === InternshipStatus.FINISHED &&
-    hasTreApproved &&
-    hasRfeApproved &&
-    hasParecerAvaliativoApproved &&
+    finalDocumentsPolicy.requiresFinalDeclaration &&
+    (!finalDocumentsPolicy.requiresCoreFinalDocuments ||
+      (hasTreApproved && hasRfeApproved && hasParecerAvaliativoApproved)) &&
     (!requiresTerminationTerm || hasTerminationTermApproved);
 
   const refreshDocuments = async () => {
@@ -407,7 +425,7 @@ export default function DocumentsModeration({
         </div>
       )}
 
-      {internshipStatus === InternshipStatus.FINISHED && (
+      {internshipStatus === InternshipStatus.FINISHED && finalDocumentsPolicy.requiresFinalDeclaration && (
         <div id="final-declaration-section" className="border border-gray-200 rounded-lg p-4 space-y-3">
           <div>
             <h4 className="text-sm font-semibold text-gray-800">Declaração Final</h4>
@@ -418,7 +436,10 @@ export default function DocumentsModeration({
 
           {!canUploadFinalDeclaration ? (
             <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-              Para liberar o envio da Declaração Final, TRE, RFE e Parecer Avaliativo devem estar aprovados
+              Para liberar o envio da Declaração Final,
+              {finalDocumentsPolicy.requiresCoreFinalDocuments
+                ? ' TRE, RFE e Parecer Avaliativo devem estar aprovados'
+                : ' os documentos finais obrigatórios devem estar aprovados'}
               {requiresTerminationTerm ? ' e o Termo de Cancelamento também deve estar aprovado.' : '.'}
             </p>
           ) : (

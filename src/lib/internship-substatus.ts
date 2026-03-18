@@ -1,5 +1,6 @@
 import { DocumentType, DocumentStatus } from '@prisma/client';
 import { isDateInFutureBRT } from './date-utils';
+import { getFinalDocumentsPolicy } from './final-documents-policy';
 
 export interface DocumentSummary {
   type: DocumentType;
@@ -73,15 +74,29 @@ export function getInProgressSubstatus(documents: DocumentSummary[]): string | n
  */
 export function getFinishedSubstatus(
   documents: DocumentSummary[],
-  earlyTerminationApproved: boolean | null = false
+  earlyTerminationApproved: boolean | null = false,
+  startDate?: string | Date,
+  endDate?: string | Date,
+  earlyTerminationRequestedAt?: string | Date | null
 ): string {
+  const finalDocumentsPolicy = getFinalDocumentsPolicy({
+    earlyTerminationApproved,
+    startDate,
+    endDate,
+    earlyTerminationRequestedAt,
+  });
+
   const requiredDocuments: Array<{ type: DocumentType; label: string }> = [
-    { type: DocumentType.TRE, label: 'TRE' },
-    { type: DocumentType.RFE, label: 'RFE' },
-    { type: DocumentType.PARECER_AVALIATIVO, label: 'Parecer Avaliativo' },
+    ...(finalDocumentsPolicy.requiresCoreFinalDocuments
+      ? [
+          { type: DocumentType.TRE, label: 'TRE' },
+          { type: DocumentType.RFE, label: 'RFE' },
+          { type: DocumentType.PARECER_AVALIATIVO, label: 'Parecer Avaliativo' },
+        ]
+      : []),
   ];
 
-  if (earlyTerminationApproved === true) {
+  if (finalDocumentsPolicy.requiresTerminationTerm) {
     requiredDocuments.push({
       type: DocumentType.TERMINATION_TERM,
       label: 'Termo de Cancelamento',
@@ -104,14 +119,22 @@ export function getFinishedSubstatus(
     .filter(({ label }) => !approvedLabels.includes(label) && !pendingLabels.includes(label))
     .map(({ label }) => label);
 
-  const finalDeclarationApproved = documents.some(
-    (doc) => doc.type === DocumentType.FINAL_DECLARATION && doc.status === DocumentStatus.APPROVED
-  );
-  const finalDeclarationPending = documents.some(
-    (doc) => doc.type === DocumentType.FINAL_DECLARATION && doc.status === DocumentStatus.PENDING_ANALYSIS
-  );
+  const finalDeclarationApproved =
+    finalDocumentsPolicy.requiresFinalDeclaration &&
+    documents.some(
+      (doc) => doc.type === DocumentType.FINAL_DECLARATION && doc.status === DocumentStatus.APPROVED
+    );
+  const finalDeclarationPending =
+    finalDocumentsPolicy.requiresFinalDeclaration &&
+    documents.some(
+      (doc) => doc.type === DocumentType.FINAL_DECLARATION && doc.status === DocumentStatus.PENDING_ANALYSIS
+    );
 
   if (approvedLabels.length === requiredDocuments.length) {
+    if (!finalDocumentsPolicy.requiresFinalDeclaration) {
+      return 'Concluído';
+    }
+
     if (finalDeclarationApproved) {
       return 'Concluído';
     }
@@ -174,13 +197,24 @@ export function getFinishedSubstatus(
 export function isInternshipBlocking(
   status: string,
   documents: DocumentSummary[],
-  earlyTerminationApproved: boolean | null = false
+  earlyTerminationApproved: boolean | null = false,
+  startDate?: string | Date,
+  endDate?: string | Date,
+  earlyTerminationRequestedAt?: string | Date | null
 ): boolean {
   if (['IN_ANALYSIS', 'APPROVED', 'IN_PROGRESS'].includes(status)) {
     return true;
   }
   if (status === 'FINISHED') {
-    return getFinishedSubstatus(documents, earlyTerminationApproved) !== 'Concluído';
+    return (
+      getFinishedSubstatus(
+        documents,
+        earlyTerminationApproved,
+        startDate,
+        endDate,
+        earlyTerminationRequestedAt
+      ) !== 'Concluído'
+    );
   }
   return false;
 }
@@ -192,8 +226,10 @@ export function getStatusWithSubstatus(
   status: string,
   documents: DocumentSummary[],
   startDate?: string | Date,
+  endDate?: string | Date,
   insuranceRequired: boolean = true,
-  earlyTerminationApproved: boolean | null = false
+  earlyTerminationApproved: boolean | null = false,
+  earlyTerminationRequestedAt?: string | Date | null
 ): string {
   switch (status) {
     case 'APPROVED':
@@ -208,7 +244,13 @@ export function getStatusWithSubstatus(
       return inProgressSubstatus ? `Em Andamento - ${inProgressSubstatus}` : 'Em Andamento';
 
     case 'FINISHED':
-      const finishedSubstatus = getFinishedSubstatus(documents, earlyTerminationApproved);
+      const finishedSubstatus = getFinishedSubstatus(
+        documents,
+        earlyTerminationApproved,
+        startDate,
+        endDate,
+        earlyTerminationRequestedAt
+      );
       return `Finalizado - ${finishedSubstatus}`;
 
     default:

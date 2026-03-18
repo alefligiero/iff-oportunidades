@@ -10,6 +10,7 @@ import { processUploadedFile, deleteFile } from '@/lib/file-upload';
 import { createErrorResponse, createSuccessResponse, createValidationErrorResponse } from '@/lib/api-response';
 import { adminFinalDeclarationUploadSchema } from '@/lib/validations/schemas';
 import { prisma } from '@/lib/prisma';
+import { getFinalDocumentsPolicy } from '@/lib/final-documents-policy';
 
 const FINAL_DECLARATION_TYPE = 'FINAL_DECLARATION' as DocumentType;
 const PARECER_AVALIATIVO_TYPE = 'PARECER_AVALIATIVO' as DocumentType;
@@ -59,6 +60,20 @@ export async function POST(
       return createErrorResponse('A Declaração Final só pode ser enviada para estágios finalizados', 400);
     }
 
+    const finalDocumentsPolicy = getFinalDocumentsPolicy({
+      earlyTerminationApproved: internship.earlyTerminationApproved,
+      startDate: internship.startDate,
+      endDate: internship.endDate,
+      earlyTerminationRequestedAt: internship.earlyTerminationRequestedAt,
+    });
+
+    if (!finalDocumentsPolicy.requiresFinalDeclaration) {
+      return createErrorResponse(
+        'Declaração Final não se aplica para encerramento antecipado com duração menor que 6 meses',
+        400
+      );
+    }
+
     const hasTreApproved = internship.documents.some(
       (doc) => doc.type === DocumentType.TRE && isApprovedDocumentStatus(doc.status)
     );
@@ -72,14 +87,17 @@ export async function POST(
       (doc) => doc.type === DocumentType.TERMINATION_TERM && isApprovedDocumentStatus(doc.status)
     );
 
-    if (!hasTreApproved || !hasRfeApproved || !hasParecerAvaliativoApproved) {
+    if (
+      finalDocumentsPolicy.requiresCoreFinalDocuments &&
+      (!hasTreApproved || !hasRfeApproved || !hasParecerAvaliativoApproved)
+    ) {
       return createErrorResponse(
         'TRE, RFE e Parecer Avaliativo devem estar aprovados antes do envio da Declaração Final',
         400
       );
     }
 
-    if (internship.earlyTerminationApproved === true && !hasTerminationTermApproved) {
+    if (finalDocumentsPolicy.requiresTerminationTerm && !hasTerminationTermApproved) {
       return createErrorResponse(
         'O Termo de Cancelamento deve estar aprovado antes do envio da Declaração Final',
         400

@@ -1,6 +1,7 @@
 'use client';
 
 import { DocumentStatus } from '@prisma/client';
+import { getFinalDocumentsPolicy } from '@/lib/final-documents-policy';
 
 interface AdminActionGuideProps {
   status: string; // InternshipStatus
@@ -9,6 +10,9 @@ interface AdminActionGuideProps {
     status: string;
   }>;
   earlyTerminationApproved: boolean | null;
+  internshipStartDate: string;
+  internshipEndDate: string;
+  earlyTerminationRequestedAt: string | null;
 }
 
 const APPROVED_DOCUMENT_STATUSES = [DocumentStatus.APPROVED, DocumentStatus.SIGNED_VALIDATED];
@@ -17,6 +21,9 @@ export default function AdminActionGuide({
   status,
   documents,
   earlyTerminationApproved,
+  internshipStartDate,
+  internshipEndDate,
+  earlyTerminationRequestedAt,
 }: AdminActionGuideProps) {
   if (status === 'REJECTED') {
     return (
@@ -41,6 +48,13 @@ export default function AdminActionGuide({
   }
 
   if (status === 'FINISHED') {
+    const finalDocumentsPolicy = getFinalDocumentsPolicy({
+      earlyTerminationApproved,
+      startDate: internshipStartDate,
+      endDate: internshipEndDate,
+      earlyTerminationRequestedAt,
+    });
+
     const treApproved = documents.some(
       (doc) => doc.type === 'TRE' && APPROVED_DOCUMENT_STATUSES.includes(doc.status as DocumentStatus)
     );
@@ -64,12 +78,11 @@ export default function AdminActionGuide({
     );
 
     const allFinalDocumentsApproved =
-      treApproved &&
-      rfeApproved &&
-      parecerAvaliativoApproved &&
-      (!earlyTerminationApproved || terminationTermApproved);
+      (!finalDocumentsPolicy.requiresCoreFinalDocuments ||
+        (treApproved && rfeApproved && parecerAvaliativoApproved)) &&
+      (!finalDocumentsPolicy.requiresTerminationTerm || terminationTermApproved);
 
-    if (allFinalDocumentsApproved && !finalDeclarationApproved) {
+    if (finalDocumentsPolicy.requiresFinalDeclaration && allFinalDocumentsApproved && !finalDeclarationApproved) {
       return (
         <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-5">
           <h3 className="text-sm font-semibold text-emerald-800 mb-2">Ação pendente do Admin</h3>

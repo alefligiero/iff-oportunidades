@@ -1,5 +1,7 @@
 'use client';
 
+import { getFinalDocumentsPolicy } from '@/lib/final-documents-policy';
+
 interface Document {
   id: string;
   type: string; // DocumentType
@@ -12,6 +14,9 @@ interface NextStepsGuideProps {
   documents: Document[];
   insuranceRequired: boolean;
   earlyTerminationApproved: boolean | null;
+  internshipStartDate: string;
+  internshipEndDate: string;
+  earlyTerminationRequestedAt: string | null;
 }
 
 export default function NextStepsGuide({
@@ -19,6 +24,9 @@ export default function NextStepsGuide({
   documents,
   insuranceRequired,
   earlyTerminationApproved,
+  internshipStartDate,
+  internshipEndDate,
+  earlyTerminationRequestedAt,
 }: NextStepsGuideProps) {
   const getNextSteps = () => {
     // Estágio em andamento
@@ -37,6 +45,13 @@ export default function NextStepsGuide({
 
     // Estágio finalizado
     if (status === 'FINISHED') {
+      const finalDocumentsPolicy = getFinalDocumentsPolicy({
+        earlyTerminationApproved,
+        startDate: internshipStartDate,
+        endDate: internshipEndDate,
+        earlyTerminationRequestedAt,
+      });
+
       const treApproved = documents.some(
         (doc) => doc.type === 'TRE' && doc.status === 'APPROVED'
       );
@@ -55,7 +70,7 @@ export default function NextStepsGuide({
       const parecerAvaliativoPending = documents.some(
         (doc) => doc.type === 'PARECER_AVALIATIVO' && doc.status === 'PENDING_ANALYSIS'
       );
-      const requiresTerminationTerm = earlyTerminationApproved === true;
+      const requiresTerminationTerm = finalDocumentsPolicy.requiresTerminationTerm;
       const terminationTermApproved = documents.some(
         (doc) => doc.type === 'TERMINATION_TERM' && doc.status === 'APPROVED'
       );
@@ -69,26 +84,27 @@ export default function NextStepsGuide({
         (doc) => doc.type === 'FINAL_DECLARATION' && doc.status === 'PENDING_ANALYSIS'
       );
       const allFinalDocsApproved =
-        treApproved &&
-        rfeApproved &&
-        parecerAvaliativoApproved &&
+        (!finalDocumentsPolicy.requiresCoreFinalDocuments ||
+          (treApproved && rfeApproved && parecerAvaliativoApproved)) &&
         (!requiresTerminationTerm || terminationTermApproved);
 
       // Todos os documentos finais aprovados
-      if (allFinalDocsApproved && finalDeclarationApproved) {
+      if (allFinalDocsApproved && (!finalDocumentsPolicy.requiresFinalDeclaration || finalDeclarationApproved)) {
         return {
           title: '🎉 Estágio Concluído com Sucesso!',
           steps: [
             '✅ Todos os documentos finais foram aprovados',
             'Parabéns pela conclusão do seu estágio!',
-            'A Declaração Final está disponível na seção de documentos deste estágio',
+            finalDocumentsPolicy.requiresFinalDeclaration
+              ? 'A Declaração Final está disponível na seção de documentos deste estágio'
+              : 'O processo de encerramento foi concluído com sucesso.',
           ],
           color: 'bg-green-50 border-green-200',
           textColor: 'text-green-900',
         };
       }
 
-      if (allFinalDocsApproved && !finalDeclarationApproved) {
+      if (finalDocumentsPolicy.requiresFinalDeclaration && allFinalDocsApproved && !finalDeclarationApproved) {
         return {
           title: '📌 Aguardando Declaração Final',
           steps: [
@@ -104,11 +120,20 @@ export default function NextStepsGuide({
       }
 
       // Documentos pendentes de análise
-      if (trePending || rfePending || parecerAvaliativoPending || (requiresTerminationTerm && terminationTermPending)) {
+      if (
+        (finalDocumentsPolicy.requiresCoreFinalDocuments && (trePending || rfePending || parecerAvaliativoPending)) ||
+        (requiresTerminationTerm && terminationTermPending)
+      ) {
         const pendingDocs = [];
-        if (trePending) pendingDocs.push('TRE (Termo de Realização de Estágio)');
-        if (rfePending) pendingDocs.push('RFE (Relatório Final de Estágio)');
-        if (parecerAvaliativoPending) pendingDocs.push('Parecer Avaliativo');
+        if (finalDocumentsPolicy.requiresCoreFinalDocuments && trePending) {
+          pendingDocs.push('TRE (Termo de Realização de Estágio)');
+        }
+        if (finalDocumentsPolicy.requiresCoreFinalDocuments && rfePending) {
+          pendingDocs.push('RFE (Relatório Final de Estágio)');
+        }
+        if (finalDocumentsPolicy.requiresCoreFinalDocuments && parecerAvaliativoPending) {
+          pendingDocs.push('Parecer Avaliativo');
+        }
         if (requiresTerminationTerm && terminationTermPending) {
           pendingDocs.push('Termo de Cancelamento de Estágio');
         }
@@ -127,36 +152,62 @@ export default function NextStepsGuide({
 
       // Precisa enviar documentos finais
       const missingDocs = [];
-      if (!treApproved && !trePending) missingDocs.push('TRE');
-      if (!rfeApproved && !rfePending) missingDocs.push('RFE');
-      if (!parecerAvaliativoApproved && !parecerAvaliativoPending) {
+      if (finalDocumentsPolicy.requiresCoreFinalDocuments && !treApproved && !trePending) {
+        missingDocs.push('TRE');
+      }
+      if (finalDocumentsPolicy.requiresCoreFinalDocuments && !rfeApproved && !rfePending) {
+        missingDocs.push('RFE');
+      }
+      if (
+        finalDocumentsPolicy.requiresCoreFinalDocuments &&
+        !parecerAvaliativoApproved &&
+        !parecerAvaliativoPending
+      ) {
         missingDocs.push('Parecer Avaliativo');
       }
       if (requiresTerminationTerm && !terminationTermApproved && !terminationTermPending) {
         missingDocs.push('Termo de Cancelamento de Estágio');
       }
 
-      const templateLine = requiresTerminationTerm
-        ? '1️⃣ Baixe os templates de TRE, RFE, Parecer Avaliativo e Termo de Cancelamento na seção "Documentos Finais" abaixo'
-        : '1️⃣ Baixe os templates de TRE, RFE e Parecer Avaliativo na seção "Documentos Finais" abaixo';
+      const templateLine = finalDocumentsPolicy.requiresCoreFinalDocuments
+        ? requiresTerminationTerm
+          ? '1️⃣ Baixe os templates de TRE, RFE, Parecer Avaliativo e Termo de Cancelamento na seção "Documentos Finais" abaixo'
+          : '1️⃣ Baixe os templates de TRE, RFE e Parecer Avaliativo na seção "Documentos Finais" abaixo'
+        : '1️⃣ Baixe o template de Termo de Cancelamento na seção "Documentos Finais" abaixo';
 
       const terminationLine = requiresTerminationTerm
-        ? '4️⃣ Termo de Cancelamento: Preencha, colete as assinaturas e envie junto com os demais documentos'
+        ? finalDocumentsPolicy.requiresCoreFinalDocuments
+          ? '4️⃣ Termo de Cancelamento: Preencha, colete as assinaturas e envie junto com os demais documentos'
+          : '2️⃣ Termo de Cancelamento: Preencha, colete as assinaturas e envie o documento para análise'
         : null;
 
       const parecerLine = '4️⃣ Parecer Avaliativo: Solicite ao Professor-Orientador o preenchimento e assinatura e envie o documento';
+
+      const coreSteps = finalDocumentsPolicy.requiresCoreFinalDocuments
+        ? [
+            '2️⃣ TRE: Preencha e solicite assinatura do representante da Empresa',
+            '3️⃣ RFE: Produza o relatório com seu Supervisor e Professor-Orientador',
+            parecerLine,
+          ]
+        : [];
+
+      const uploadStep = finalDocumentsPolicy.requiresCoreFinalDocuments
+        ? `${terminationLine ? '6️⃣' : '5️⃣'} Faça o upload dos documentos preenchidos e assinados`
+        : '3️⃣ Faça o upload do Termo de Cancelamento preenchido e assinado';
+
+      const approvalStep = finalDocumentsPolicy.requiresCoreFinalDocuments
+        ? `${terminationLine ? '7️⃣' : '6️⃣'} Aguarde a aprovação da Agência de Oportunidades`
+        : '4️⃣ Aguarde a aprovação da Agência de Oportunidades';
 
       return {
         title: '📋 Enviar Documentos Finais',
         steps: [
           'Seu estágio foi finalizado! Agora você precisa enviar os documentos finais:',
           templateLine,
-          '2️⃣ TRE: Preencha e solicite assinatura do representante da Empresa',
-          '3️⃣ RFE: Produza o relatório com seu Supervisor e Professor-Orientador',
-          parecerLine,
+          ...coreSteps,
           ...(terminationLine ? [terminationLine] : []),
-          `${terminationLine ? '6️⃣' : '5️⃣'} Faça o upload dos documentos preenchidos e assinados`,
-          `${terminationLine ? '7️⃣' : '6️⃣'} Aguarde a aprovação da Agência de Oportunidades`,
+          uploadStep,
+          approvalStep,
         ],
         color: 'bg-blue-50 border-blue-200',
         textColor: 'text-blue-900',

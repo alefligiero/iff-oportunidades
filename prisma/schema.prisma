@@ -91,6 +91,7 @@ model Internship {
   rejectionReason           String?
   rejectedAt                DateTime?
   earlyTerminationApproved  Boolean?
+  earlyTerminationRequestedAt DateTime?
   earlyTerminationHandledAt DateTime?
   earlyTerminationReason    String?
   earlyTerminationRequested Boolean            @default(false)

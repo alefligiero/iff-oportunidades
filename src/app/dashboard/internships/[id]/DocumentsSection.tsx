@@ -6,6 +6,7 @@ import DocumentUpload from "./DocumentUpload";
 import DocumentList from "./DocumentList";
 import DownloadTemplates from "./DownloadTemplates";
 import DownloadOfficialDocumentCard from "./DownloadOfficialDocumentCard";
+import { getFinalDocumentsPolicy } from "@/lib/final-documents-policy";
 
 export type DocumentItem = {
   id: string;
@@ -22,6 +23,9 @@ interface DocumentsSectionProps {
   internshipType: InternshipType;
   status: InternshipStatus;
   earlyTerminationApproved: boolean | null;
+  internshipStartDate: string;
+  internshipEndDate: string;
+  earlyTerminationRequestedAt: string | null;
   initialDocuments: DocumentItem[];
 }
 
@@ -42,11 +46,25 @@ export default function DocumentsSection({
   internshipType,
   status,
   earlyTerminationApproved,
+  internshipStartDate,
+  internshipEndDate,
+  earlyTerminationRequestedAt,
   initialDocuments,
 }: DocumentsSectionProps) {
   const [documents, setDocuments] = useState<DocumentItem[]>(normalizeDocuments(initialDocuments));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const finalDocumentsPolicy = useMemo(
+    () =>
+      getFinalDocumentsPolicy({
+        earlyTerminationApproved,
+        startDate: internshipStartDate,
+        endDate: internshipEndDate,
+        earlyTerminationRequestedAt,
+      }),
+    [earlyTerminationApproved, internshipStartDate, internshipEndDate, earlyTerminationRequestedAt]
+  );
 
   // Documentos "TCE + PAE assinados"
   const signedContractDocs = useMemo(
@@ -71,7 +89,9 @@ export default function DocumentsSection({
   );
   const canUploadTre =
     status !== InternshipStatus.CANCELED &&
-    status === InternshipStatus.FINISHED && !treApproved;
+    status === InternshipStatus.FINISHED &&
+    finalDocumentsPolicy.requiresCoreFinalDocuments &&
+    !treApproved;
 
   // RFE (apenas se internship está finalizado)
   const rfeDocs = useMemo(
@@ -83,7 +103,9 @@ export default function DocumentsSection({
   );
   const canUploadRfe =
     status !== InternshipStatus.CANCELED &&
-    status === InternshipStatus.FINISHED && !rfeApproved;
+    status === InternshipStatus.FINISHED &&
+    finalDocumentsPolicy.requiresCoreFinalDocuments &&
+    !rfeApproved;
 
   // Parecer Avaliativo (apenas se internship está finalizado)
   const parecerAvaliativoDocs = useMemo(
@@ -96,6 +118,7 @@ export default function DocumentsSection({
   const canUploadParecerAvaliativo =
     status !== InternshipStatus.CANCELED &&
     status === InternshipStatus.FINISHED &&
+    finalDocumentsPolicy.requiresCoreFinalDocuments &&
     !parecerAvaliativoApproved;
 
   // Termo de Cancelamento (obrigatório apenas para encerramento antecipado aprovado)
@@ -106,7 +129,7 @@ export default function DocumentsSection({
   const terminationTermApproved = terminationTermDocs.some(
     (doc) => doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED
   );
-  const requiresTerminationTerm = earlyTerminationApproved === true;
+  const requiresTerminationTerm = finalDocumentsPolicy.requiresTerminationTerm;
   const canUploadTerminationTerm =
     requiresTerminationTerm &&
     status !== InternshipStatus.CANCELED &&
@@ -272,95 +295,99 @@ export default function DocumentsSection({
 
           {/* Templates para Download */}
           <DownloadTemplates
-            showTRE={true}
-            showRFE={true}
-            showParecerAvaliativo={true}
+            showTRE={finalDocumentsPolicy.requiresCoreFinalDocuments}
+            showRFE={finalDocumentsPolicy.requiresCoreFinalDocuments}
+            showParecerAvaliativo={finalDocumentsPolicy.requiresCoreFinalDocuments}
             showTerminationTerm={requiresTerminationTerm}
           />
 
-          {/* Seção TRE */}
-          <div className="border-t pt-4">
-            <div className="mb-3">
-              <h4 className="text-sm font-semibold text-gray-900">Enviar TRE Preenchido</h4>
-              <p className="text-xs text-gray-600">
-                Após o representante da empresa assinar o TRE, faça o upload do documento completo.
-              </p>
-            </div>
+          {finalDocumentsPolicy.requiresCoreFinalDocuments && (
+            <>
+              {/* Seção TRE */}
+              <div className="border-t pt-4">
+                <div className="mb-3">
+                  <h4 className="text-sm font-semibold text-gray-900">Enviar TRE Preenchido</h4>
+                  <p className="text-xs text-gray-600">
+                    Após o representante da empresa assinar o TRE, faça o upload do documento completo.
+                  </p>
+                </div>
 
-            {canUploadTre && (
-              <DocumentUpload
-                internshipId={internshipId}
-                documentType={DocumentType.TRE}
-                onUploadSuccess={refreshDocuments}
-                disabled={false}
-              />
-            )}
+                {canUploadTre && (
+                  <DocumentUpload
+                    internshipId={internshipId}
+                    documentType={DocumentType.TRE}
+                    onUploadSuccess={refreshDocuments}
+                    disabled={false}
+                  />
+                )}
 
-            <DocumentList
-              internshipId={internshipId}
-              documents={treDocs}
-              onRefresh={refreshDocuments}
-              showUploadButton={true}
-              title="TRE enviados"
-              showAlerts={false}
-            />
-          </div>
+                <DocumentList
+                  internshipId={internshipId}
+                  documents={treDocs}
+                  onRefresh={refreshDocuments}
+                  showUploadButton={true}
+                  title="TRE enviados"
+                  showAlerts={false}
+                />
+              </div>
 
-          {/* Seção RFE */}
-          <div className="border-t pt-4">
-            <div className="mb-3">
-              <h4 className="text-sm font-semibold text-gray-900">Enviar Relatório Final de Estágio</h4>
-              <p className="text-xs text-gray-600">
-                Após produzir o relatório com seu Supervisor e Professor-Orientador e coletar as assinaturas, faça o upload.
-              </p>
-            </div>
+              {/* Seção RFE */}
+              <div className="border-t pt-4">
+                <div className="mb-3">
+                  <h4 className="text-sm font-semibold text-gray-900">Enviar Relatório Final de Estágio</h4>
+                  <p className="text-xs text-gray-600">
+                    Após produzir o relatório com seu Supervisor e Professor-Orientador e coletar as assinaturas, faça o upload.
+                  </p>
+                </div>
 
-            {canUploadRfe && (
-              <DocumentUpload
-                internshipId={internshipId}
-                documentType={DocumentType.RFE}
-                onUploadSuccess={refreshDocuments}
-                disabled={false}
-              />
-            )}
+                {canUploadRfe && (
+                  <DocumentUpload
+                    internshipId={internshipId}
+                    documentType={DocumentType.RFE}
+                    onUploadSuccess={refreshDocuments}
+                    disabled={false}
+                  />
+                )}
 
-            <DocumentList
-              internshipId={internshipId}
-              documents={rfeDocs}
-              onRefresh={refreshDocuments}
-              showUploadButton={true}
-              title="RFE enviados"
-              showAlerts={false}
-            />
-          </div>
+                <DocumentList
+                  internshipId={internshipId}
+                  documents={rfeDocs}
+                  onRefresh={refreshDocuments}
+                  showUploadButton={true}
+                  title="RFE enviados"
+                  showAlerts={false}
+                />
+              </div>
 
-          {/* Seção Parecer Avaliativo */}
-          <div className="border-t pt-4">
-            <div className="mb-3">
-              <h4 className="text-sm font-semibold text-gray-900">Enviar Parecer Avaliativo</h4>
-              <p className="text-xs text-gray-600">
-                Após o Professor-Orientador preencher e assinar o parecer, faça o upload do documento completo.
-              </p>
-            </div>
+              {/* Seção Parecer Avaliativo */}
+              <div className="border-t pt-4">
+                <div className="mb-3">
+                  <h4 className="text-sm font-semibold text-gray-900">Enviar Parecer Avaliativo</h4>
+                  <p className="text-xs text-gray-600">
+                    Após o Professor-Orientador preencher e assinar o parecer, faça o upload do documento completo.
+                  </p>
+                </div>
 
-            {canUploadParecerAvaliativo && (
-              <DocumentUpload
-                internshipId={internshipId}
-                documentType={DocumentType.PARECER_AVALIATIVO}
-                onUploadSuccess={refreshDocuments}
-                disabled={false}
-              />
-            )}
+                {canUploadParecerAvaliativo && (
+                  <DocumentUpload
+                    internshipId={internshipId}
+                    documentType={DocumentType.PARECER_AVALIATIVO}
+                    onUploadSuccess={refreshDocuments}
+                    disabled={false}
+                  />
+                )}
 
-            <DocumentList
-              internshipId={internshipId}
-              documents={parecerAvaliativoDocs}
-              onRefresh={refreshDocuments}
-              showUploadButton={true}
-              title="Pareceres Avaliativos enviados"
-              showAlerts={false}
-            />
-          </div>
+                <DocumentList
+                  internshipId={internshipId}
+                  documents={parecerAvaliativoDocs}
+                  onRefresh={refreshDocuments}
+                  showUploadButton={true}
+                  title="Pareceres Avaliativos enviados"
+                  showAlerts={false}
+                />
+              </div>
+            </>
+          )}
 
           {requiresTerminationTerm && (
             <div className="border-t pt-4">

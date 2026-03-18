@@ -52,6 +52,7 @@ export async function POST(
       where: { id: internshipId },
       data: {
         earlyTerminationRequested: true,
+        earlyTerminationRequestedAt: new Date(),
         earlyTerminationReason: reason,
         earlyTerminationApproved: null,
         earlyTerminationHandledAt: null,

@@ -133,7 +133,13 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
 
   const finishedSubstatus =
     internship?.status === InternshipStatus.FINISHED
-      ? getFinishedSubstatus(internship.documents, internship.earlyTerminationApproved)
+      ? getFinishedSubstatus(
+          internship.documents,
+          internship.earlyTerminationApproved,
+          internship.startDate,
+          internship.endDate,
+          internship.earlyTerminationRequestedAt
+        )
       : null;
 
   if (error) {
@@ -222,6 +228,9 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
           documents={initialDocuments}
           insuranceRequired={internship.insuranceRequired}
           earlyTerminationApproved={internship.earlyTerminationApproved}
+          internshipStartDate={internship.startDate.toISOString()}
+          internshipEndDate={internship.endDate.toISOString()}
+          earlyTerminationRequestedAt={internship.earlyTerminationRequestedAt?.toISOString() ?? null}
         />
 
         {internship.insuranceRequired && <InsuranceDataForm
@@ -243,6 +252,9 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
           internshipType={internship.type}
           status={internship.status}
           earlyTerminationApproved={internship.earlyTerminationApproved}
+          internshipStartDate={internship.startDate.toISOString()}
+          internshipEndDate={internship.endDate.toISOString()}
+          earlyTerminationRequestedAt={internship.earlyTerminationRequestedAt?.toISOString() ?? null}
           initialDocuments={initialDocuments}
         />
 

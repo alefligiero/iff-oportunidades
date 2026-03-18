@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/get-user-from-token';
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response';
 import { generatePeriodicReportsSchedule } from '@/lib/periodic-reports';
+import { getFinalDocumentsPolicy } from '@/lib/final-documents-policy';
 
 interface PendingTask {
   id: string;
@@ -96,6 +97,9 @@ export async function GET(request: NextRequest) {
             id: true,
             companyName: true,
             earlyTerminationApproved: true,
+            earlyTerminationRequestedAt: true,
+            startDate: true,
+            endDate: true,
             student: {
               select: { name: true },
             },
@@ -141,6 +145,13 @@ export async function GET(request: NextRequest) {
       });
 
       finishedInternships.forEach((internship) => {
+        const finalDocumentsPolicy = getFinalDocumentsPolicy({
+          earlyTerminationApproved: internship.earlyTerminationApproved,
+          startDate: internship.startDate,
+          endDate: internship.endDate,
+          earlyTerminationRequestedAt: internship.earlyTerminationRequestedAt,
+        });
+
         const treApproved = internship.documents.some(
           (doc) => doc.type === DocumentType.TRE && APPROVED_DOCUMENT_STATUSES.includes(doc.status)
         );
@@ -153,11 +164,14 @@ export async function GET(request: NextRequest) {
             APPROVED_DOCUMENT_STATUSES.includes(doc.status)
         );
 
-        if (!treApproved || !rfeApproved || !parecerAvaliativoApproved) {
+        if (
+          finalDocumentsPolicy.requiresCoreFinalDocuments &&
+          (!treApproved || !rfeApproved || !parecerAvaliativoApproved)
+        ) {
           return;
         }
 
-        if (internship.earlyTerminationApproved === true) {
+        if (finalDocumentsPolicy.requiresTerminationTerm) {
           const terminationTermApproved = internship.documents.some(
             (doc) =>
               doc.type === DocumentType.TERMINATION_TERM &&
@@ -167,6 +181,10 @@ export async function GET(request: NextRequest) {
           if (!terminationTermApproved) {
             return;
           }
+        }
+
+        if (!finalDocumentsPolicy.requiresFinalDeclaration) {
+          return;
         }
 
         const finalDeclarationApproved = internship.documents.some(
@@ -319,6 +337,13 @@ export async function GET(request: NextRequest) {
       }
 
       if (internship.status === InternshipStatus.FINISHED) {
+        const finalDocumentsPolicy = getFinalDocumentsPolicy({
+          earlyTerminationApproved: internship.earlyTerminationApproved,
+          startDate: internship.startDate,
+          endDate: internship.endDate,
+          earlyTerminationRequestedAt: internship.earlyTerminationRequestedAt,
+        });
+
         const treLatest = getLatestDocumentByType(documents, DocumentType.TRE);
         const treApproved = documents.some(
           (doc) => doc.type === DocumentType.TRE && APPROVED_DOCUMENT_STATUSES.includes(doc.status)
@@ -327,7 +352,7 @@ export async function GET(request: NextRequest) {
           (doc) => doc.type === DocumentType.TRE && doc.status === DocumentStatus.PENDING_ANALYSIS
         );
 
-        if (!treApproved && !trePending) {
+        if (finalDocumentsPolicy.requiresCoreFinalDocuments && !treApproved && !trePending) {
           const treRejected = treLatest?.status === DocumentStatus.REJECTED;
           tasks.push({
             id: `${internship.id}-tre`,
@@ -345,7 +370,7 @@ export async function GET(request: NextRequest) {
           (doc) => doc.type === DocumentType.RFE && doc.status === DocumentStatus.PENDING_ANALYSIS
         );
 
-        if (!rfeApproved && !rfePending) {
+        if (finalDocumentsPolicy.requiresCoreFinalDocuments && !rfeApproved && !rfePending) {
           const rfeRejected = rfeLatest?.status === DocumentStatus.REJECTED;
           tasks.push({
             id: `${internship.id}-rfe`,
@@ -370,7 +395,11 @@ export async function GET(request: NextRequest) {
             doc.status === DocumentStatus.PENDING_ANALYSIS
         );
 
-        if (!parecerAvaliativoApproved && !parecerAvaliativoPending) {
+        if (
+          finalDocumentsPolicy.requiresCoreFinalDocuments &&
+          !parecerAvaliativoApproved &&
+          !parecerAvaliativoPending
+        ) {
           const parecerAvaliativoRejected =
             parecerAvaliativoLatest?.status === DocumentStatus.REJECTED;
           tasks.push({
@@ -383,7 +412,7 @@ export async function GET(request: NextRequest) {
           });
         }
 
-        if (internship.earlyTerminationApproved === true) {
+        if (finalDocumentsPolicy.requiresTerminationTerm) {
           const terminationTermLatest = getLatestDocumentByType(
             documents,
             DocumentType.TERMINATION_TERM

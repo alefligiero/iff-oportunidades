@@ -144,11 +144,17 @@ export async function PATCH(
     }
 
     if (status === InternshipStatus.FINISHED) {
+      const requestedAt = (internship as { earlyTerminationRequestedAt?: Date | null }).earlyTerminationRequestedAt;
       updateData.earlyTerminationReason = trimmedReason;
       updateData.earlyTerminationHandledAt = new Date();
+      updateData.earlyTerminationRequestedAt = requestedAt ?? new Date();
       updateData.earlyTerminationRequested = false;
       updateData.earlyTerminationApproved = true;
       updateData.earlyTerminationRejectionReason = null;
+    }
+
+    if (status === InternshipStatus.CANCELED) {
+      updateData.earlyTerminationRequested = false;
     }
 
     const updatedInternship = await prisma.internship.update({

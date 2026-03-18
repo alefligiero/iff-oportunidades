@@ -1,5 +1,7 @@
 'use client';
 
+import { getFinalDocumentsPolicy } from '@/lib/final-documents-policy';
+
 interface DocumentItem {
   id: string;
   type: string; // DocumentType
@@ -12,6 +14,9 @@ interface AdminDocumentAlertsProps {
   documents: DocumentItem[];
   insuranceRequired: boolean;
   earlyTerminationApproved: boolean | null;
+  internshipStartDate: string;
+  internshipEndDate: string;
+  earlyTerminationRequestedAt: string | null;
 }
 
 const documentTypeLabels: Record<string, string> = {
@@ -32,7 +37,17 @@ export default function AdminDocumentAlerts({
   documents,
   insuranceRequired,
   earlyTerminationApproved,
+  internshipStartDate,
+  internshipEndDate,
+  earlyTerminationRequestedAt,
 }: AdminDocumentAlertsProps) {
+  const finalDocumentsPolicy = getFinalDocumentsPolicy({
+    earlyTerminationApproved,
+    startDate: internshipStartDate,
+    endDate: internshipEndDate,
+    earlyTerminationRequestedAt,
+  });
+
   const pendingDocuments = documents.filter(
     (doc) => doc.status === 'PENDING_ANALYSIS' && Boolean(doc.fileUrl)
   );
@@ -52,7 +67,7 @@ export default function AdminDocumentAlerts({
   );
   const showMissingTerminationTermAlert =
     status === 'FINISHED' &&
-    earlyTerminationApproved === true &&
+    finalDocumentsPolicy.requiresTerminationTerm &&
     !terminationTermExists;
 
   const treApproved = documents.some(
@@ -76,10 +91,10 @@ export default function AdminDocumentAlerts({
   );
   const showMissingFinalDeclarationAlert =
     status === 'FINISHED' &&
-    treApproved &&
-    rfeApproved &&
-    parecerAvaliativoApproved &&
-    (!earlyTerminationApproved || terminationTermApproved) &&
+    finalDocumentsPolicy.requiresFinalDeclaration &&
+    (!finalDocumentsPolicy.requiresCoreFinalDocuments ||
+      (treApproved && rfeApproved && parecerAvaliativoApproved)) &&
+    (!finalDocumentsPolicy.requiresTerminationTerm || terminationTermApproved) &&
     !finalDeclarationExists;
 
   if (

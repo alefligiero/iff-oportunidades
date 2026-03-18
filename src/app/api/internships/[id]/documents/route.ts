@@ -5,6 +5,7 @@ import { processUploadedFile, deleteFile } from '@/lib/file-upload';
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/prisma';
 import { documentUploadTypeSchema } from '@/lib/validations/schemas';
+import { getFinalDocumentsPolicy } from '@/lib/final-documents-policy';
 
 /**
  * POST /api/internships/[id]/documents
@@ -71,6 +72,30 @@ export async function POST(
       return createErrorResponse(
         'A Declaração Final deve ser enviada pelo Admin no painel administrativo',
         403
+      );
+    }
+
+    const finalDocumentsPolicy = getFinalDocumentsPolicy({
+      earlyTerminationApproved: internship.earlyTerminationApproved,
+      startDate: internship.startDate,
+      endDate: internship.endDate,
+      earlyTerminationRequestedAt: internship.earlyTerminationRequestedAt,
+    });
+
+    if (
+      !finalDocumentsPolicy.requiresCoreFinalDocuments &&
+      [DocumentType.TRE, DocumentType.RFE, DocumentType.PARECER_AVALIATIVO].includes(documentType)
+    ) {
+      return createErrorResponse(
+        'Para encerramento antecipado com duração menor que 6 meses, apenas o Termo de Cancelamento é aceito',
+        400
+      );
+    }
+
+    if (documentType === DocumentType.TERMINATION_TERM && !finalDocumentsPolicy.requiresTerminationTerm) {
+      return createErrorResponse(
+        'O Termo de Cancelamento só pode ser enviado quando houver encerramento antecipado aprovado',
+        400
       );
     }
 

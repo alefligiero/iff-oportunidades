@@ -119,7 +119,13 @@ export default async function InternshipDetailPage({ params }: { params: Promise
 
   const finishedSubstatus =
     internship?.status === InternshipStatus.FINISHED
-      ? getFinishedSubstatus(internship.documents, internship.earlyTerminationApproved)
+      ? getFinishedSubstatus(
+          internship.documents,
+          internship.earlyTerminationApproved,
+          internship.startDate,
+          internship.endDate,
+          internship.earlyTerminationRequestedAt
+        )
       : null;
 
   if (!internship) {
@@ -177,12 +183,18 @@ export default async function InternshipDetailPage({ params }: { params: Promise
           status={internship.status}
           documents={initialDocuments}
           earlyTerminationApproved={internship.earlyTerminationApproved}
+          internshipStartDate={internship.startDate.toISOString()}
+          internshipEndDate={internship.endDate.toISOString()}
+          earlyTerminationRequestedAt={internship.earlyTerminationRequestedAt?.toISOString() ?? null}
         />
         <AdminDocumentAlerts
           status={internship.status}
           documents={initialDocuments}
           insuranceRequired={internship.insuranceRequired}
           earlyTerminationApproved={internship.earlyTerminationApproved}
+          internshipStartDate={internship.startDate.toISOString()}
+          internshipEndDate={internship.endDate.toISOString()}
+          earlyTerminationRequestedAt={internship.earlyTerminationRequestedAt?.toISOString() ?? null}
         />
 
         {/* Admin-finished message */}
@@ -240,6 +252,9 @@ export default async function InternshipDetailPage({ params }: { params: Promise
           internshipStatus={internship.status}
           insuranceRequired={internship.insuranceRequired}
           earlyTerminationApproved={internship.earlyTerminationApproved}
+          internshipStartDate={internship.startDate.toISOString()}
+          internshipEndDate={internship.endDate.toISOString()}
+          earlyTerminationRequestedAt={internship.earlyTerminationRequestedAt?.toISOString() ?? null}
           initialDocuments={initialDocuments}
         />
 
