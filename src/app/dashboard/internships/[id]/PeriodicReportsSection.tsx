@@ -465,7 +465,7 @@ export default function PeriodicReportsSection({
               Enviar {submitModalPeriod}º Relatório Periódico
             </h3>
             <p className="text-sm text-gray-600 mt-2 mb-4">
-              Envie o relatório <strong>já assinado</strong> por você, pelo supervisor e pelo professor orientador. O arquivo deve estar em PDF, DOC ou DOCX.
+              Envie o relatório <strong>já assinado</strong> por você, pelo supervisor e pelo professor orientador. O arquivo deve estar em PDF.
             </p>
 
             {submitError && (
@@ -481,7 +481,7 @@ export default function PeriodicReportsSection({
               <div className="relative">
                 <input
                   type="file"
-                  accept=".pdf,.doc,.docx"
+                  accept=".pdf"
                   className="sr-only"
                   id={`file-input-${submitModalPeriod}`}
                   onChange={(e) => {
