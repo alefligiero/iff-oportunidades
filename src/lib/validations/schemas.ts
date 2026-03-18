@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Gender, InternshipModality, VacancyType, InternshipStatus, DocumentType, DocumentStatus } from '@prisma/client';
+import { isDateBeforeTodayBRT } from '@/lib/date-utils';
 
 // ===== FUNÇÕES AUXILIARES DE VALIDAÇÃO =====
 
@@ -15,13 +16,7 @@ const validateInternshipDates = (data: InternshipValidationInput, ctx: z.Refinem
   if (!data.startDate || !data.endDate) return;
 
   // Validação: Data de início não pode ser anterior ao dia atual
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  const startDateAtMidnight = new Date(data.startDate);
-  startDateAtMidnight.setHours(0, 0, 0, 0);
-  
-  if (startDateAtMidnight < today) {
+  if (isDateBeforeTodayBRT(data.startDate)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: 'A data de início não pode ser anterior ao dia atual.',

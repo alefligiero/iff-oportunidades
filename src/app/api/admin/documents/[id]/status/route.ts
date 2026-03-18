@@ -4,6 +4,7 @@ import { getUserFromToken } from '@/lib/get-user-from-token';
 import { createSuccessResponse, createErrorResponse, createValidationErrorResponse } from '@/lib/api-response';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
+import { isDateInPastOrTodayBRT } from '@/lib/date-utils';
 
 // Schema de validação para atualização de status
 const updateDocumentStatusSchema = z.object({
@@ -61,14 +62,8 @@ async function checkAndStartInternshipIfReady(internshipId: string): Promise<voi
   if (hasSignedContractApproved && insuranceRequirementMet) {
     // Se estágio está aprovado (aguardando documentos), verificar data de início
     if (internship.status === InternshipStatus.APPROVED) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const startDate = new Date(internship.startDate);
-      startDate.setHours(0, 0, 0, 0);
-
-      // Verificar se a data de início já chegou
-      if (startDate <= today) {
+      // Verificar se a data de início já chegou (comparação por dia civil em America/Sao_Paulo)
+      if (isDateInPastOrTodayBRT(internship.startDate)) {
         // Data de início já chegou ou é hoje - iniciar estágio
         await prisma.internship.update({
           where: { id: internshipId },

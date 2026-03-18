@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/get-user-from-token';
 import { processUploadedFile } from '@/lib/file-upload';
+import { parseDateOnlyToUtc } from '@/lib/date-utils';
 import { NotificationType, Role } from '@prisma/client';
 
 export async function PATCH(
@@ -64,6 +65,26 @@ export async function PATCH(
       );
     }
 
+    const parsedInsuranceStartDate = parseDateOnlyToUtc(insuranceStartDate);
+    const parsedInsuranceEndDate = parseDateOnlyToUtc(insuranceEndDate);
+
+    if (
+      Number.isNaN(parsedInsuranceStartDate.getTime()) ||
+      Number.isNaN(parsedInsuranceEndDate.getTime())
+    ) {
+      return NextResponse.json(
+        { error: 'Datas de vigência do seguro inválidas.' },
+        { status: 400 }
+      );
+    }
+
+    if (parsedInsuranceEndDate < parsedInsuranceStartDate) {
+      return NextResponse.json(
+        { error: 'A vigência final do seguro deve ser igual ou posterior à vigência inicial.' },
+        { status: 400 }
+      );
+    }
+
     const updatedInternship = await prisma.$transaction(async (tx) => {
       const internshipUpdated = await tx.internship.update({
         where: { id: internshipId },
@@ -71,8 +92,8 @@ export async function PATCH(
           insuranceCompany,
           insurancePolicyNumber,
           insuranceCompanyCnpj,
-          insuranceStartDate: new Date(insuranceStartDate),
-          insuranceEndDate: new Date(insuranceEndDate),
+          insuranceStartDate: parsedInsuranceStartDate,
+          insuranceEndDate: parsedInsuranceEndDate,
         },
       });
 

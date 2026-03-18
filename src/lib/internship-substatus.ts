@@ -1,4 +1,5 @@
 import { DocumentType, DocumentStatus } from '@prisma/client';
+import { isDateInFutureBRT } from './date-utils';
 
 export interface DocumentSummary {
   type: DocumentType;
@@ -39,14 +40,8 @@ export function getApprovedSubstatus(
   if (!hasSignedContractApproved) return 'Aguardando TCE/PAE assinados';
   if (insuranceRequired && !hasLifeInsuranceApproved) return 'Aguardando Seguro';
   
-  // Prioridade 3: Verificar se a data de início já chegou
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  const start = new Date(startDate);
-  start.setHours(0, 0, 0, 0);
-  
-  if (start > today) {
+  // Prioridade 3: Verificar se a data de início já chegou (timezone America/Sao_Paulo)
+  if (isDateInFutureBRT(startDate)) {
     return 'Aguardando data de início';
   }
   

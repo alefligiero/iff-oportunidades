@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { InternshipStatus, DocumentStatus, DocumentType } from '@prisma/client';
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/prisma';
+import { getTodayBRT } from '@/lib/date-utils';
 
 /**
  * GET /api/cron/start-internships
@@ -21,8 +22,7 @@ export async function GET(request: NextRequest) {
       return createErrorResponse('Não autorizado', 401);
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = getTodayBRT();
 
     // Buscar todos os estágios elegíveis pela data de início
     const internshipsToProcess = await prisma.internship.findMany({

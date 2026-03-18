@@ -4,9 +4,8 @@ import { z } from 'zod';
 import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { getSystemConfig } from '@/lib/system-config';
+import { parseDateOnlyToUtc } from '@/lib/date-utils';
 import { adminUpdateInternshipStatusSchema } from '@/lib/validations/schemas';
-
-const parseDateOnlyToUtc = (value: string) => new Date(`${value}T00:00:00.000Z`);
 
 export async function PATCH(
   request: NextRequest,
@@ -49,11 +48,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'Estágio não encontrado.' }, { status: 404 });
     }
 
-    const isReasonRequired = [
+    const reasonRequiredStatuses = new Set<InternshipStatus>([
       InternshipStatus.REJECTED,
       InternshipStatus.FINISHED,
       InternshipStatus.CANCELED,
-    ].includes(status);
+    ]);
+    const isReasonRequired = reasonRequiredStatuses.has(status);
 
     if (isReasonRequired && !trimmedReason) {
       return NextResponse.json({ error: 'É obrigatório fornecer um motivo.' }, { status: 400 });
@@ -88,7 +88,11 @@ export async function PATCH(
     }
 
     if (status === InternshipStatus.CANCELED) {
-      if ([InternshipStatus.FINISHED, InternshipStatus.CANCELED].includes(internship.status)) {
+      const closedStatuses = new Set<InternshipStatus>([
+        InternshipStatus.FINISHED,
+        InternshipStatus.CANCELED,
+      ]);
+      if (closedStatuses.has(internship.status)) {
         return NextResponse.json({ error: 'Este estágio já está encerrado.' }, { status: 400 });
       }
     }

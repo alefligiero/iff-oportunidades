@@ -7,6 +7,7 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import PizZip from 'pizzip';
 import { promisify } from 'util';
+import { formatDateBR } from '@/lib/date-utils';
 
 const execFileAsync = promisify(execFile);
 
@@ -68,11 +69,6 @@ export class PdfConversionUnavailableError extends Error {
     super(message);
     this.name = 'PdfConversionUnavailableError';
   }
-}
-
-function formatDateBR(value: Date | string | null | undefined) {
-  if (!value) return '';
-  return format(new Date(value), 'dd/MM/yyyy');
 }
 
 function formatLongDateBR(value: Date) {

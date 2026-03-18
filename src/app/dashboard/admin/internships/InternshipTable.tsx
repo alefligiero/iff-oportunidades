@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { InternshipStatus, InternshipType, InternshipModality } from '@prisma/client';
 import { getApprovedSubstatus, getInProgressSubstatus, getFinishedSubstatus, type DocumentSummary } from '@/lib/internship-substatus';
+import { formatDateBR } from '@/lib/date-utils';
 
 const typeMap: { [key in InternshipType]: string } = {
   DIRECT: 'Estágio Direto',
@@ -68,8 +69,6 @@ interface InternshipTableProps {
   loading?: boolean;
 }
 
-const formatDate = (date: string) => new Date(date).toLocaleDateString('pt-BR');
-
 export default function InternshipTable({ internships, loading = false }: InternshipTableProps) {
   if (loading) {
     return (
@@ -133,7 +132,7 @@ export default function InternshipTable({ internships, loading = false }: Intern
                   {typeMap[internship.type]}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  {formatDate(internship.startDate)} - {formatDate(internship.endDate)}
+                  {formatDateBR(internship.startDate)} - {formatDateBR(internship.endDate)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-2">
