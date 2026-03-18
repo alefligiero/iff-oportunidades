@@ -532,6 +532,8 @@ export default function InternshipForm({
               <option value="">Selecione...</option>
               <option value={Gender.MALE}>Masculino</option>
               <option value={Gender.FEMALE}>Feminino</option>
+              <option value={Gender.OTHER}>Outro</option>
+              <option value={Gender.PREFER_NOT_TO_SAY}>Prefiro não informar</option>
             </select>
             {errors.studentGender && <p className="mt-1 text-xs text-red-600">{errors.studentGender}</p>}
           </div>

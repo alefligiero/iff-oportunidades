@@ -38,6 +38,8 @@ const modalityMap = {
 const genderMap = {
   [Gender.MALE]: 'Masculino',
   [Gender.FEMALE]: 'Feminino',
+  [Gender.OTHER]: 'Outro',
+  [Gender.PREFER_NOT_TO_SAY]: 'Prefiro não informar',
 };
 
 async function getInternshipDetails(id: string) {

@@ -31,6 +31,8 @@ const AUTO_CANCEL_NOTE = 'Cancelado automaticamente apos 7 dias em recusado sem 
 const genderLabels: { [key in Gender]: string } = {
   [Gender.MALE]: 'Masculino',
   [Gender.FEMALE]: 'Feminino',
+  [Gender.OTHER]: 'Outro',
+  [Gender.PREFER_NOT_TO_SAY]: 'Prefiro não informar',
 };
 
 
