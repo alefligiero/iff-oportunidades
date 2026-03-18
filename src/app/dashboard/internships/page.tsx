@@ -96,17 +96,23 @@ const formatDate = (dateString: Date) => {
 
 export default async function MyInternshipsPage() {
   const { data: internships, hasActiveInternship, error } = await getStudentInternships();
+  const blockedMessage = 'Você possui um estágio ou uma solicitação de estágio em andamento ou aguardando documentos. Conclua/Cancele o atual antes de solicitar um novo.';
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Meus Estágios</h1>
         {hasActiveInternship ? (
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2">
-              ⚠️ Você possui um estágio ou uma solicitação de estágio em andamento ou aguardando documentos. Conclua/Cancele o atual antes de solicitar um novo.
-            </span>
-          </div>
+          <span title={blockedMessage}>
+            <button
+              type="button"
+              disabled
+              className="bg-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium cursor-not-allowed"
+              aria-label={blockedMessage}
+            >
+              Solicitar Novo Estágio
+            </button>
+          </span>
         ) : (
           <Link href="/dashboard/internships/new" className="bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition-colors text-sm font-medium">
             Solicitar Novo Estágio
