@@ -5,6 +5,7 @@ import { DocumentStatus, DocumentType, InternshipStatus, InternshipType } from "
 import DocumentUpload from "./DocumentUpload";
 import DocumentList from "./DocumentList";
 import DownloadTemplates from "./DownloadTemplates";
+import DownloadOfficialDocumentCard from "./DownloadOfficialDocumentCard";
 
 export type DocumentItem = {
   id: string;
@@ -193,6 +194,12 @@ export default function DocumentsSection({
           {error}
         </div>
       )}
+
+      <DownloadOfficialDocumentCard
+        internshipId={internshipId}
+        status={status}
+        internshipType={internshipType}
+      />
 
       {(status === InternshipStatus.APPROVED || status === InternshipStatus.IN_PROGRESS || status === InternshipStatus.FINISHED) && (
         <div className="bg-white p-6 rounded-lg shadow-md space-y-4 border border-gray-200">

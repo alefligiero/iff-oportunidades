@@ -201,14 +201,6 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
               Corrigir e Reenviar
             </Link>
           )}
-          {internship.status === InternshipStatus.APPROVED && internship.type !== InternshipType.INTEGRATOR && (
-            <Link 
-              href={`/dashboard/internships/${internship.id}/document`}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm flex items-center gap-2"
-            >
-              <span>📄</span> Baixar TCE/PAE oficial
-            </Link>
-          )}
         </div>
       </div>
 
