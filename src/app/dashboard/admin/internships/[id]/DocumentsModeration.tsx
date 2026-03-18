@@ -59,7 +59,9 @@ export default function DocumentsModeration({
   const [pendingApprovalDocId, setPendingApprovalDocId] = useState<string | null>(null);
   const [finalDeclarationFile, setFinalDeclarationFile] = useState<File | null>(null);
   const [finalDeclarationMessage, setFinalDeclarationMessage] = useState<string | null>(null);
-  const visibleDocuments = documents.filter((doc) => Boolean(doc.fileUrl));
+  const visibleDocuments = documents.filter(
+    (doc) => Boolean(doc.fileUrl) && doc.type !== DocumentType.PERIODIC_REPORT
+  );
   const signedContractDocs = visibleDocuments.filter((doc) => doc.type === DocumentType.SIGNED_CONTRACT);
   const finalDeclarationDocs = visibleDocuments.filter(
     (doc) => doc.type === DocumentType.FINAL_DECLARATION
