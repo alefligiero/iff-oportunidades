@@ -3,7 +3,7 @@
 import { InternshipStatus } from '@prisma/client';
 
 const statusConfig = {
-  IN_ANALYSIS: { label: 'Pendentes', color: 'border-b-yellow-400 text-yellow-700' },
+  IN_ANALYSIS: { label: 'Solicitados', color: 'border-b-yellow-400 text-yellow-700' },
   APPROVED: { label: 'Aprovados', color: 'border-b-blue-400 text-blue-700' },
   IN_PROGRESS: { label: 'Em Andamento', color: 'border-b-green-400 text-green-700' },
   FINISHED: { label: 'Concluídos', color: 'border-b-gray-400 text-gray-700' },

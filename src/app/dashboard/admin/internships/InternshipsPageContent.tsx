@@ -88,7 +88,7 @@ export default function InternshipsPageContent({ allInternships }: InternshipsPa
 
     // Ordenação por status
     if (activeStatus === InternshipStatus.IN_ANALYSIS) {
-      // Pendentes: mais antigo primeiro
+      // Solicitados: mais antigo primeiro
       result.sort(
         (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
