@@ -80,6 +80,7 @@ Além disso:
         - No `.env`, confirme:
             - `DATABASE_URL` apontando para seu Postgres (por padrão: localhost:5432)
             - `JWT_SECRET` com um valor não previsível em produção
+            - `ADMIN_SEED_EMAIL` e `ADMIN_SEED_PASSWORD` para o usuário Admin criado no seed
 
 4.  **Suba o banco de dados (se usar Docker):**
     ```bash
@@ -96,6 +97,15 @@ Além disso:
     npx prisma db seed
     ```
 
+7.  **(Produção) Criar Admin inicial sem seed:**
+    ```bash
+    npm run admin:bootstrap
+    ```
+    Variáveis necessárias no ambiente:
+    - `ADMIN_BOOTSTRAP_EMAIL`
+    - `ADMIN_BOOTSTRAP_PASSWORD`
+    - `ADMIN_BOOTSTRAP_FORCE_PASSWORD_UPDATE` (`true` para rotacionar senha de admin existente)
+
 ---
 
 ## ▶️ Rodando a Aplicação
@@ -108,12 +118,16 @@ A aplicação estará disponível em `http://localhost:3000`.
 
 ### 🔐 Usuários de teste (seed)
 
-Se você rodou o seed, os usuários a seguir foram criados (senha padrão: `123456`):
+Se você rodou o seed, os usuários a seguir foram criados:
 
-- Admin: `admin@iff.edu.br`
+- Admin: definido por `ADMIN_SEED_EMAIL` (senha definida por `ADMIN_SEED_PASSWORD`)
 - Estudante 1: `joao.silva@estudante.iff.edu.br`
 - Estudante 2: `maria.oliveira@estudante.iff.edu.br`
 - Empresa 1: `rh@techcorp.com.br`
 - Empresa 2: `contato@inovadata.com.br`
+
+Obs.: Estudantes e empresas do seed permanecem com senha padrão `123456`.
+
+Obs.: Em produção, prefira `npm run admin:bootstrap` para criar o Admin inicial sem depender do seed.
 
 Obs.: O cookie `auth_token` é usado na autenticação e o middleware protege rotas `/api/*` (exceto `/api/auth/*`) e `/dashboard/*`. Certifique-se de definir `JWT_SECRET` no `.env`.

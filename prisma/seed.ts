@@ -55,6 +55,13 @@ async function copyExamplePdf(internshipId: string, documentType: string): Promi
 async function main() {
   console.log('🌱 Iniciando o seed...');
 
+  const adminSeedEmail = process.env.ADMIN_SEED_EMAIL?.trim();
+  const adminSeedPassword = process.env.ADMIN_SEED_PASSWORD;
+
+  if (!adminSeedEmail || !adminSeedPassword) {
+    throw new Error('Defina ADMIN_SEED_EMAIL e ADMIN_SEED_PASSWORD no ambiente para executar o seed.');
+  }
+
   const autoCancelNote = 'Cancelado automaticamente apos 7 dias em recusado sem correcoes.';
   const autoCloseNote = 'Fechada automaticamente apos 7 dias em rejeitada sem correcoes.';
 
@@ -69,12 +76,13 @@ async function main() {
   console.log('🗑️  Dados anteriores removidos');
 
   const defaultPassword = await bcrypt.hash('123456', 10);
+  const adminPassword = await bcrypt.hash(adminSeedPassword, 10);
 
   // 1. Admin
   const adminUser = await prisma.user.create({
     data: {
-      email: 'admin@iff.edu.br',
-      password: defaultPassword,
+      email: adminSeedEmail,
+      password: adminPassword,
       role: Role.ADMIN,
     },
   });
@@ -786,7 +794,7 @@ async function main() {
   console.log('\n📋 USUÁRIOS CRIADOS:');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('👨‍💼 ADMIN:');
-  console.log('   📧 admin@iff.edu.br');
+  console.log(`   📧 ${adminSeedEmail}`);
   console.log('\n🎓 ESTUDANTES:');
   console.log('   1️⃣  joao.silva@estudante.iff.edu.br - EM ANÁLISE');
   console.log('   2️⃣  maria.oliveira@estudante.iff.edu.br - APROVADO');
@@ -807,7 +815,8 @@ async function main() {
   console.log('   - Download de templates TRE e RFE');
   console.log('   - Upload de documentos finais');
   console.log('   - Aprovação pelo admin');
-  console.log('\n🔐 SENHA PADRÃO: 123456');
+  console.log('\n🔐 SENHA PADRÃO (ESTUDANTES/EMPRESAS): 123456');
+  console.log('🔐 SENHA ADMIN: definida por ADMIN_SEED_PASSWORD');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 }
 
