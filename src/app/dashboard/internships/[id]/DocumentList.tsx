@@ -30,6 +30,7 @@ const documentTypeLabels: Record<string, string> = {
   RFE: 'Relatório Final (RFE)',
   PARECER_AVALIATIVO: 'Parecer Avaliativo',
   TERMINATION_TERM: 'Termo de Cancelamento de Estágio',
+  EXTENSION_TERM: 'Termo Aditivo de Prorrogação',
   FINAL_DECLARATION: 'Declaração Final',
   SIGNED_CONTRACT: 'TCE + PAE assinados (PDF único)',
   LIFE_INSURANCE: 'Seguro de Vida',
@@ -66,7 +67,7 @@ function DocumentRow({
       <div className="flex items-center justify-between gap-4 mb-3">
         <div className="flex items-center gap-3">
           <h4 className="font-semibold text-gray-900">
-            {documentTypeLabels[doc.type]}
+            {documentTypeLabels[doc.type] ?? doc.type}
           </h4>
           <span
             className={`px-2 py-0.5 text-xs font-semibold rounded-full border ${

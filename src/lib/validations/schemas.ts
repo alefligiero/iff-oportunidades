@@ -208,6 +208,67 @@ export const decideEarlyTerminationSchema = z.object({
   }
 });
 
+const dateOnlySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida. Use o formato YYYY-MM-DD.');
+
+export const requestInternshipExtensionSchema = z.object({
+  reason: z.string().trim().min(10, 'A justificativa deve ter pelo menos 10 caracteres.'),
+  extensionStartDate: dateOnlySchema,
+  extensionEndDate: dateOnlySchema,
+}).superRefine((data, ctx) => {
+  if (data.extensionEndDate <= data.extensionStartDate) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'A data final da prorrogação deve ser posterior à data inicial.',
+      path: ['extensionEndDate'],
+    });
+  }
+});
+
+export const decideInternshipExtensionSchema = z.object({
+  action: z.enum(['APPROVE', 'REJECT'], { required_error: 'Ação é obrigatória.' }),
+  rejectionReason: z.string().optional(),
+  approvedExtensionStartDate: dateOnlySchema.optional(),
+  approvedExtensionEndDate: dateOnlySchema.optional(),
+}).superRefine((data, ctx) => {
+  if (data.action === 'REJECT' && !data.rejectionReason?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Forneça uma justificativa para a recusa.',
+      path: ['rejectionReason'],
+    });
+  }
+
+  if (data.action === 'APPROVE') {
+    if (!data.approvedExtensionStartDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'A data inicial aprovada é obrigatória para aprovação.',
+        path: ['approvedExtensionStartDate'],
+      });
+    }
+
+    if (!data.approvedExtensionEndDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'A data final aprovada é obrigatória para aprovação.',
+        path: ['approvedExtensionEndDate'],
+      });
+    }
+
+    if (
+      data.approvedExtensionStartDate &&
+      data.approvedExtensionEndDate &&
+      data.approvedExtensionEndDate <= data.approvedExtensionStartDate
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'A data final aprovada deve ser posterior à data inicial aprovada.',
+        path: ['approvedExtensionEndDate'],
+      });
+    }
+  }
+});
+
 export const updateInternshipSchema = z.object(internshipBaseSchemaFields).partial().superRefine((data, ctx) => {
   validateInternshipDates(data, ctx);
   addTransportationGrantValidation(data, ctx);
@@ -401,6 +462,8 @@ export type UpdateInternshipInput = z.infer<typeof updateInternshipSchema>;
 export type UpdateInternshipStatusInput = z.infer<typeof updateInternshipStatusSchema>;
 export type RequestEarlyTerminationInput = z.infer<typeof requestEarlyTerminationSchema>;
 export type DecideEarlyTerminationInput = z.infer<typeof decideEarlyTerminationSchema>;
+export type RequestInternshipExtensionInput = z.infer<typeof requestInternshipExtensionSchema>;
+export type DecideInternshipExtensionInput = z.infer<typeof decideInternshipExtensionSchema>;
 export type CreateVacancyInput = z.infer<typeof createVacancySchema>;
 export type UpdateVacancyInput = z.infer<typeof updateVacancySchema>;
 export type UpdateVacancyStatusInput = z.infer<typeof updateVacancyStatusSchema>;

@@ -99,6 +99,13 @@ export async function POST(
       );
     }
 
+    if (documentType === DocumentType.EXTENSION_TERM && internship.internshipExtensionApproved !== true) {
+      return createErrorResponse(
+        'O Termo Aditivo só pode ser enviado após a prorrogação ser aprovada pela Agência',
+        400
+      );
+    }
+
     if (documentType === DocumentType.LIFE_INSURANCE) {
       const hasAllInsuranceData = Boolean(
         internship.insuranceCompany &&
@@ -124,6 +131,7 @@ export async function POST(
       RFE: 'RFE',
       PARECER_AVALIATIVO: 'Parecer Avaliativo',
       TERMINATION_TERM: 'Termo de Cancelamento',
+      EXTENSION_TERM: 'Termo Aditivo de Prorrogação',
       FINAL_DECLARATION: 'Declaração Final',
       SIGNED_CONTRACT: 'TCE + PAE assinados',
       LIFE_INSURANCE: 'comprovante do Seguro de Vida',

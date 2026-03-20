@@ -52,7 +52,37 @@ export function getApprovedSubstatus(
 /**
  * Calcula o substatus de um estágio com status IN_PROGRESS
  */
-export function getInProgressSubstatus(documents: DocumentSummary[]): string | null {
+interface InProgressSubstatusOptions {
+  internshipExtensionRequested?: boolean;
+  internshipExtensionApproved?: boolean | null;
+}
+
+export function getInProgressSubstatus(
+  documents: DocumentSummary[],
+  options: InProgressSubstatusOptions = {}
+): string | null {
+  const { internshipExtensionRequested = false, internshipExtensionApproved = null } = options;
+
+  if (internshipExtensionRequested) {
+    return 'Prorrogação em análise';
+  }
+
+  if (internshipExtensionApproved === true) {
+    const extensionTerm = documents.find((doc) => doc.type === DocumentType.EXTENSION_TERM);
+
+    if (!extensionTerm) {
+      return 'Aguardando Termo Aditivo';
+    }
+
+    if (extensionTerm.status === DocumentStatus.PENDING_ANALYSIS) {
+      return 'Termo Aditivo em análise';
+    }
+
+    if (extensionTerm.status === DocumentStatus.APPROVED || extensionTerm.status === DocumentStatus.SIGNED_VALIDATED) {
+      return 'Prorrogação efetivada';
+    }
+  }
+
   // Verificar relatórios periódicos pendentes
   const periodicReports = documents.filter((doc) => doc.type === DocumentType.PERIODIC_REPORT);
   const hasPendingReports = periodicReports.some((doc) => doc.status === DocumentStatus.PENDING_ANALYSIS);

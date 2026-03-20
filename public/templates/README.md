@@ -49,6 +49,12 @@ Para que o sistema funcione corretamente, você precisa adicionar os seguintes a
 - Utilizado como fonte única para gerar o DOCX preenchido e o PDF oficial
 - Os placeholders devem permanecer em formato `<campo>` para compatibilidade com a geração backend
 
+### 8. `TCE ADITIVO.docx`
+**Modelo oficial de TCE Aditivo para prorrogação de estágio (estágio direto)**
+- Documento fonte usado na geração oficial do aditivo após aprovação da prorrogação
+- Utilizado para gerar DOCX/PDF com os dados atualizados do período de prorrogação
+- Os placeholders devem permanecer em formato `<campo>` para compatibilidade com a geração backend
+
 ## Placeholders esperados no `TCE PAE.docx`
 
 Para preenchimento automático fiel ao DOCX oficial, o modelo deve usar placeholders como texto simples no formato `<campo>`.
@@ -95,6 +101,11 @@ Campos suportados atualmente:
 - `<plano de atividades>`
 - `<data emissao>`
 - `<is_remote>` (flag booleana para condicional de modalidade remota)
+
+No `TCE ADITIVO.docx`, use os mesmos placeholders do `TCE PAE.docx` e, se desejar separar visualmente o bloco de prorrogação, também pode usar:
+
+- `<inicio prorrogacao>`
+- `<final prorrogacao>`
 
 Regras de preenchimento relevantes:
 
@@ -146,6 +157,7 @@ Substitua os valores literais fixos do modelo, como `0` em matrículas, número 
    - `modelo-relatorio-periodico.pdf` (opcional)
    - `termination-term-template.docx`
    - `TCE PAE.docx`
+   - `TCE ADITIVO.docx`
 3. Os arquivos estarão automaticamente disponíveis em:
    - `/templates/tre-template.docx`
    - `/templates/rfe-orientacoes.pdf`

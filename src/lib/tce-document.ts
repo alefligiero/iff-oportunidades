@@ -12,6 +12,7 @@ import { formatDateBR } from '@/lib/date-utils';
 const execFileAsync = promisify(execFile);
 
 const TEMPLATE_PATH = join(process.cwd(), 'public/templates/TCE PAE.docx');
+const ADDENDUM_TEMPLATE_PATH = join(process.cwd(), 'public/templates/TCE ADITIVO.docx');
 type TemplateValue = string | boolean;
 
 type StudentData = {
@@ -62,6 +63,8 @@ type InternshipTemplateData = {
   supervisorRole?: string | null;
   internshipSector?: string | null;
   technicalActivities?: string | null;
+  internshipExtensionStartDate?: Date | string | null;
+  internshipExtensionEndDate?: Date | string | null;
 };
 
 export class PdfConversionUnavailableError extends Error {
@@ -164,7 +167,15 @@ export async function buildTceTemplateData(
 }
 
 export async function generateTceDocxBuffer(data: Record<string, TemplateValue>) {
-  const content = await fs.readFile(TEMPLATE_PATH, 'binary');
+  return generateDocxBuffer(TEMPLATE_PATH, data);
+}
+
+export async function generateTceAddendumDocxBuffer(data: Record<string, TemplateValue>) {
+  return generateDocxBuffer(ADDENDUM_TEMPLATE_PATH, data);
+}
+
+async function generateDocxBuffer(templatePath: string, data: Record<string, TemplateValue>) {
+  const content = await fs.readFile(templatePath, 'binary');
   const zip = new PizZip(content);
   const doc = new Docxtemplater(zip, {
     delimiters: {
@@ -251,4 +262,30 @@ export function buildTceFileBaseName(studentName: string | null | undefined) {
     .toLowerCase();
 
   return `tce-pae-${normalizedName || 'aluno'}`;
+}
+
+export async function buildTceAddendumTemplateData(
+  internship: InternshipTemplateData,
+  courseNameMap: Record<string, string>
+) {
+  const templateData = await buildTceTemplateData(internship, courseNameMap);
+
+  return {
+    ...templateData,
+    inicio: formatDateBR(internship.internshipExtensionStartDate ?? internship.startDate),
+    final: formatDateBR(internship.internshipExtensionEndDate ?? internship.endDate),
+    'inicio prorrogacao': formatDateBR(internship.internshipExtensionStartDate ?? internship.startDate),
+    'final prorrogacao': formatDateBR(internship.internshipExtensionEndDate ?? internship.endDate),
+  };
+}
+
+export function buildTceAddendumFileBaseName(studentName: string | null | undefined) {
+  const normalizedName = (studentName ?? 'aluno')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+
+  return `tce-aditivo-${normalizedName || 'aluno'}`;
 }

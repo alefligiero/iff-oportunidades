@@ -23,6 +23,7 @@ const adminDocumentLabels: Record<DocumentType, string> = {
   RFE: 'do RFE',
   PARECER_AVALIATIVO: 'do Parecer Avaliativo',
   TERMINATION_TERM: 'do Termo de Cancelamento',
+  EXTENSION_TERM: 'do Termo Aditivo de Prorrogação',
   FINAL_DECLARATION: 'da Declaração Final',
   SIGNED_CONTRACT: 'do TCE + PAE assinados',
   LIFE_INSURANCE: 'do comprovante do Seguro de Vida',
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (userPayload.role === 'ADMIN') {
-      const [pendingInternships, pendingDocuments, pendingVacancies, finishedInternships] = await Promise.all([
+      const [pendingInternships, pendingDocuments, pendingVacancies, finishedInternships, extensionRequests] = await Promise.all([
         prisma.internship.findMany({
           where: { status: InternshipStatus.IN_ANALYSIS },
           select: {
@@ -112,6 +113,20 @@ export async function GET(request: NextRequest) {
           },
           orderBy: { updatedAt: 'desc' },
         }),
+        prisma.internship.findMany({
+          where: {
+            internshipExtensionRequested: true,
+            status: InternshipStatus.IN_PROGRESS,
+          },
+          select: {
+            id: true,
+            companyName: true,
+            student: {
+              select: { name: true },
+            },
+          },
+          orderBy: { internshipExtensionRequestedAt: 'desc' },
+        }),
       ]);
 
       const tasks: PendingTask[] = [];
@@ -141,6 +156,15 @@ export async function GET(request: NextRequest) {
           title: 'Aprovar vaga',
           description: `Empresa ${vacancy.company.name} - ${vacancy.title}.`,
           href: `/dashboard/admin/vacancies/${vacancy.id}`,
+        });
+      });
+
+      extensionRequests.forEach((internship) => {
+        tasks.push({
+          id: `${internship.id}-extension-review`,
+          title: 'Analisar prorrogação de estágio',
+          description: `Aluno ${internship.student.name} - Empresa ${internship.companyName}.`,
+          href: `/dashboard/admin/internships/${internship.id}`,
         });
       });
 
@@ -307,6 +331,28 @@ export async function GET(request: NextRequest) {
               ? 'Reenviar TCE + PAE assinados'
               : 'Enviar TCE + PAE assinados',
             description: `Falta o PDF unico com TCE e PAE assinados do estagio na empresa ${internship.companyName}.`,
+            href: `/dashboard/internships/${internship.id}#documents-section`,
+          });
+        }
+      }
+
+      if (internship.internshipExtensionApproved) {
+        const extensionTermLatest = getLatestDocumentByType(documents, DocumentType.EXTENSION_TERM);
+        const extensionTermApproved = documents.some(
+          (doc) =>
+            doc.type === DocumentType.EXTENSION_TERM &&
+            APPROVED_DOCUMENT_STATUSES.includes(doc.status)
+        );
+        const extensionTermPending = documents.some(
+          (doc) => doc.type === DocumentType.EXTENSION_TERM && doc.status === DocumentStatus.PENDING_ANALYSIS
+        );
+
+        if (!extensionTermApproved && !extensionTermPending) {
+          const isRejected = extensionTermLatest?.status === DocumentStatus.REJECTED;
+          tasks.push({
+            id: `${internship.id}-extension-term`,
+            title: isRejected ? 'Reenviar Termo Aditivo' : 'Enviar Termo Aditivo',
+            description: `Envie o termo aditivo assinado do estagio na empresa ${internship.companyName}.`,
             href: `/dashboard/internships/${internship.id}#documents-section`,
           });
         }

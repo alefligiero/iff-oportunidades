@@ -116,7 +116,10 @@ export default async function InternshipDetailPage({ params }: { params: Promise
 
   const inProgressSubstatus =
     internship?.status === InternshipStatus.IN_PROGRESS
-      ? getInProgressSubstatus(internship.documents)
+      ? getInProgressSubstatus(internship.documents, {
+          internshipExtensionRequested: Boolean(internship.internshipExtensionRequested),
+          internshipExtensionApproved: internship.internshipExtensionApproved,
+        })
       : null;
 
   const finishedSubstatus =
@@ -239,6 +242,11 @@ export default async function InternshipDetailPage({ params }: { params: Promise
               earlyTerminationRequested={Boolean(internship.earlyTerminationRequested)}
               earlyTerminationApproved={internship.earlyTerminationApproved}
               earlyTerminationReason={internship.earlyTerminationReason}
+              internshipExtensionRequested={Boolean(internship.internshipExtensionRequested)}
+              internshipExtensionApproved={internship.internshipExtensionApproved}
+              internshipExtensionReason={internship.internshipExtensionReason}
+              internshipExtensionStartDate={internship.internshipExtensionStartDate?.toISOString().slice(0, 10) ?? null}
+              internshipExtensionEndDate={internship.internshipExtensionEndDate?.toISOString().slice(0, 10) ?? null}
               documents={initialDocuments}
               requireLifeInsuranceForNewInternships={systemConfig.requireLifeInsuranceForNewInternships}
               initialInsuranceCompany={internship.insuranceCompany}

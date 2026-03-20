@@ -26,6 +26,11 @@ interface Props {
   earlyTerminationRequested: boolean;
   earlyTerminationApproved: boolean | null;
   earlyTerminationReason: string | null;
+  internshipExtensionRequested: boolean;
+  internshipExtensionApproved: boolean | null;
+  internshipExtensionReason: string | null;
+  internshipExtensionStartDate: string | null;
+  internshipExtensionEndDate: string | null;
   documents?: Document[];
   requireLifeInsuranceForNewInternships: boolean;
   initialInsuranceCompany?: string | null;
@@ -41,6 +46,11 @@ export default function ActionButtons({
   earlyTerminationRequested,
   earlyTerminationApproved,
   earlyTerminationReason,
+  internshipExtensionRequested,
+  internshipExtensionApproved,
+  internshipExtensionReason,
+  internshipExtensionStartDate,
+  internshipExtensionEndDate,
   documents = [],
   requireLifeInsuranceForNewInternships,
   initialInsuranceCompany = null,
@@ -58,6 +68,10 @@ export default function ActionButtons({
   const [rejectionReason, setRejectionReason] = useState('');
   const [earlyModalOpen, setEarlyModalOpen] = useState(false);
   const [earlyRejectionReason, setEarlyRejectionReason] = useState('');
+  const [extensionModalOpen, setExtensionModalOpen] = useState(false);
+  const [extensionRejectionReason, setExtensionRejectionReason] = useState('');
+  const [approvedExtensionStartDate, setApprovedExtensionStartDate] = useState(internshipExtensionStartDate ?? '');
+  const [approvedExtensionEndDate, setApprovedExtensionEndDate] = useState(internshipExtensionEndDate ?? '');
   const [terminationModalOpen, setTerminationModalOpen] = useState(false);
   const [terminationReason, setTerminationReason] = useState('');
   const [terminationStatus, setTerminationStatus] = useState<InternshipStatus>(InternshipStatus.CANCELED);
@@ -216,6 +230,43 @@ export default function ActionButtons({
     }
   };
 
+  const handleInternshipExtension = async (action: 'APPROVE' | 'REJECT', reason?: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/admin/internships/${internshipId}/extension-request`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          action,
+          rejectionReason: reason,
+          approvedExtensionStartDate: action === 'APPROVE' ? approvedExtensionStartDate : undefined,
+          approvedExtensionEndDate: action === 'APPROVE' ? approvedExtensionEndDate : undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Falha ao decidir prorrogação.');
+      }
+
+      addNotification(
+        'success',
+        action === 'APPROVE'
+          ? 'Solicitação de prorrogação aprovada. A vigência será efetivada após aprovação do Termo Aditivo.'
+          : 'Prorrogação recusada com sucesso!'
+      );
+      router.refresh();
+    } catch (rawError) {
+      const err = rawError instanceof Error ? rawError : new Error('Erro desconhecido');
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+      setExtensionModalOpen(false);
+    }
+  };
+
   const handleRejectClick = () => {
     setRejectionReason('');
     setIsModalOpen(true);
@@ -320,6 +371,65 @@ export default function ActionButtons({
             <div className="text-sm text-green-700">Encerramento antecipado aprovado.</div>
           ) : (
             <div className="text-sm text-red-700">Encerramento antecipado recusado.</div>
+          )}
+        </div>
+      )}
+
+      {internshipExtensionRequested && (
+        <div className="mt-6 border border-indigo-200 bg-indigo-50 rounded-lg p-4 space-y-3">
+          <div className="text-sm text-gray-800">
+            <strong>Solicitação de prorrogação</strong>
+            {internshipExtensionReason && (
+              <div className="mt-1 text-gray-700">Justificativa do aluno: {internshipExtensionReason}</div>
+            )}
+          </div>
+
+          {internshipExtensionApproved === null ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <label className="text-sm text-gray-700">
+                  Início aprovado
+                  <input
+                    type="date"
+                    value={approvedExtensionStartDate}
+                    onChange={(e) => setApprovedExtensionStartDate(e.target.value)}
+                    className="mt-1 input-form w-full text-gray-800"
+                  />
+                </label>
+                <label className="text-sm text-gray-700">
+                  Fim aprovado
+                  <input
+                    type="date"
+                    value={approvedExtensionEndDate}
+                    onChange={(e) => setApprovedExtensionEndDate(e.target.value)}
+                    className="mt-1 input-form w-full text-gray-800"
+                  />
+                </label>
+              </div>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => handleInternshipExtension('APPROVE')}
+                  disabled={isLoading}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg disabled:bg-green-300"
+                >
+                  {isLoading ? 'A processar...' : 'Aprovar prorrogação'}
+                </button>
+                <button
+                  onClick={() => {
+                    setExtensionRejectionReason('');
+                    setExtensionModalOpen(true);
+                  }}
+                  disabled={isLoading}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:bg-red-300"
+                >
+                  {isLoading ? 'A processar...' : 'Recusar prorrogação'}
+                </button>
+              </div>
+            </div>
+          ) : internshipExtensionApproved ? (
+            <div className="text-sm text-green-700">Prorrogação aprovada.</div>
+          ) : (
+            <div className="text-sm text-red-700">Prorrogação recusada.</div>
           )}
         </div>
       )}
@@ -498,6 +608,39 @@ export default function ActionButtons({
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:bg-red-300"
               >
                 {isLoading ? 'A enviar...' : 'Confirmar recusa'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {extensionModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity animate-fadeIn">
+          <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md transform animate-scaleIn">
+            <h3 className="text-lg font-bold text-gray-900">Motivo da Recusa da Prorrogação</h3>
+            <p className="text-sm text-gray-600 mt-2 mb-4">
+              Informe o motivo da recusa para que o aluno consiga ajustar a solicitação.
+            </p>
+            <textarea
+              value={extensionRejectionReason}
+              onChange={(e) => setExtensionRejectionReason(e.target.value)}
+              className="input-form w-full text-gray-800 placeholder-gray-500"
+              rows={4}
+              placeholder="Ex: prazo ultrapassa o limite legal de 24 meses..."
+            />
+            <div className="mt-4 flex justify-end space-x-2">
+              <button
+                onClick={() => setExtensionModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleInternshipExtension('REJECT', extensionRejectionReason)}
+                disabled={isLoading}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:bg-red-300"
+              >
+                {isLoading ? 'A enviar...' : 'Confirmar Recusa'}
               </button>
             </div>
           </div>

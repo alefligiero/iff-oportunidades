@@ -6,6 +6,7 @@ import DocumentUpload from "./DocumentUpload";
 import DocumentList from "./DocumentList";
 import DownloadTemplates from "./DownloadTemplates";
 import DownloadOfficialDocumentCard from "./DownloadOfficialDocumentCard";
+import DownloadOfficialExtensionDocumentCard from "./DownloadOfficialExtensionDocumentCard";
 import { getFinalDocumentsPolicy } from "@/lib/final-documents-policy";
 
 export type DocumentItem = {
@@ -23,6 +24,7 @@ interface DocumentsSectionProps {
   internshipType: InternshipType;
   status: InternshipStatus;
   earlyTerminationApproved: boolean | null;
+  internshipExtensionApproved: boolean | null;
   internshipStartDate: string;
   internshipEndDate: string;
   earlyTerminationRequestedAt: string | null;
@@ -46,6 +48,7 @@ export default function DocumentsSection({
   internshipType,
   status,
   earlyTerminationApproved,
+  internshipExtensionApproved,
   internshipStartDate,
   internshipEndDate,
   earlyTerminationRequestedAt,
@@ -147,6 +150,21 @@ export default function DocumentsSection({
     [documents]
   );
 
+  const extensionTermDocs = useMemo(
+    () => documents.filter((doc) => doc.type === DocumentType.EXTENSION_TERM),
+    [documents]
+  );
+
+  const extensionTermApproved = extensionTermDocs.some(
+    (doc) => doc.status === DocumentStatus.APPROVED || doc.status === DocumentStatus.SIGNED_VALIDATED
+  );
+
+  const canUploadExtensionTerm =
+    internshipExtensionApproved === true &&
+    status !== InternshipStatus.CANCELED &&
+    status !== InternshipStatus.FINISHED &&
+    !extensionTermApproved;
+
   const tceDocs = useMemo(
     () => documents.filter((doc) => doc.type === DocumentType.TCE),
     [documents]
@@ -204,6 +222,12 @@ export default function DocumentsSection({
         internshipId={internshipId}
         status={status}
         internshipType={internshipType}
+      />
+
+      <DownloadOfficialExtensionDocumentCard
+        internshipId={internshipId}
+        internshipType={internshipType}
+        internshipExtensionApproved={internshipExtensionApproved}
       />
 
       {(status === InternshipStatus.APPROVED || status === InternshipStatus.IN_PROGRESS || status === InternshipStatus.FINISHED) && (
@@ -279,6 +303,35 @@ export default function DocumentsSection({
             onRefresh={refreshDocuments}
             showUploadButton={false}
             title="TCE enviados"
+            showAlerts={false}
+          />
+        </div>
+      )}
+
+      {(internshipExtensionApproved === true || extensionTermDocs.length > 0) && (
+        <div className="bg-white p-6 rounded-lg shadow-md space-y-4 border border-gray-200">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">Termo Aditivo de Prorrogação</h3>
+            <p className="text-sm text-gray-600">
+              Envie o termo aditivo assinado após a aprovação da solicitação de prorrogação. A prorrogação só passa a valer após aprovação deste documento pela Agência.
+            </p>
+          </div>
+
+          {canUploadExtensionTerm && (
+            <DocumentUpload
+              internshipId={internshipId}
+              documentType={DocumentType.EXTENSION_TERM}
+              onUploadSuccess={refreshDocuments}
+              disabled={false}
+            />
+          )}
+
+          <DocumentList
+            internshipId={internshipId}
+            documents={extensionTermDocs}
+            onRefresh={refreshDocuments}
+            showUploadButton={true}
+            title="Termos Aditivos enviados"
             showAlerts={false}
           />
         </div>

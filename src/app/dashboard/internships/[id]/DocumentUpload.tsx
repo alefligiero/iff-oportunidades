@@ -18,6 +18,7 @@ const documentTypeLabels: Record<DocumentType, string> = {
   RFE: 'Relatório Final de Estágio (RFE)',
   PARECER_AVALIATIVO: 'Parecer Avaliativo',
   TERMINATION_TERM: 'Termo de Cancelamento de Estágio',
+  EXTENSION_TERM: 'Termo Aditivo de Prorrogação',
   FINAL_DECLARATION: 'Declaração Final',
   SIGNED_CONTRACT: 'TCE + PAE assinados (PDF único)',
   LIFE_INSURANCE: 'Comprovante de Seguro de Vida',

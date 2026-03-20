@@ -96,6 +96,14 @@ model Internship {
   earlyTerminationReason    String?
   earlyTerminationRequested Boolean            @default(false)
   earlyTerminationRejectionReason String?
+  internshipExtensionRequested Boolean         @default(false)
+  internshipExtensionRequestedAt DateTime?
+  internshipExtensionHandledAt DateTime?
+  internshipExtensionApproved  Boolean?
+  internshipExtensionReason    String?
+  internshipExtensionRejectionReason String?
+  internshipExtensionStartDate DateTime?
+  internshipExtensionEndDate   DateTime?
   hasDetailedInfo           Boolean            @default(false)
   insuranceRequired         Boolean            @default(false)
   documents                 Document[]
@@ -207,6 +215,7 @@ enum DocumentType {
   RFE
   PARECER_AVALIATIVO
   TERMINATION_TERM
+  EXTENSION_TERM
   FINAL_DECLARATION
   SIGNED_CONTRACT
   LIFE_INSURANCE

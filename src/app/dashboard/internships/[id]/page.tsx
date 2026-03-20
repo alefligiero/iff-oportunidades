@@ -5,6 +5,7 @@ import { PrismaClient, InternshipStatus, InternshipType, InternshipModality, Gen
 import { redirect } from 'next/navigation';
 import { getApprovedSubstatus, getInProgressSubstatus, getFinishedSubstatus } from '@/lib/internship-substatus';
 import RequestEarlyTermination from './RequestEarlyTermination';
+import RequestInternshipExtension from './RequestInternshipExtension';
 import DocumentsSection from './DocumentsSection';
 import NextStepsGuide from './NextStepsGuide';
 import StatusProgress from './StatusProgress';
@@ -128,9 +129,16 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
     (doc) => doc.type === DocumentType.LIFE_INSURANCE
   );
 
+  const extensionTermDocument = internship?.documents.find(
+    (doc) => doc.type === DocumentType.EXTENSION_TERM
+  );
+
   const inProgressSubstatus =
     internship?.status === InternshipStatus.IN_PROGRESS
-      ? getInProgressSubstatus(internship.documents)
+      ? getInProgressSubstatus(internship.documents, {
+          internshipExtensionRequested: Boolean(internship.internshipExtensionRequested),
+          internshipExtensionApproved: internship.internshipExtensionApproved,
+        })
       : null;
 
   const finishedSubstatus =
@@ -223,6 +231,20 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
           earlyTerminationRejectionReason={internship.earlyTerminationRejectionReason}
         />
 
+        <RequestInternshipExtension
+          internshipId={internship.id}
+          status={internship.status}
+          currentEndDate={internship.endDate.toISOString()}
+          internshipExtensionRequested={Boolean(internship.internshipExtensionRequested)}
+          internshipExtensionApproved={internship.internshipExtensionApproved}
+          internshipExtensionReason={internship.internshipExtensionReason}
+          internshipExtensionHandledAt={internship.internshipExtensionHandledAt ? internship.internshipExtensionHandledAt.toISOString() : null}
+          internshipExtensionRejectionReason={internship.internshipExtensionRejectionReason}
+          internshipExtensionStartDate={internship.internshipExtensionStartDate ? internship.internshipExtensionStartDate.toISOString().slice(0, 10) : null}
+          internshipExtensionEndDate={internship.internshipExtensionEndDate ? internship.internshipExtensionEndDate.toISOString().slice(0, 10) : null}
+          extensionTermStatus={extensionTermDocument?.status ?? null}
+        />
+
         <StatusProgress status={internship.status} />
 
         <NextStepsGuide
@@ -254,6 +276,7 @@ export default async function InternshipDetailsPage({ params }: InternshipDetail
           internshipType={internship.type}
           status={internship.status}
           earlyTerminationApproved={internship.earlyTerminationApproved}
+          internshipExtensionApproved={internship.internshipExtensionApproved}
           internshipStartDate={internship.startDate.toISOString()}
           internshipEndDate={internship.endDate.toISOString()}
           earlyTerminationRequestedAt={internship.earlyTerminationRequestedAt?.toISOString() ?? null}

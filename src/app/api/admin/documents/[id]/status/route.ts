@@ -22,6 +22,7 @@ const documentTypeLabels: Record<DocumentType, string> = {
   RFE: 'RFE',
   PARECER_AVALIATIVO: 'Parecer Avaliativo',
   TERMINATION_TERM: 'Termo de Cancelamento',
+  EXTENSION_TERM: 'Termo Aditivo de Prorrogação',
   FINAL_DECLARATION: 'Declaração Final',
   SIGNED_CONTRACT: 'TCE + PAE assinados',
   LIFE_INSURANCE: 'Seguro de Vida',
@@ -122,6 +123,8 @@ export async function PATCH(
         internship: {
           select: {
             companyName: true,
+            internshipExtensionApproved: true,
+            internshipExtensionEndDate: true,
             student: {
               select: {
                 name: true,
@@ -137,15 +140,56 @@ export async function PATCH(
       return createErrorResponse('Documento não encontrado', 404);
     }
 
-    // Atualizar documento
-    const updatedDocument = await prisma.document.update({
-      where: { id: documentId },
-      data: {
-        status: status as DocumentStatus,
-        rejectionComments: status === 'REJECTED' ? rejectionComments : null,
-        updatedAt: new Date(),
-      },
-    });
+    let updatedDocument;
+
+    if (status === 'APPROVED' && document.type === DocumentType.EXTENSION_TERM) {
+      if (document.internship.internshipExtensionApproved !== true) {
+        return createErrorResponse(
+          'Não é possível aprovar o Termo Aditivo sem uma solicitação de prorrogação previamente aprovada.',
+          409
+        );
+      }
+
+      if (!document.internship.internshipExtensionEndDate) {
+        return createErrorResponse(
+          'Não foi encontrada a data final aprovada da prorrogação para efetivar o estágio.',
+          409
+        );
+      }
+
+      const result = await prisma.$transaction(async (tx) => {
+        const nextDocument = await tx.document.update({
+          where: { id: documentId },
+          data: {
+            status: status as DocumentStatus,
+            rejectionComments: null,
+            updatedAt: new Date(),
+          },
+        });
+
+        await tx.internship.update({
+          where: { id: document.internshipId },
+          data: {
+            endDate: document.internship.internshipExtensionEndDate,
+            updatedAt: new Date(),
+          },
+        });
+
+        return nextDocument;
+      });
+
+      updatedDocument = result;
+    } else {
+      // Atualizar documento
+      updatedDocument = await prisma.document.update({
+        where: { id: documentId },
+        data: {
+          status: status as DocumentStatus,
+          rejectionComments: status === 'REJECTED' ? rejectionComments : null,
+          updatedAt: new Date(),
+        },
+      });
+    }
 
     // Se documento foi aprovado, verificar se estágio pode iniciar automaticamente
     if (status === 'APPROVED') {
