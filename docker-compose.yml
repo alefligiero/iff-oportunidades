@@ -1,10 +1,23 @@
 services:
-  db:
-    image: postgres:16-alpine
-    container_name: iff_oportunidades_api_db
+  app:
+    build:
+      context: .
+    container_name: iff_oportunidades_app
     restart: unless-stopped
     env_file:
-      - ./.env.db
+      - .env
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    container_name: iff_oportunidades_app_db
+    restart: unless-stopped
+    env_file:
+      - .env.db
     ports:
       - "5432:5432"
     volumes:
