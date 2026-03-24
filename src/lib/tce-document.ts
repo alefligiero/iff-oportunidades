@@ -115,7 +115,7 @@ export async function buildTceTemplateData(
   const insuranceValidity = internship.insuranceStartDate && internship.insuranceEndDate
     ? `${formatDateBR(internship.insuranceStartDate)} a ${formatDateBR(internship.insuranceEndDate)}`
     : '';
-  const courseName = courseNameMap[internship.studentCourse] ?? internship.studentCourse ?? '';
+  const courseName = (internship.studentCourse ? courseNameMap[internship.studentCourse] : undefined) ?? internship.studentCourse ?? '';
   const transportationValue = internship.modality === 'REMOTO'
     ? '( Estágio 100% Remoto )'
     : formatCurrencyBR(internship.transportationGrant);

@@ -4,13 +4,15 @@ import { useState, useEffect } from 'react';
 import { AuthGuard } from '@/components/AuthGuard';
 import InternshipsPageContent from './InternshipsPageContent';
 
+import { InternshipStatus, InternshipType, InternshipModality, DocumentType, DocumentStatus } from '@prisma/client';
+
 interface Internship {
   id: string;
-  status: string;
-  type: string;
+  status: InternshipStatus;
+  type: InternshipType;
   companyName: string;
   studentCourse: string;
-  modality: string;
+  modality: InternshipModality;
   earlyTerminationRequested: boolean;
   earlyTerminationApproved: boolean | null;
   insuranceRequired: boolean;
@@ -22,8 +24,8 @@ interface Internship {
     matricula: string;
   };
   documents: {
-    type: string;
-    status: string;
+    type: DocumentType;
+    status: DocumentStatus;
     fileUrl: string | null;
   }[];
 }

@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react';
 import { AuthGuard } from '@/components/AuthGuard';
 import VacanciesPageContent from './VacanciesPageContent';
+import { VacancyStatus, VacancyType, VacancyModality } from '@prisma/client';
 
 interface Vacancy {
   id: string;
   title: string;
-  status: string;
-  type: string;
-  modality: string;
+  status: VacancyStatus;
+  type: VacancyType;
+  modality: VacancyModality;
   remuneration: number;
   workload: number;
   createdAt: string;

@@ -183,7 +183,7 @@ export function withLogging(handler: RouteHandler): RouteHandler {
     const response = await handler(request, ...args);
     
     const duration = Date.now() - start;
-    console.log(`[${method}] ${url} - ${response.status} - ${duration}ms`);
+    console.log(`[${method}] ${url} - ${response?.status || 'N/A'} - ${duration}ms`);
 
     return response;
   };
@@ -197,7 +197,8 @@ export function withRateLimit(maxRequests: number = 100, windowMs: number = 15 *
 
   return function(handler: RouteHandler): RouteHandler {
     return async (request: NextRequest, ...args: unknown[]) => {
-      const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const ip = (request as any).ip || request.headers.get('x-forwarded-for') || 'unknown';
       const now = Date.now();
       const windowStart = now - windowMs;
 

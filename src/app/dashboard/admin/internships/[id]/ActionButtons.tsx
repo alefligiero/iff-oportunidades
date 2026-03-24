@@ -89,7 +89,7 @@ export default function ActionButtons({
     (doc) => doc.type === 'SIGNED_CONTRACT' && doc.status === 'PENDING_ANALYSIS' && Boolean(doc.fileUrl)
   );
   const isReadyForApproval = canModerateFormalization && !hasSignedContractPending;
-  const canForceClose = ![InternshipStatus.FINISHED, InternshipStatus.CANCELED].includes(internshipStatus);
+  const canForceClose = !([InternshipStatus.FINISHED, InternshipStatus.CANCELED] as InternshipStatus[]).includes(internshipStatus);
   const canSelectFinishOrCancel = internshipStatus === InternshipStatus.IN_PROGRESS;
 
   const handleUpdateStatus = async (
@@ -137,15 +137,17 @@ export default function ActionButtons({
         throw new Error(data.error || 'Falha ao atualizar o estado.');
       }
 
-      const successMessage = {
+      const successMessage: Partial<Record<InternshipStatus, string>> = {
         [InternshipStatus.APPROVED]: 'Estágio aprovado com sucesso!',
         [InternshipStatus.REJECTED]: 'Estágio recusado com sucesso!',
         [InternshipStatus.IN_PROGRESS]: 'Estágio iniciado com sucesso!',
         [InternshipStatus.FINISHED]: 'Estágio concluído com sucesso!',
         [InternshipStatus.CANCELED]: 'Estágio cancelado com sucesso!',
-      }[status];
+      };
+      
+      const message = successMessage[status];
 
-      addNotification('success', successMessage || 'Status atualizado com sucesso!');
+      addNotification('success', message || 'Status atualizado com sucesso!');
       router.push('/dashboard/admin/internships');
       router.refresh();
 

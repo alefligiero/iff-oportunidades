@@ -11,7 +11,7 @@ const updateVacancySchema = z.object({
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userPayload = await getUserFromToken(request);
@@ -24,8 +24,9 @@ export async function PATCH(
         return NextResponse.json({ error: 'Empresa não encontrada.' }, { status: 404 });
     }
 
+    const { id } = await params;
     const vacancy = await prisma.jobVacancy.findFirst({
-        where: { id: params.id, companyId: company.id }
+        where: { id, companyId: company.id }
     });
     if (!vacancy) {
         return NextResponse.json({ error: 'Vaga não encontrada ou não pertence a esta empresa.' }, { status: 404 });
@@ -39,7 +40,7 @@ export async function PATCH(
     }
 
     const updatedVacancy = await prisma.jobVacancy.update({
-      where: { id: params.id },
+      where: { id },
       data: { ...validation.data, status: 'PENDING_APPROVAL' }, // Re-submete para aprovação
     });
 
@@ -70,7 +71,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userPayload = await getUserFromToken(request);
@@ -83,8 +84,9 @@ export async function DELETE(
         return NextResponse.json({ error: 'Empresa não encontrada.' }, { status: 404 });
     }
 
+    const { id } = await params;
     await prisma.jobVacancy.delete({
-      where: { id: params.id, companyId: company.id },
+      where: { id, companyId: company.id },
     });
 
     return NextResponse.json({ message: 'Vaga deletada com sucesso.' }, { status: 200 });

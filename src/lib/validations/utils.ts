@@ -11,7 +11,7 @@ export function validateRequestBody<T>(schema: z.ZodSchema<T>, body: unknown) {
   
   if (!result.success) {
     return {
-      success: false,
+      success: false as const,
       error: NextResponse.json(
         { 
           error: 'Dados inválidos', 
@@ -23,7 +23,7 @@ export function validateRequestBody<T>(schema: z.ZodSchema<T>, body: unknown) {
   }
 
   return {
-    success: true,
+    success: true as const,
     data: result.data
   };
 }
@@ -36,7 +36,7 @@ export function validateParams<T>(schema: z.ZodSchema<T>, params: unknown) {
   
   if (!result.success) {
     return {
-      success: false,
+      success: false as const,
       error: NextResponse.json(
         { 
           error: 'Parâmetros inválidos', 
@@ -48,7 +48,7 @@ export function validateParams<T>(schema: z.ZodSchema<T>, params: unknown) {
   }
 
   return {
-    success: true,
+    success: true as const,
     data: result.data
     };
 }
@@ -62,7 +62,7 @@ export function validateQuery<T>(schema: z.ZodSchema<T>, searchParams: URLSearch
   
   if (!result.success) {
     return {
-      success: false,
+      success: false as const,
       error: NextResponse.json(
         { 
           error: 'Parâmetros de consulta inválidos', 
@@ -74,7 +74,7 @@ export function validateQuery<T>(schema: z.ZodSchema<T>, searchParams: URLSearch
   }
 
   return {
-    success: true,
+    success: true as const,
     data: result.data
   };
 }
@@ -87,7 +87,7 @@ export function validateHeaders(request: NextRequest, requiredHeaders: string[])
   
   if (missingHeaders.length > 0) {
     return {
-      success: false,
+      success: false as const,
       error: NextResponse.json(
         { 
           error: 'Headers obrigatórios ausentes', 
@@ -99,7 +99,7 @@ export function validateHeaders(request: NextRequest, requiredHeaders: string[])
   }
 
   return {
-    success: true,
+    success: true as const,
     data: Object.fromEntries(
       requiredHeaders.map(header => [header, request.headers.get(header)])
     )
@@ -122,7 +122,7 @@ export async function validateRequest<T>(request: NextRequest, options: {
   if (requiredHeaders) {
     const headerValidation = validateHeaders(request, requiredHeaders);
     if (!headerValidation.success) {
-      return { success: false, error: headerValidation.error };
+      return { success: false as const, error: headerValidation.error };
     }
     result.headers = headerValidation.data;
   }
@@ -135,7 +135,7 @@ export async function validateRequest<T>(request: NextRequest, options: {
     
     const paramValidation = validateParams(paramSchema, params);
     if (!paramValidation.success) {
-      return { success: false, error: paramValidation.error };
+      return { success: false as const, error: paramValidation.error };
     }
     result.params = paramValidation.data;
   }
@@ -145,7 +145,7 @@ export async function validateRequest<T>(request: NextRequest, options: {
     const url = new URL(request.url);
     const queryValidation = validateQuery(querySchema, url.searchParams);
     if (!queryValidation.success) {
-      return { success: false, error: queryValidation.error };
+      return { success: false as const, error: queryValidation.error };
     }
     result.query = queryValidation.data;
   }
@@ -155,13 +155,13 @@ export async function validateRequest<T>(request: NextRequest, options: {
     const body = await request.json();
     const bodyValidation = validateRequestBody(bodySchema, body);
     if (!bodyValidation.success) {
-      return { success: false, error: bodyValidation.error };
+      return { success: false as const, error: bodyValidation.error };
     }
     result.body = bodyValidation.data;
   }
 
   return {
-    success: true,
+    success: true as const,
     data: result
   };
 }
@@ -173,7 +173,7 @@ export function createErrorResponse(message: string, status: number = 400, detai
   return NextResponse.json(
     { 
       error: message,
-      ...(details && { details })
+      ...(details ? { details } : {})
     }, 
     { status }
   );
@@ -192,7 +192,7 @@ export function createSuccessResponse<T>(data: T, status: number = 200) {
 export function validateUserPermission(userRole: string, allowedRoles: string[]) {
   if (!allowedRoles.includes(userRole)) {
     return {
-      success: false,
+      success: false as const,
       error: NextResponse.json(
         { error: 'Acesso negado. Permissão insuficiente.' }, 
         { status: 403 }
@@ -200,7 +200,7 @@ export function validateUserPermission(userRole: string, allowedRoles: string[])
     };
   }
 
-  return { success: true };
+  return { success: true as const };
 }
 
 /**
@@ -210,7 +210,7 @@ export function validateCuid(id: string) {
   const cuidRegex = /^c[0-9a-z]{24}$/;
   if (!cuidRegex.test(id)) {
     return {
-      success: false,
+      success: false as const,
       error: NextResponse.json(
         { error: 'ID inválido' }, 
         { status: 400 }
@@ -218,7 +218,7 @@ export function validateCuid(id: string) {
     };
   }
 
-  return { success: true };
+  return { success: true as const };
 }
 
 /**
@@ -239,7 +239,7 @@ export function validateDate(dateString: string) {
   const date = new Date(dateString);
   if (isNaN(date.getTime())) {
     return {
-      success: false,
+      success: false as const,
       error: NextResponse.json(
         { error: 'Data inválida' }, 
         { status: 400 }
@@ -247,6 +247,6 @@ export function validateDate(dateString: string) {
     };
   }
 
-  return { success: true, data: date };
+  return { success: true as const, data: date };
 }
 

@@ -7,11 +7,12 @@ import CloseVacancyButton from '@/app/dashboard/vacancies/CloseVacancyButton';
 
 const prisma = new PrismaClient();
 
-const statusMap = {
+const statusMap: Record<VacancyStatus, { text: string; color: string }> = {
   [VacancyStatus.PENDING_APPROVAL]: { text: 'Pendente', color: 'bg-yellow-100 text-yellow-800' },
   [VacancyStatus.APPROVED]: { text: 'Aprovada', color: 'bg-green-100 text-green-800' },
   [VacancyStatus.REJECTED]: { text: 'Rejeitada', color: 'bg-red-100 text-red-800' },
   [VacancyStatus.CLOSED_BY_COMPANY]: { text: 'Fechada', color: 'bg-gray-100 text-gray-800' },
+  [VacancyStatus.CLOSED_BY_ADMIN]: { text: 'Fechada pelo admin', color: 'bg-gray-100 text-gray-800' },
 };
 
 type VacanciesParams = {

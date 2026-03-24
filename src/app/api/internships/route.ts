@@ -91,7 +91,7 @@ async function createInternship(request: NextRequest) {
   const validatedData = validation.data;
   const normalizedTransportationGrant = validatedData.modality === 'REMOTO'
     ? 0
-    : validatedData.transportationGrant;
+    : (validatedData.transportationGrant as number);
 
   const isValidCourse = await isActiveCourseCode(validatedData.studentCourse);
   if (!isValidCourse) {
@@ -142,6 +142,8 @@ async function createInternship(request: NextRequest) {
       const internshipCreateData: Prisma.InternshipUncheckedCreateInput = {
         ...validatedData,
         transportationGrant: normalizedTransportationGrant,
+        insuranceStartDate: insuranceStartDate as string | Date | null,
+        insuranceEndDate: insuranceEndDate as string | Date | null,
         type: InternshipType.INTEGRATOR,
         studentId: studentProfile.id,
         hasDetailedInfo: true,
@@ -210,6 +212,8 @@ async function createInternship(request: NextRequest) {
       const internshipCreateData: Prisma.InternshipUncheckedCreateInput = {
         ...validatedData,
         transportationGrant: normalizedTransportationGrant,
+        insuranceStartDate: insuranceStartDate as string | Date | null,
+        insuranceEndDate: insuranceEndDate as string | Date | null,
         type: InternshipType.DIRECT,
         studentId: studentProfile.id,
         hasDetailedInfo: true,

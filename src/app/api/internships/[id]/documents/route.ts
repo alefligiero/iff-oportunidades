@@ -84,7 +84,7 @@ export async function POST(
 
     if (
       !finalDocumentsPolicy.requiresCoreFinalDocuments &&
-      [DocumentType.TRE, DocumentType.RFE, DocumentType.PARECER_AVALIATIVO].includes(documentType)
+      ([DocumentType.TRE, DocumentType.RFE, DocumentType.PARECER_AVALIATIVO] as DocumentType[]).includes(documentType)
     ) {
       return createErrorResponse(
         'Para encerramento antecipado com duração menor que 6 meses, apenas o Termo de Cancelamento é aceito',

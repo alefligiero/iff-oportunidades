@@ -150,7 +150,7 @@ export async function PATCH(
     });
 
     if (previousFileUrl) {
-      const oldFilePath = previousFileUrl.replace('/uploads/documents/', '');
+      const oldFilePath = (previousFileUrl as string).replace('/uploads/documents/', '');
       const fullPath = `${process.cwd()}/public/uploads/documents/${oldFilePath}`;
       deleteFile(fullPath);
     }

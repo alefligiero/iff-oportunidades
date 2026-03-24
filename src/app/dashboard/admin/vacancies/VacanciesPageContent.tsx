@@ -6,7 +6,7 @@ import VacancyTabs from './VacancyTabs';
 import VacancyFilters, { FilterState } from './VacancyFilters';
 import VacancyTable from './VacancyTable';
 
-type TabStatus = VacancyStatus | 'CLOSED';
+type TabStatus = 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'CLOSED';
 
 interface Vacancy {
   id: string;

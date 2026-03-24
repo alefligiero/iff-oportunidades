@@ -15,7 +15,7 @@ interface AdminActionGuideProps {
   earlyTerminationRequestedAt: string | null;
 }
 
-const APPROVED_DOCUMENT_STATUSES = [DocumentStatus.APPROVED, DocumentStatus.SIGNED_VALIDATED];
+const APPROVED_DOCUMENT_STATUSES: DocumentStatus[] = [DocumentStatus.APPROVED, DocumentStatus.SIGNED_VALIDATED];
 
 export default function AdminActionGuide({
   status,

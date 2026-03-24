@@ -207,7 +207,7 @@ export function matchDocumentsToPeriods(
   // Estratégia robusta: associação sequencial simples
   // 1º documento -> 1º período, 2º documento -> 2º período, etc.
   // Documentos rejeitados permitem reenvio para o mesmo período
-  const periodDocuments = new Map<number, PeriodicReportPeriod['document'][]>();
+  const periodDocuments = new Map<number, NonNullable<PeriodicReportPeriod['document']>[]>();
   
   let currentPeriodIndex = 0;
   
@@ -219,7 +219,7 @@ export function matchDocumentsToPeriods(
       const currentPeriodDocs = periodDocuments.get(currentPeriodIndex);
       if (currentPeriodDocs && currentPeriodDocs.length > 0) {
         const lastDoc = currentPeriodDocs[currentPeriodDocs.length - 1];
-        if (lastDoc.status === DocumentStatus.REJECTED) {
+        if (lastDoc?.status === DocumentStatus.REJECTED) {
           // Reenvio para o mesmo período
           assignedPeriod = currentPeriodIndex;
         }

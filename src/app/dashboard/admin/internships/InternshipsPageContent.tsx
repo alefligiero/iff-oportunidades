@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { InternshipStatus, InternshipType, InternshipModality } from '@prisma/client';
+import { InternshipStatus, InternshipType, InternshipModality, DocumentType, DocumentStatus } from '@prisma/client';
 import InternshipTabs from './InternshipTabs';
 import InternshipFilters, { FilterState } from './InternshipFilters';
 import InternshipTable from './InternshipTable';
@@ -22,8 +22,8 @@ interface Internship {
   earlyTerminationApproved: boolean | null;
   insuranceRequired: boolean;
   documents: {
-    type: string;
-    status: string;
+    type: DocumentType;
+    status: DocumentStatus;
     fileUrl: string | null;
   }[];
 }

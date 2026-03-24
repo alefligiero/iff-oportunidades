@@ -13,7 +13,7 @@ interface PendingTask {
   href: string;
 }
 
-const APPROVED_DOCUMENT_STATUSES = [DocumentStatus.APPROVED, DocumentStatus.SIGNED_VALIDATED];
+const APPROVED_DOCUMENT_STATUSES: DocumentStatus[] = [DocumentStatus.APPROVED, DocumentStatus.SIGNED_VALIDATED];
 
 const adminDocumentLabels: Record<DocumentType, string> = {
   TCE: 'do TCE',
@@ -33,10 +33,10 @@ const formatDate = (date: Date) => {
   return new Date(date).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 };
 
-const getLatestDocumentByType = (
-  documents: Array<{ type: DocumentType; createdAt: Date; updatedAt: Date }>,
+const getLatestDocumentByType = <T extends { type: DocumentType; updatedAt: Date }>(
+  documents: T[],
   type: DocumentType
-) => {
+): T | undefined => {
   return documents
     .filter((doc) => doc.type === type)
     .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())[0];
@@ -309,7 +309,7 @@ export async function GET(request: NextRequest) {
       }
 
       if (
-        [InternshipStatus.APPROVED, InternshipStatus.IN_PROGRESS, InternshipStatus.FINISHED].includes(
+        ([InternshipStatus.APPROVED, InternshipStatus.IN_PROGRESS, InternshipStatus.FINISHED] as InternshipStatus[]).includes(
           internship.status
         )
       ) {

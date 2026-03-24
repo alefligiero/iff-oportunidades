@@ -170,7 +170,7 @@ export async function PATCH(
         await tx.internship.update({
           where: { id: document.internshipId },
           data: {
-            endDate: document.internship.internshipExtensionEndDate,
+            endDate: document.internship.internshipExtensionEndDate!,
             updatedAt: new Date(),
           },
         });

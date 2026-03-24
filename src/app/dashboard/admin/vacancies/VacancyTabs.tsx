@@ -2,7 +2,7 @@
 
 import { VacancyStatus } from '@prisma/client';
 
-type TabStatus = VacancyStatus | 'CLOSED';
+type TabStatus = 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'CLOSED';
 
 const statusConfig: Record<TabStatus, { label: string; color: string }> = {
   PENDING_APPROVAL: { label: 'Pendentes', color: 'border-b-yellow-400 text-yellow-700' },
