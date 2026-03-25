@@ -35,26 +35,40 @@ Esta rota **finaliza estágios**:
 - Atualiza o status para `FINISHED`
 - Quando finalizado, o sistema libera automaticamente o envio dos documentos finais (TRE e RFE)
 
-### 3. Agendamento
+### 3. Rota API: `/api/cron/release-periodic-reports`
+
+Libera o envio de relatórios periódicos para os alunos elegíveis:
+- Busca todos os estágios com status `IN_PROGRESS` que requerem relatórios periódicos (duração > 6 meses)
+- Para cada período cujo `availableDate == hoje` (30 dias antes do vencimento), verifica se já existe notificação
+- Se não existir, cria uma **notificação** para o aluno informando que o período está aberto para envio
+- Idempotente: não gera notificações duplicadas no mesmo dia para o mesmo período
+
+### 4. Rota API: `/api/cron/auto-cancel-rejected`
+
+Cancela automaticamente registros que permanecem em status rejeitado por mais de 7 dias:
+- **Vagas**: `status = REJECTED` e `updatedAt <= hoje - 7 dias` → atualizado para `CLOSED_BY_ADMIN`
+- **Estágios**: `status = REJECTED` e `rejectedAt <= hoje - 7 dias` → atualizado para `CANCELED`
+- Consolida a lógica existente em `/api/admin/vacancies/auto-close` e `/api/admin/internships/auto-cancel`
+
+### 5. Agendamento
 
 **No Vercel** (configurado em `vercel.json`):
 ```json
 {
   "crons": [
-    {
-      "path": "/api/cron/start-internships",
-      "schedule": "0 6 * * *"
-    },
-    {
-      "path": "/api/cron/finish-internships",
-      "schedule": "0 7 * * *"
-    }
+    { "path": "/api/cron/start-internships",        "schedule": "0 6 * * *" },
+    { "path": "/api/cron/finish-internships",       "schedule": "0 7 * * *" },
+    { "path": "/api/cron/release-periodic-reports", "schedule": "0 8 * * *" },
+    { "path": "/api/cron/auto-cancel-rejected",     "schedule": "0 9 * * *" }
   ]
 }
 ```
 
-- **Início**: Executa **todos os dias às 6h da manhã** (horário UTC)
-- **Finalização**: Executa **todos os dias às 7h da manhã** (horário UTC)
+- **Início de estágios**: todos os dias às **6h UTC**
+- **Finalização de estágios**: todos os dias às **7h UTC**
+- **Liberação de relatórios**: todos os dias às **8h UTC**
+- **Auto-cancelamento de rejeitados**: todos os dias às **9h UTC**
+
 
 **Em outros ambientes**:
 Use um serviço externo de cron como:
