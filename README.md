@@ -41,28 +41,26 @@ O projeto foi desenvolvido utilizando as seguintes tecnologias:
 
 ## ⚙️ Como Começar
 
-Siga as instruções abaixo para configurar e rodar o projeto em seu ambiente local.
+Siga as instruções abaixo para configurar e rodar o projeto em seu ambiente local para desenvolvimento ou servidor de produção.
 
 ### Pré-requisitos
 
-Escolha uma das duas opções para o banco de dados:
+Para rodar o projeto de forma eficiente:
 
-- Com Docker (recomendado):
-    - [Docker](https://www.docker.com/) e [Docker Compose](https://docs.docker.com/compose/)
-- Sem Docker:
-    - Uma instância local do **PostgreSQL** rodando
-
-Além disso:
-
-- [Node.js](https://nodejs.org/en/) (v18.18+ ou v20+ recomendado)
-- [npm](https://www.npmjs.com/) (ou Yarn/Pnpm, se preferir)
+- [Docker](https://www.docker.com/) e [Docker Compose](https://docs.docker.com/compose/) instalados no seu sistema
 - [Git](https://git-scm.com/)
 
-### Instalação
+*(Para desenvolvimento, também é necessário ter o [Node.js](https://nodejs.org/en/) v18.18+ ou v20+ e npm instalados).*
+
+---
+
+### 🛠️ Ambiente de Desenvolvimento
+
+Para desenvolvimento, recomenda-se rodar apenas o banco de dados via Docker e o servidor Web diretamente no Node.js local.
 
 1.  **Clone o repositório:**
     ```bash
-    git clone [https://github.com/SEU-USUARIO/iff-oportunidades.git](https://github.com/SEU-USUARIO/iff-oportunidades.git)
+    git clone https://github.com/SEU-USUARIO/iff-oportunidades.git
     cd iff-oportunidades
     ```
 
@@ -72,49 +70,59 @@ Além disso:
     ```
 
 3.  **Configure as variáveis de ambiente:**
-        - Copie os exemplos e ajuste conforme necessário:
-        ```bash
-        cp .env.example .env
-        cp .env.db.example .env.db   # necessário apenas se for usar o Docker do Postgres
-        ```
-        - No `.env`, confirme:
-            - `DATABASE_URL` apontando para seu Postgres (por padrão: localhost:5432)
-            - `JWT_SECRET` com um valor não previsível em produção
-            - `ADMIN_SEED_EMAIL` e `ADMIN_SEED_PASSWORD` para o usuário Admin criado no seed
-
-4.  **Suba o banco de dados (se usar Docker):**
+    - Copie os exemplos e ajuste conforme necessário:
     ```bash
-    docker compose up -d
+    cp .env.example .env
+    cp .env.db.example .env.db
     ```
 
-5.  **Execute as migrações do banco de dados:**
+4.  **Suba apenas o banco de dados no Docker:**
+    ```bash
+    docker compose up db -d
+    ```
+
+5.  **Execute as migrações e (opcionalmente) popule os dados de exemplo:**
     ```bash
     npx prisma migrate dev
-    ```
-
-6.  **(Opcional, mas recomendado) Popular dados de exemplo:**
-    ```bash
     npx prisma db seed
     ```
 
-7.  **(Produção) Criar Admin inicial sem seed:**
+6.  **Inicie o servidor de desenvolvimento:**
     ```bash
-    npm run admin:bootstrap
+    npm run dev
     ```
-    Variáveis necessárias no ambiente:
-    - `ADMIN_BOOTSTRAP_EMAIL`
-    - `ADMIN_BOOTSTRAP_PASSWORD`
-    - `ADMIN_BOOTSTRAP_FORCE_PASSWORD_UPDATE` (`true` para rotacionar senha de admin existente)
+    A aplicação estará disponível em `http://localhost:3000`.
 
 ---
 
-## ▶️ Rodando a Aplicação
+### 🚀 Ambiente de Produção (Docker)
 
-Para iniciar o servidor de desenvolvimento, que servirá tanto o frontend quanto a API, execute o comando:
-```bash
-npm run dev
-```
-A aplicação estará disponível em `http://localhost:3000`.
+O projeto está totalmente dockerizado. Em produção, você sobe **toda a aplicação** (banco de dados e sistema web) via Docker. O próprio contêiner da aplicação aplica as migrações no banco e cria o usuário Admin inicial automaticamente no startup.
+
+1.  **Clone o repositório no servidor:**
+    ```bash
+    git clone https://github.com/SEU-USUARIO/iff-oportunidades.git
+    cd iff-oportunidades
+    ```
+
+2.  **Configure as variáveis de ambiente:**
+    ```bash
+    cp .env.example .env
+    cp .env.db.example .env.db
+    ```
+    - No arquivo `.env`, é **obrigatório** definir:
+      - `JWT_SECRET` com um valor forte e imprevisível.
+      - `ADMIN_BOOTSTRAP_EMAIL` e `ADMIN_BOOTSTRAP_PASSWORD` para a criação automática da primeira conta de admin na inicialização.
+    - No `.env.db`, altere as credenciais padrão de banco de dados (também reflita as mudanças na `DATABASE_URL` do seu `.env`).
+
+3.  **Suba os contêineres e realize a build da imagem da aplicação:**
+    ```bash
+    docker compose up -d --build
+    ```
+    
+Pronto! A aplicação estará disponível na porta `3000`. A infraestrutura do Docker tratará de executar o `prisma migrate deploy` e popular o admin automaticamente através do `entrypoint.sh`.
+
+---
 
 ### 🔐 Usuários de teste (seed)
 
