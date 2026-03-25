@@ -180,6 +180,7 @@ async function main() {
 
   // 8. Estudante com estágio RECÉM FINALIZADO (para testar documentos finais)
   const student7 = await prisma.user.create({
+
     data: {
       email: 'bruno.oliveira@estudante.iff.edu.br',
       password: defaultPassword,
@@ -188,6 +189,81 @@ async function main() {
         create: {
           name: 'Bruno Oliveira Nascimento',
           matricula: '20241007',
+        },
+      },
+    },
+  });
+
+  // 9. Estudante com estágio REJEITADO (aguardando correção)
+  const student8 = await prisma.user.create({
+    data: {
+      email: 'rafaela.lima@estudante.iff.edu.br',
+      password: defaultPassword,
+      role: Role.STUDENT,
+      studentProfile: {
+        create: {
+          name: 'Rafaela Lima Barbosa',
+          matricula: '20241008',
+        },
+      },
+    },
+  });
+
+  // 10. Estudante com estágio EM ANÁLISE e documento em análise
+  const student9 = await prisma.user.create({
+    data: {
+      email: 'gabriel.ferreira@estudante.iff.edu.br',
+      password: defaultPassword,
+      role: Role.STUDENT,
+      studentProfile: {
+        create: {
+          name: 'Gabriel Ferreira Nunes',
+          matricula: '20241009',
+        },
+      },
+    },
+  });
+
+  // 11. Estudante com estágio EM ANDAMENTO com extensão solicitada
+  const student10 = await prisma.user.create({
+    data: {
+      email: 'isabela.santos@estudante.iff.edu.br',
+      password: defaultPassword,
+      role: Role.STUDENT,
+      studentProfile: {
+        create: {
+          name: 'Isabela Santos Gomes',
+          matricula: '20241010',
+        },
+      },
+    },
+  });
+
+  // 12. Estudante com estágio APROVADO via agente integrador
+  const student11 = await prisma.user.create({
+    data: {
+      email: 'matheus.cardoso@estudante.iff.edu.br',
+      password: defaultPassword,
+      role: Role.STUDENT,
+      studentProfile: {
+        create: {
+          name: 'Matheus Cardoso Pinto',
+          matricula: '20241011',
+        },
+      },
+    },
+  });
+
+  // 13. Estudante com estágio EM ANDAMENTO com rescisão antecipada solicitada
+  const student12 = await prisma.user.create({
+    data: {
+      email: 'larissa.monteiro@estudante.iff.edu.br',
+      password: defaultPassword,
+      role: Role.STUDENT,
+      studentProfile: {
+        create: {
+          name: 'Larissa Monteiro Dias',
+          matricula: '20241012',
         },
       },
     },
@@ -269,6 +345,107 @@ async function main() {
   if (company1.companyProfile && company2.companyProfile && company3.companyProfile && company4.companyProfile) {
     await prisma.jobVacancy.createMany({
       data: [
+        // --- Vagas adicionais ---
+        {
+          title: 'Desenvolvedor Full Stack Júnior',
+          description: 'Vaga efetiva para recém-formado atuar no desenvolvimento de sistemas internos.',
+          type: VacancyType.JOB,
+          status: VacancyStatus.APPROVED,
+          companyId: company1.companyProfile.id,
+          remuneration: 2500,
+          workload: 40,
+          benefits: 'Plano de saúde, VR, VT',
+          contactInfo: 'rh@techcorp.com.br',
+          eligibleCourses: [Course.BSI],
+          modality: VacancyModality.HIBRIDO,
+          responsibilities: 'Desenvolver e manter sistemas web full stack, participar de code reviews.',
+          softSkills: 'Proatividade, organização, comunicação',
+          technicalSkills: 'React, Node.js, PostgreSQL, Docker',
+        },
+        {
+          title: 'Estágio em Engenharia de Automação',
+          description: 'Apoio à equipe de automação industrial no desenvolvimento de CLP e IHM.',
+          type: VacancyType.INTERNSHIP,
+          status: VacancyStatus.APPROVED,
+          companyId: company2.companyProfile.id,
+          remuneration: 900,
+          workload: 25,
+          benefits: 'Auxílio alimentação e transporte',
+          contactInfo: 'contato@agrosul.com.br',
+          eligibleCourses: [Course.TEC_AUTOMACAO_SUBSEQUENTE, Course.ENG_MECANICA],
+          minPeriod: 3,
+          modality: VacancyModality.PRESENCIAL,
+          responsibilities: 'Programar CLPs, documentar circuitos e apoiar instalações.',
+          softSkills: 'Atenção a detalhes, trabalho em equipe',
+          technicalSkills: 'CLP, Ladder, AutoCAD Elétrico',
+        },
+        {
+          title: 'Analista de Sistemas Pleno',
+          description: 'Posição efetiva para atuar em projetos de prontuário eletrônico.',
+          type: VacancyType.JOB,
+          status: VacancyStatus.PENDING_APPROVAL,
+          companyId: company3.companyProfile.id,
+          remuneration: 4200,
+          workload: 40,
+          benefits: 'Plano de saúde, odontológico, PLR',
+          contactInfo: 'recrutamento@medicore.com.br',
+          eligibleCourses: [Course.BSI],
+          modality: VacancyModality.HIBRIDO,
+          responsibilities: 'Levantar requisitos, modelar sistemas e homologar entregas.',
+          softSkills: 'Análise crítica, comunicação com stakeholders',
+          technicalSkills: 'UML, SQL, HL7 FHIR, Scrum',
+        },
+        {
+          title: 'Estágio em Química Analítica',
+          description: 'Apoio em análises laboratoriais de controle de qualidade agrícola.',
+          type: VacancyType.INTERNSHIP,
+          status: VacancyStatus.APPROVED,
+          companyId: company2.companyProfile.id,
+          remuneration: 820,
+          workload: 20,
+          benefits: 'Auxílio alimentação',
+          contactInfo: 'contato@agrosul.com.br',
+          eligibleCourses: [Course.LIC_QUIMICA, Course.TEC_QUIMICA_INTEGRADO, Course.TEC_QUIMICA_CONCOMITANTE],
+          minPeriod: 2,
+          modality: VacancyModality.PRESENCIAL,
+          responsibilities: 'Realizar análises físico-químicas, laudos e controle de amostras.',
+          softSkills: 'Organização, responsabilidade',
+          technicalSkills: 'Cromatografia, espectrofotometria, BPL',
+        },
+        {
+          title: 'Estágio em Administração e Logística',
+          description: 'Suporte ao setor administrativo e controle de estoque.',
+          type: VacancyType.INTERNSHIP,
+          status: VacancyStatus.CLOSED_BY_COMPANY,
+          companyId: company4.companyProfile.id,
+          remuneration: 700,
+          workload: 20,
+          benefits: 'VT',
+          contactInfo: 'jobs@brisklog.com.br',
+          eligibleCourses: [Course.TEC_ADM_INTEGRADO],
+          minPeriod: 1,
+          modality: VacancyModality.PRESENCIAL,
+          responsibilities: 'Auxiliar no controle de estoque, emissão de notas e rotinas administrativas.',
+          softSkills: 'Organização, discrição',
+          technicalSkills: 'Excel, ERP básico, rotinas administrativas',
+          closureReason: 'Vaga preenchida antes do prazo previsto.',
+        },
+        {
+          title: 'Técnico em Eletroeletrônica',
+          description: 'Vaga efetiva para manutenção elétrica e eletrônica de equipamentos industriais.',
+          type: VacancyType.JOB,
+          status: VacancyStatus.APPROVED,
+          companyId: company4.companyProfile.id,
+          remuneration: 3100,
+          workload: 44,
+          benefits: 'Plano de saúde, VR, seguro de vida',
+          contactInfo: 'jobs@brisklog.com.br',
+          eligibleCourses: [Course.TEC_ELETRO_INTEGRADO, Course.TEC_ELETRO_CONCOMITANTE],
+          modality: VacancyModality.PRESENCIAL,
+          responsibilities: 'Manutenção preventiva e corretiva, laudos técnicos, suporte à produção.',
+          softSkills: 'Responsabilidade, segurança no trabalho',
+          technicalSkills: 'NR10, multímetro, inversores de frequência',
+        },
         {
           title: 'Estagio em Front-end React',
           description: 'Atue no desenvolvimento de interfaces web modernas e acessiveis.',
@@ -423,7 +600,16 @@ async function main() {
     prisma.student.findUnique({ where: { userId: student7.id } }),
   ]);
 
+  const profiles2 = await Promise.all([
+    prisma.student.findUnique({ where: { userId: student8.id } }),
+    prisma.student.findUnique({ where: { userId: student9.id } }),
+    prisma.student.findUnique({ where: { userId: student10.id } }),
+    prisma.student.findUnique({ where: { userId: student11.id } }),
+    prisma.student.findUnique({ where: { userId: student12.id } }),
+  ]);
+
   const [profile1, profile2, profile3, profile4, profile5, profile6, profile7] = profiles;
+  const [profile8, profile9, profile10, profile11, profile12] = profiles2;
 
   // Estágio 1: EM ANÁLISE (João)
   if (profile1) {
@@ -789,6 +975,280 @@ async function main() {
       data: { type: 'SIGNED_CONTRACT', status: 'APPROVED', internshipId: internship.id, fileUrl: contractPdfPath7 },
     });
   }
+  // Estágio 8: REJEITADO aguardando correção (Rafaela)
+  if (profile8) {
+    await prisma.internship.create({
+      data: {
+        studentId: profile8.id,
+        status: 'REJECTED',
+        type: 'DIRECT',
+        studentGender: 'FEMALE',
+        studentAddressStreet: 'Rua Pinheiro Machado',
+        studentAddressNumber: '91',
+        studentAddressDistrict: 'Parque Leopoldina',
+        studentAddressCityState: 'Campos dos Goytacazes/RJ',
+        studentAddressCep: '28021-180',
+        studentPhone: '(22) 98123-4567',
+        studentCpf: '44455566677',
+        studentCourse: 'TEC_INFO_INTEGRADO',
+        studentCoursePeriod: '2º ano',
+        studentSchoolYear: '2024',
+        companyName: 'Nexus Soluções Web',
+        companyCnpj: '88999000000111',
+        companyRepresentativeName: 'Felipe Castro',
+        companyRepresentativeRole: 'Gerente de TI',
+        companyAddressStreet: 'Rua Visconde de Santa Cruz',
+        companyAddressNumber: '200',
+        companyAddressDistrict: 'Centro',
+        companyAddressCityState: 'Campos dos Goytacazes/RJ',
+        companyAddressCep: '28010-335',
+        companyEmail: 'ti@nexusweb.com.br',
+        companyPhone: '(22) 3311-2200',
+        modality: 'PRESENCIAL',
+        startDate: new Date('2026-04-15'),
+        endDate: new Date('2026-10-15'),
+        weeklyHours: 20,
+        dailyHours: '13:00 às 17:00',
+        monthlyGrant: 650.0,
+        transportationGrant: 100.0,
+        advisorProfessorName: 'Prof. Msc. Adriana Pires',
+        advisorProfessorId: 'SIAPE222333',
+        supervisorName: 'Roberta Andrade',
+        supervisorRole: 'Analista de Sistemas',
+        internshipSector: 'Desenvolvimento de Software',
+        technicalActivities: 'Manutenção de sistemas web, apoio em implantações.',
+        insuranceRequired: false,
+        rejectionReason: 'O CNPJ informado está irregular na Receita Federal. Por favor, corrija e reenvie o formulário.',
+        rejectedAt: new Date('2026-03-20'),
+      },
+    });
+  }
+
+  // Estágio 9: EM ANÁLISE com documento TCE em análise (Gabriel)
+  if (profile9) {
+    const internship9 = await prisma.internship.create({
+      data: {
+        studentId: profile9.id,
+        status: 'IN_ANALYSIS',
+        type: 'DIRECT',
+        studentGender: 'MALE',
+        studentAddressStreet: 'Av. Sete de Setembro',
+        studentAddressNumber: '310',
+        studentAddressDistrict: 'Centro',
+        studentAddressCityState: 'Itaperuna/RJ',
+        studentAddressCep: '28300-005',
+        studentPhone: '(22) 99321-6543',
+        studentCpf: '55566677788',
+        studentCourse: 'ENG_MECANICA',
+        studentCoursePeriod: '5º período',
+        studentSchoolYear: '2024',
+        companyName: 'Mecatrônica Industrial S/A',
+        companyCnpj: '99000111000122',
+        companyRepresentativeName: 'Cláudio Braga',
+        companyRepresentativeRole: 'Diretor de Operações',
+        companyAddressStreet: 'Rod. BR-356',
+        companyAddressNumber: 'Km 5',
+        companyAddressDistrict: 'Distrito Industrial',
+        companyAddressCityState: 'Itaperuna/RJ',
+        companyAddressCep: '28305-000',
+        companyEmail: 'rh@mecatronica.com.br',
+        companyPhone: '(22) 3823-9900',
+        modality: 'PRESENCIAL',
+        startDate: new Date('2026-05-01'),
+        endDate: new Date('2026-12-31'),
+        weeklyHours: 25,
+        dailyHours: '07:00 às 12:00',
+        monthlyGrant: 920.0,
+        transportationGrant: 160.0,
+        advisorProfessorName: 'Prof. Dr. Hélio Mota',
+        advisorProfessorId: 'SIAPE444555',
+        supervisorName: 'Edinaldo Prado',
+        supervisorRole: 'Engenheiro Mecânico',
+        internshipSector: 'Manutenção Industrial',
+        technicalActivities: 'Apoio na manutenção preventiva de máquinas, análise de falhas.',
+        insuranceRequired: false,
+      },
+    });
+
+    const tcePdfPath9 = await copyExamplePdf(internship9.id, 'TCE');
+    await prisma.document.create({
+      data: { type: 'TCE', status: 'PENDING_ANALYSIS', internshipId: internship9.id, fileUrl: tcePdfPath9 },
+    });
+  }
+
+  // Estágio 10: EM ANDAMENTO com extensão solicitada (Isabela)
+  if (profile10) {
+    const internship10 = await prisma.internship.create({
+      data: {
+        studentId: profile10.id,
+        status: 'IN_PROGRESS',
+        type: 'DIRECT',
+        studentGender: 'FEMALE',
+        studentAddressStreet: 'Rua Maestro Darke de Matos',
+        studentAddressNumber: '55',
+        studentAddressDistrict: 'Penha',
+        studentAddressCityState: 'Campos dos Goytacazes/RJ',
+        studentAddressCep: '28024-475',
+        studentPhone: '(22) 97654-3210',
+        studentCpf: '66677788899',
+        studentCourse: 'LIC_QUIMICA',
+        studentCoursePeriod: '6º período',
+        studentSchoolYear: '2024',
+        companyName: 'Petrochem Lubrificantes Ltda',
+        companyCnpj: '11000222000133',
+        companyRepresentativeName: 'Sandra Ramos',
+        companyRepresentativeRole: 'Gerente de Qualidade',
+        companyAddressStreet: 'Av. Governador Roberto Silveira',
+        companyAddressNumber: '1500',
+        companyAddressDistrict: 'Novo Horizonte',
+        companyAddressCityState: 'Campos dos Goytacazes/RJ',
+        companyAddressCep: '28040-060',
+        companyEmail: 'qualidade@petrochem.com.br',
+        companyPhone: '(22) 3364-7700',
+        modality: 'PRESENCIAL',
+        startDate: new Date('2025-06-01'),
+        endDate: new Date('2026-05-31'),
+        weeklyHours: 20,
+        dailyHours: '08:00 às 12:00',
+        monthlyGrant: 880.0,
+        transportationGrant: 140.0,
+        advisorProfessorName: 'Prof. Dr. Mauro Abreu',
+        advisorProfessorId: 'SIAPE555666',
+        supervisorName: 'Henrique Leal',
+        supervisorRole: 'Químico Analista',
+        internshipSector: 'Controle de Qualidade',
+        technicalActivities: 'Análises laboratoriais, emissão de certificados de qualidade.',
+        insuranceRequired: false,
+        internshipExtensionRequested: true,
+        internshipExtensionRequestedAt: new Date('2026-03-10'),
+        internshipExtensionReason: 'A estudante tem desempenho excelente e o projeto ainda não foi concluído. Solicitamos prorrogação por mais 6 meses.',
+        internshipExtensionStartDate: new Date('2026-06-01'),
+        internshipExtensionEndDate: new Date('2026-11-30'),
+      },
+    });
+
+    const contractPdfPath10 = await copyExamplePdf(internship10.id, 'SIGNED_CONTRACT');
+    const reportPdfPath10 = await copyExamplePdf(internship10.id, 'PERIODIC_REPORT');
+    await prisma.document.createMany({
+      data: [
+        { type: 'SIGNED_CONTRACT', status: 'APPROVED', internshipId: internship10.id, fileUrl: contractPdfPath10 },
+        { type: 'PERIODIC_REPORT', status: 'APPROVED', internshipId: internship10.id, fileUrl: reportPdfPath10 },
+      ],
+    });
+  }
+
+  // Estágio 11: APROVADO via agente integrador (Matheus)
+  if (profile11) {
+    const internship11 = await prisma.internship.create({
+      data: {
+        studentId: profile11.id,
+        status: 'APPROVED',
+        type: 'INTEGRATOR',
+        studentGender: 'MALE',
+        studentAddressStreet: 'Rua Engenheiro Souza Filho',
+        studentAddressNumber: '742',
+        studentAddressDistrict: 'Parque Ambaí',
+        studentAddressCityState: 'Campos dos Goytacazes/RJ',
+        studentAddressCep: '28048-080',
+        studentPhone: '(22) 96543-2109',
+        studentCpf: '77788899910',
+        studentCourse: 'TEC_ADM_INTEGRADO',
+        studentCoursePeriod: '3º ano',
+        studentSchoolYear: '2024',
+        companyName: 'Grupo Varejo Norte Fluminense',
+        companyCnpj: '22000333000144',
+        companyRepresentativeName: 'Letícia Moura',
+        companyRepresentativeRole: 'Supervisora de RH',
+        companyAddressStreet: 'Av. Nilo Peçanha',
+        companyAddressNumber: '350',
+        companyAddressDistrict: 'Centro',
+        companyAddressCityState: 'Campos dos Goytacazes/RJ',
+        companyAddressCep: '28010-411',
+        companyEmail: 'rh@grupovarejo.com.br',
+        companyPhone: '(22) 3010-5500',
+        modality: 'PRESENCIAL',
+        startDate: new Date('2026-04-07'),
+        endDate: new Date('2026-10-07'),
+        weeklyHours: 20,
+        dailyHours: '13:00 às 17:00',
+        monthlyGrant: 700.0,
+        transportationGrant: 110.0,
+        advisorProfessorName: 'Prof. Msc. Simone Araujo',
+        advisorProfessorId: 'SIAPE666777',
+        supervisorName: 'Rodrigo Fonseca',
+        supervisorRole: 'Coordenador Administrativo',
+        internshipSector: 'Administrativo/Comercial',
+        technicalActivities: 'Auxílio em rotinas administrativas, controle de documentos e atendimento.',
+        insuranceRequired: false,
+        approvedAt: new Date('2026-03-21'),
+      },
+    });
+
+    const tcePdfPath11 = await copyExamplePdf(internship11.id, 'TCE');
+    await prisma.document.create({
+      data: { type: 'TCE', status: 'APPROVED', internshipId: internship11.id, fileUrl: tcePdfPath11 },
+    });
+  }
+
+  // Estágio 12: EM ANDAMENTO com rescisão antecipada solicitada (Larissa)
+  if (profile12) {
+    const internship12 = await prisma.internship.create({
+      data: {
+        studentId: profile12.id,
+        status: 'IN_PROGRESS',
+        type: 'DIRECT',
+        studentGender: 'FEMALE',
+        studentAddressStreet: 'Rua Coronel Leite',
+        studentAddressNumber: '88',
+        studentAddressDistrict: 'Horto',
+        studentAddressCityState: 'Campos dos Goytacazes/RJ',
+        studentAddressCep: '28020-420',
+        studentPhone: '(22) 95432-1098',
+        studentCpf: '88899900011',
+        studentCourse: 'BSI',
+        studentCoursePeriod: '8º período',
+        studentSchoolYear: '2025',
+        companyName: 'DataPrime Analytics',
+        companyCnpj: '33000444000155',
+        companyRepresentativeName: 'André Vasconcelos',
+        companyRepresentativeRole: 'Head de Dados',
+        companyAddressStreet: 'Rua Tenente Coronel Cardoso',
+        companyAddressNumber: '660',
+        companyAddressDistrict: 'Centro',
+        companyAddressCityState: 'Campos dos Goytacazes/RJ',
+        companyAddressCep: '28010-100',
+        companyEmail: 'rh@dataprime.com.br',
+        companyPhone: '(22) 3355-8800',
+        modality: 'REMOTO',
+        startDate: new Date('2025-07-01'),
+        endDate: new Date('2026-06-30'),
+        weeklyHours: 30,
+        dailyHours: '09:00 às 15:00',
+        monthlyGrant: 1100.0,
+        transportationGrant: 0.0,
+        advisorProfessorName: 'Prof. Dr. Leandro Vieira',
+        advisorProfessorId: 'SIAPE777888',
+        supervisorName: 'Camilla Torres',
+        supervisorRole: 'Cientista de Dados Sênior',
+        internshipSector: 'Ciência de Dados',
+        technicalActivities: 'Análise exploratória de dados, criação de modelos preditivos.',
+        insuranceRequired: false,
+        earlyTerminationRequested: true,
+        earlyTerminationRequestedAt: new Date('2026-03-18'),
+        earlyTerminationReason: 'A estudante foi aprovada em programa de intercâmbio internacional e precisa encerrar o estágio.',
+      },
+    });
+
+    const contractPdfPath12 = await copyExamplePdf(internship12.id, 'SIGNED_CONTRACT');
+    const reportPdfPath12 = await copyExamplePdf(internship12.id, 'PERIODIC_REPORT');
+    await prisma.document.createMany({
+      data: [
+        { type: 'SIGNED_CONTRACT', status: 'APPROVED', internshipId: internship12.id, fileUrl: contractPdfPath12 },
+        { type: 'PERIODIC_REPORT', status: 'APPROVED', internshipId: internship12.id, fileUrl: reportPdfPath12 },
+      ],
+    });
+  }
+
   console.log('🎯 Estágios criados');
   console.log('\n✅ Seed concluído!');
   console.log('\n📋 USUÁRIOS CRIADOS:');
@@ -803,13 +1263,18 @@ async function main() {
   console.log('   5️⃣  lucas.lima@estudante.iff.edu.br - CANCELADO');
   console.log('   6️⃣  carla.mendes@estudante.iff.edu.br - EM ANÁLISE');
   console.log('   7️⃣  bruno.oliveira@estudante.iff.edu.br - FINALIZADO RECENTE (sem documentos finais) ⭐');
+  console.log('   8️⃣  rafaela.lima@estudante.iff.edu.br - REJEITADO (aguardando correção)');
+  console.log('   9️⃣  gabriel.ferreira@estudante.iff.edu.br - EM ANÁLISE (doc TCE em análise)');
+  console.log('   🔟  isabela.santos@estudante.iff.edu.br - EM ANDAMENTO (extensão solicitada)');
+  console.log('   1️⃣1️⃣  matheus.cardoso@estudante.iff.edu.br - APROVADO (integrador)');
+  console.log('   1️⃣2️⃣  larissa.monteiro@estudante.iff.edu.br - EM ANDAMENTO (rescisão solicitada)');
   console.log('\n🏢 EMPRESAS:');
   console.log('   📧 rh@techcorp.com.br');
   console.log('   📧 contato@agrosul.com.br');
   console.log('   📧 recrutamento@medicore.com.br');
   console.log('   📧 jobs@brisklog.com.br');
   console.log('\n📌 VAGAS CRIADAS:');
-  console.log('   ✅ 8 vagas (2 por empresa) com status variados');
+  console.log('   ✅ 14 vagas no total com status, modalidades e tipos variados');
   console.log('\n⭐ TESTE DE DOCUMENTOS FINAIS:');
   console.log('   Use bruno.oliveira@estudante.iff.edu.br para testar:');
   console.log('   - Download de templates TRE e RFE');
