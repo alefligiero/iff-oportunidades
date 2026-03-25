@@ -69,13 +69,6 @@ Cancela automaticamente registros que permanecem em status rejeitado por mais de
 - **Liberação de relatórios**: todos os dias às **8h UTC**
 - **Auto-cancelamento de rejeitados**: todos os dias às **9h UTC**
 
-
-**Em outros ambientes**:
-Use um serviço externo de cron como:
-- [cron-job.org](https://cron-job.org)
-- [EasyCron](https://www.easycron.com)
-- Ou configure um cron job no servidor Linux
-
 Exemplo de configuração cron (Linux):
 ```bash
 # Iniciar estágios às 6h
