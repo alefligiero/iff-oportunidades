@@ -13,8 +13,6 @@ interface UserData {
 type FieldErrors = {
   name?: string;
   email?: string;
-  matricula?: string;
-  cnpj?: string;
 };
 
 interface AdminSettingsData {
@@ -241,20 +239,6 @@ export default function SettingsPage() {
         if (!userData.email) return 'O campo de email é obrigatório.';
         if (!/\S+@\S+\.\S+/.test(userData.email)) return 'Por favor, insira um formato de email válido.';
         return undefined;
-      case 'matricula':
-        if (user?.role === 'STUDENT') {
-          const unmasked = userData.matricula?.replace(/[^\d]/g, '') || '';
-          if (!unmasked) return 'O campo de matrícula é obrigatório.';
-          if (unmasked.length !== 12) return 'A matrícula deve conter exatamente 12 números.';
-        }
-        return undefined;
-      case 'cnpj':
-        if (user?.role === 'COMPANY') {
-          const unmasked = userData.cnpj?.replace(/[^\d]/g, '') || '';
-          if (!unmasked) return 'O campo de CNPJ é obrigatório.';
-          if (unmasked.length !== 14) return 'O CNPJ deve conter 14 números.';
-        }
-        return undefined;
       default:
         return undefined;
     }
@@ -265,13 +249,6 @@ export default function SettingsPage() {
     setFieldErrors(prev => ({ ...prev, [fieldName]: errorMsg }));
   };
 
-  const handleCnpjChange = (value: string) => {
-    setUserData({ ...userData, cnpj: formatCNPJ(value) });
-    if (fieldErrors.cnpj) {
-      setFieldErrors(prev => ({ ...prev, cnpj: undefined }));
-    }
-  };
-
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -280,14 +257,10 @@ export default function SettingsPage() {
     // Validar todos os campos
     const nameError = validateField('name');
     const emailError = validateField('email');
-    const matriculaError = validateField('matricula');
-    const cnpjError = validateField('cnpj');
 
     const newErrors: FieldErrors = {};
     if (nameError) newErrors.name = nameError;
     if (emailError) newErrors.email = emailError;
-    if (matriculaError) newErrors.matricula = matriculaError;
-    if (cnpjError) newErrors.cnpj = cnpjError;
 
     if (Object.keys(newErrors).length > 0) {
       setFieldErrors(newErrors);
@@ -297,10 +270,10 @@ export default function SettingsPage() {
     setSaving(true);
 
     try {
-      // Remover formatação do CNPJ antes de enviar
+      // Matrícula e CNPJ são somente leitura: só nome e e-mail são enviados.
       const payload = {
-        ...userData,
-        cnpj: userData.cnpj?.replace(/[^\d]/g, ''),
+        name: userData.name,
+        email: userData.email,
       };
 
       const response = await fetch('/api/users/me', {
@@ -621,17 +594,11 @@ export default function SettingsPage() {
                   type="text"
                   id="matricula"
                   value={userData.matricula || ''}
-                  onChange={(e) => {
-                    setUserData({ ...userData, matricula: e.target.value });
-                    if (fieldErrors.matricula) setFieldErrors(prev => ({ ...prev, matricula: undefined }));
-                  }}
-                  onBlur={() => handleBlur('matricula')}
-                  placeholder="Ex: 202019700392"
-                  maxLength={12}
-                  className={`w-full px-3 py-2 border ${fieldErrors.matricula ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 ${fieldErrors.matricula ? 'focus:ring-red-500' : 'focus:ring-green-500'} text-gray-900`}
-                  required
+                  readOnly
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed"
                 />
-                {fieldErrors.matricula && <p className="mt-1 text-xs text-red-600">{fieldErrors.matricula}</p>}
+                <p className="mt-1 text-xs text-gray-500">A matrícula não pode ser alterada.</p>
               </div>
             )}
 
@@ -644,14 +611,11 @@ export default function SettingsPage() {
                   type="text"
                   id="cnpj"
                   value={userData.cnpj || ''}
-                  onChange={(e) => handleCnpjChange(e.target.value)}
-                  onBlur={() => handleBlur('cnpj')}
-                  placeholder="00.000.000/0000-00"
-                  maxLength={18}
-                  className={`w-full px-3 py-2 border ${fieldErrors.cnpj ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 ${fieldErrors.cnpj ? 'focus:ring-red-500' : 'focus:ring-green-500'} text-gray-900`}
-                  required
+                  readOnly
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed"
                 />
-                {fieldErrors.cnpj && <p className="mt-1 text-xs text-red-600">{fieldErrors.cnpj}</p>}
+                <p className="mt-1 text-xs text-gray-500">O CNPJ não pode ser alterado.</p>
               </div>
             )}
           </div>
