@@ -5,8 +5,6 @@ import mime from 'mime-types';
 // Configurações de upload
 export const UPLOAD_CONFIG = {
   MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB em bytes
-  ALLOWED_MIME_TYPES: ['application/pdf', 'image/jpeg', 'image/png'],
-  ALLOWED_EXTENSIONS: ['.pdf', '.jpg', '.jpeg', '.png'],
   UPLOAD_DIR: path.join(process.cwd(), 'public', 'uploads', 'documents'),
 };
 
@@ -25,19 +23,31 @@ export interface UploadError {
   code: 'FILE_TOO_LARGE' | 'INVALID_TYPE' | 'UPLOAD_FAILED' | 'NO_FILE';
 }
 
-/**
- * Valida se o tipo MIME do arquivo é permitido
- */
-function isAllowedMimeType(mimeType: string): boolean {
-  return UPLOAD_CONFIG.ALLOWED_MIME_TYPES.includes(mimeType);
+interface AllowedFileTypes {
+  mimeTypes: string[];
+  extensions: string[];
+  description: string;
 }
 
+const PDF_ONLY: AllowedFileTypes = {
+  mimeTypes: ['application/pdf'],
+  extensions: ['.pdf'],
+  description: 'Apenas arquivos PDF são aceitos',
+};
+
+// O comprovante de seguro pode ser uma foto ou captura da apólice.
+const PDF_OR_IMAGE: AllowedFileTypes = {
+  mimeTypes: ['application/pdf', 'image/jpeg', 'image/png'],
+  extensions: ['.pdf', '.jpg', '.jpeg', '.png'],
+  description: 'Apenas PDF, JPEG e PNG são aceitos',
+};
+
 /**
- * Valida se a extensão do arquivo é permitida
+ * Define os formatos aceitos para cada tipo de documento:
+ * PDF para todos, exceto o comprovante de seguro de vida (PDF, JPEG ou PNG).
  */
-function isAllowedExtension(filename: string): boolean {
-  const ext = path.extname(filename).toLowerCase();
-  return UPLOAD_CONFIG.ALLOWED_EXTENSIONS.includes(ext);
+export function getAllowedFileTypes(documentType: string): AllowedFileTypes {
+  return documentType === 'LIFE_INSURANCE' ? PDF_OR_IMAGE : PDF_ONLY;
 }
 
 /**
@@ -101,17 +111,20 @@ export async function processUploadedFile(
       };
     }
 
+    const allowedTypes = getAllowedFileTypes(documentType);
+
     // Validar tipo MIME
     const mimeType = fileField.type;
-    if (!isAllowedMimeType(mimeType)) {
+    if (!allowedTypes.mimeTypes.includes(mimeType)) {
       return {
-        error: 'Tipo de arquivo não permitido. Apenas PDF, JPEG e PNG são aceitos',
+        error: `Tipo de arquivo não permitido. ${allowedTypes.description}`,
         code: 'INVALID_TYPE',
       };
     }
 
     // Validar extensão
-    if (!isAllowedExtension(fileField.name)) {
+    const extension = path.extname(fileField.name).toLowerCase();
+    if (!allowedTypes.extensions.includes(extension)) {
       return {
         error: 'Extensão de arquivo não permitida',
         code: 'INVALID_TYPE',

@@ -41,11 +41,11 @@ export default function DocumentUpload({
   // Validar arquivo selecionado
   const validateFile = (file: File): string | null => {
     const maxSize = 10 * 1024 * 1024; // 10MB
-    const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
     const extension = '.' + file.name.split('.').pop()?.toLowerCase();
 
-    if (!allowedExtensions.includes(extension)) {
-      return 'Apenas arquivos PDF, JPEG e PNG são permitidos';
+    // Documentos do processo de estágio são aceitos somente em PDF
+    if (extension !== '.pdf') {
+      return 'Apenas arquivos PDF são permitidos';
     }
 
     if (file.size > maxSize) {
@@ -200,7 +200,7 @@ export default function DocumentUpload({
             ref={fileInputRef}
             type="file"
             onChange={handleFileChange}
-            accept=".pdf,.jpg,.jpeg,.png"
+            accept=".pdf"
             disabled={disabled || uploading}
             className="hidden"
           />
@@ -243,7 +243,7 @@ export default function DocumentUpload({
                 <span className="font-medium text-green-600">Clique para selecionar</span> ou arraste o arquivo aqui
               </p>
               <p className="mt-1 text-xs text-gray-500">
-                PDF, JPEG ou PNG (máx. 10MB)
+                Somente PDF (máx. 10MB)
               </p>
             </div>
           )}
