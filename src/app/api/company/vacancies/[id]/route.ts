@@ -68,30 +68,3 @@ export async function PATCH(
     return NextResponse.json({ error: 'Ocorreu um erro interno.' }, { status: 500 });
   }
 }
-
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const userPayload = await getUserFromToken(request);
-    if (userPayload.role !== 'COMPANY') {
-      return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
-    }
-
-    const company = await prisma.company.findUnique({ where: { userId: userPayload.userId }});
-    if (!company) {
-        return NextResponse.json({ error: 'Empresa não encontrada.' }, { status: 404 });
-    }
-
-    const { id } = await params;
-    await prisma.jobVacancy.delete({
-      where: { id, companyId: company.id },
-    });
-
-    return NextResponse.json({ message: 'Vaga deletada com sucesso.' }, { status: 200 });
-  } catch (error) {
-    console.error('Erro ao deletar vaga:', error);
-    return NextResponse.json({ error: 'Ocorreu um erro interno.' }, { status: 500 });
-  }
-}

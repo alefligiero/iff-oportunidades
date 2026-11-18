@@ -77,7 +77,8 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const { email, name, matricula, cnpj } = validation.data;
+    // Matrícula e CNPJ identificam o usuário e não podem ser alterados depois do cadastro.
+    const { email, name } = validation.data;
 
     // Verificar se email já existe (se tentando mudar)
     if (email) {
@@ -99,19 +100,8 @@ export async function PUT(request: NextRequest) {
 
     // Atualizar Student ou Company
     if (userRole === 'STUDENT') {
-      const updateData: { name?: string; matricula?: string } = {};
+      const updateData: { name?: string } = {};
       if (name) updateData.name = name;
-      if (matricula) {
-        const unmaskedMatricula = matricula.replace(/[^\d]/g, '');
-        // Verificar se matrícula já existe
-        const existingStudent = await prisma.student.findFirst({
-          where: { matricula: unmaskedMatricula, userId: { not: userId } },
-        });
-        if (existingStudent) {
-          return NextResponse.json({ error: 'Matrícula já está em uso.' }, { status: 400 });
-        }
-        updateData.matricula = unmaskedMatricula;
-      }
       if (Object.keys(updateData).length > 0) {
         await prisma.student.update({
           where: { userId },
@@ -119,19 +109,8 @@ export async function PUT(request: NextRequest) {
         });
       }
     } else if (userRole === 'COMPANY') {
-      const updateData: { name?: string; cnpj?: string } = {};
+      const updateData: { name?: string } = {};
       if (name) updateData.name = name;
-      if (cnpj) {
-        const unmaskedCnpj = cnpj.replace(/[^\d]/g, '');
-        // Verificar se CNPJ já existe
-        const existingCompany = await prisma.company.findFirst({
-          where: { cnpj: unmaskedCnpj, userId: { not: userId } },
-        });
-        if (existingCompany) {
-          return NextResponse.json({ error: 'CNPJ já está em uso.' }, { status: 400 });
-        }
-        updateData.cnpj = unmaskedCnpj;
-      }
       if (Object.keys(updateData).length > 0) {
         await prisma.company.update({
           where: { userId },

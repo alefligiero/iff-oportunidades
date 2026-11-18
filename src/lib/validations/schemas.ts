@@ -60,12 +60,49 @@ export const loginSchema = z.object({
   password: z.string().min(1, { message: 'A senha é obrigatória' }),
 });
 
+/**
+ * Valida um CNPJ já sem máscara (14 dígitos): rejeita sequências repetidas
+ * e confere os dois dígitos verificadores.
+ */
+function isValidCnpj(cnpj: string): boolean {
+  if (!/^\d{14}$/.test(cnpj) || /^(\d)\1{13}$/.test(cnpj)) return false;
+
+  const calcCheckDigit = (base: string): number => {
+    const weights = base.length === 12
+      ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+      : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const sum = base.split('').reduce((acc, digit, i) => acc + Number(digit) * weights[i], 0);
+    const remainder = sum % 11;
+    return remainder < 2 ? 0 : 11 - remainder;
+  };
+
+  const firstDigit = calcCheckDigit(cnpj.slice(0, 12));
+  const secondDigit = calcCheckDigit(cnpj.slice(0, 12) + firstDigit);
+  return cnpj === `${cnpj.slice(0, 12)}${firstDigit}${secondDigit}`;
+}
+
+// O documento chega sem máscara: matrícula (12 dígitos) para aluno, CNPJ (14 dígitos) para empresa.
 export const registerSchema = z.object({
   email: z.string().email({ message: 'Email inválido' }),
   password: z.string().min(6, { message: 'A senha deve ter no mínimo 6 caracteres' }),
   role: z.enum(['STUDENT', 'COMPANY'], { message: 'Role inválido' }),
   name: z.string().min(3, { message: 'O nome é obrigatório' }),
-  document: z.string().min(5, { message: 'Documento inválido' }),
+  document: z.string().min(1, { message: 'Documento inválido' }),
+}).superRefine((data, ctx) => {
+  if (data.role === 'STUDENT' && !/^\d{12}$/.test(data.document)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['document'],
+      message: 'A matrícula deve conter exatamente 12 números.',
+    });
+  }
+  if (data.role === 'COMPANY' && !isValidCnpj(data.document)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['document'],
+      message: 'CNPJ inválido.',
+    });
+  }
 });
 
 // ===== SCHEMAS DE USUÁRIO =====
@@ -78,16 +115,7 @@ export const updateUserSchema = z.object({
 export const updateUserProfileSchema = z.object({
   email: z.string().email({ message: 'Por favor, insira um formato de email válido.' }).optional(),
   name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }).optional(),
-  matricula: z.string().optional().refine((val) => {
-    if (!val) return true;
-    const unmasked = val.replace(/[^\d]/g, '');
-    return unmasked.length === 12;
-  }, { message: 'A matrícula deve conter exatamente 12 números.' }),
-  cnpj: z.string().optional().refine((val) => {
-    if (!val) return true;
-    const unmasked = val.replace(/[^\d]/g, '');
-    return unmasked.length === 14;
-  }, { message: 'O CNPJ deve conter 14 números.' }),
+  // matricula e cnpj ficam de fora de propósito: não podem ser alterados após o cadastro.
 });
 
 export const changePasswordSchema = z.object({
