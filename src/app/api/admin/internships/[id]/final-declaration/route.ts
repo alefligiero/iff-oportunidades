@@ -6,7 +6,7 @@ import {
   NotificationType,
 } from '@prisma/client';
 import { getUserFromToken } from '@/lib/get-user-from-token';
-import { processUploadedFile, deleteFile } from '@/lib/file-upload';
+import { processUploadedFile, deleteStoredFile } from '@/lib/file-upload';
 import { createErrorResponse, createSuccessResponse, createValidationErrorResponse } from '@/lib/api-response';
 import { adminFinalDeclarationUploadSchema } from '@/lib/validations/schemas';
 import { prisma } from '@/lib/prisma';
@@ -131,9 +131,7 @@ export async function POST(
 
     if (existingDeclaration) {
       if (existingDeclaration.fileUrl) {
-        const oldFilePath = existingDeclaration.fileUrl.replace('/uploads/documents/', '');
-        const fullPath = `${process.cwd()}/public/uploads/documents/${oldFilePath}`;
-        deleteFile(fullPath);
+        deleteStoredFile(existingDeclaration.fileUrl);
       }
 
       document = await prisma.document.update({

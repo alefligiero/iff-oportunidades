@@ -41,6 +41,9 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# Uploaded documents (private, never committed)
+/storage/
 # PDF templates (not committed, user provides locally)
 /public/templates/*.pdf
 # WORD templates (not committed, user provides locally)

@@ -6,6 +6,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    volumes:
+      - uploads_data:/app/storage
     ports:
       - "3000:3000"
     depends_on:
@@ -30,3 +32,4 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:

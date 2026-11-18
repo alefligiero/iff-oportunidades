@@ -122,6 +122,12 @@ O projeto está totalmente dockerizado. Em produção, você sobe **toda a aplic
     
 Pronto! A aplicação estará disponível na porta `3000`. A infraestrutura do Docker tratará de executar o `prisma migrate deploy` e popular o admin automaticamente através do `entrypoint.sh`.
 
+#### 📁 Documentos enviados
+
+Os documentos enviados pelos usuários ficam em `storage/documents/` (ou na pasta definida em `UPLOAD_DIR`), **fora de `public/`**. Eles só são lidos pela rota autenticada `/api/documents/[id]/download`. No Docker, essa pasta é o volume `uploads_data`, que mantém os arquivos quando o contêiner é recriado.
+
+Se você já tinha arquivos em `public/uploads/documents/`: no Docker, o `entrypoint.sh` move esses arquivos para a pasta nova na próxima subida. No ambiente de desenvolvimento, mova-os manualmente: `mkdir -p storage/documents && mv public/uploads/documents/* storage/documents/`.
+
 ---
 
 ### 🔐 Usuários de teste (seed)

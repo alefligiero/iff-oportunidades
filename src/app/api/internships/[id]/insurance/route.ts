@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/get-user-from-token';
-import { deleteFile, processUploadedFile } from '@/lib/file-upload';
+import { deleteStoredFile, processUploadedFile } from '@/lib/file-upload';
 import { parseDateOnlyToUtc } from '@/lib/date-utils';
 import { NotificationType, Role } from '@prisma/client';
 import { insuranceUploadPayloadSchema } from '@/lib/validations/schemas';
@@ -150,9 +150,7 @@ export async function PATCH(
     });
 
     if (previousFileUrl) {
-      const oldFilePath = (previousFileUrl as string).replace('/uploads/documents/', '');
-      const fullPath = `${process.cwd()}/public/uploads/documents/${oldFilePath}`;
-      deleteFile(fullPath);
+      deleteStoredFile(previousFileUrl as string);
     }
 
     const admins = await prisma.user.findMany({
@@ -184,9 +182,7 @@ export async function PATCH(
 
     if (error instanceof Error && error.message === 'INSURANCE_DOCUMENT_LOCKED') {
       if (uploadedFileUrl) {
-        const uploadedFilename = uploadedFileUrl.replace('/uploads/documents/', '');
-        const uploadedFullPath = `${process.cwd()}/public/uploads/documents/${uploadedFilename}`;
-        deleteFile(uploadedFullPath);
+        deleteStoredFile(uploadedFileUrl);
       }
 
       return NextResponse.json(
@@ -196,9 +192,7 @@ export async function PATCH(
     }
 
     if (uploadedFileUrl) {
-      const uploadedFilename = uploadedFileUrl.replace('/uploads/documents/', '');
-      const uploadedFullPath = `${process.cwd()}/public/uploads/documents/${uploadedFilename}`;
-      deleteFile(uploadedFullPath);
+      deleteStoredFile(uploadedFileUrl);
     }
 
     return NextResponse.json({ error: 'Erro interno do servidor.' }, { status: 500 });

@@ -5,8 +5,36 @@ import mime from 'mime-types';
 // Configurações de upload
 export const UPLOAD_CONFIG = {
   MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB em bytes
-  UPLOAD_DIR: path.join(process.cwd(), 'public', 'uploads', 'documents'),
 };
+
+/**
+ * Pasta onde os documentos enviados são gravados.
+ * Fica FORA de `public/` de propósito: os arquivos só podem ser lidos pela rota
+ * autenticada `/api/documents/[id]/download`, nunca por uma URL estática.
+ * Pode ser trocada pela variável de ambiente UPLOAD_DIR (caminho absoluto ou relativo ao cwd).
+ */
+export function getUploadDir(): string {
+  const configured = process.env.UPLOAD_DIR?.trim();
+  return configured
+    ? path.resolve(process.cwd(), configured)
+    : path.join(process.cwd(), 'storage', 'documents');
+}
+
+/**
+ * Converte o `fileUrl` guardado no banco no caminho real do arquivo em disco.
+ * O `fileUrl` (ex.: `/uploads/documents/nome.pdf`) é só um identificador do arquivo,
+ * não uma URL pública. Usa apenas o nome do arquivo para impedir path traversal.
+ */
+export function resolveStoredFilePath(fileUrl: string): string {
+  return path.join(getUploadDir(), path.basename(fileUrl));
+}
+
+/**
+ * Remove do disco o arquivo referenciado por um `fileUrl` do banco.
+ */
+export function deleteStoredFile(fileUrl: string): boolean {
+  return deleteFile(resolveStoredFilePath(fileUrl));
+}
 
 // Tipos de retorno
 export interface UploadedFile {
@@ -15,7 +43,7 @@ export interface UploadedFile {
   size: number;
   mimeType: string;
   path: string;
-  url: string; // URL pública para acesso
+  url: string; // Identificador gravado em Document.fileUrl; o acesso é pela rota de download
 }
 
 export interface UploadError {
@@ -64,8 +92,9 @@ function generateUniqueFilename(originalName: string, internshipId: string, docu
  * Garante que o diretório de upload existe
  */
 function ensureUploadDirExists(): void {
-  if (!fs.existsSync(UPLOAD_CONFIG.UPLOAD_DIR)) {
-    fs.mkdirSync(UPLOAD_CONFIG.UPLOAD_DIR, { recursive: true });
+  const uploadDir = getUploadDir();
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
   }
 }
 
@@ -134,12 +163,12 @@ export async function processUploadedFile(
     // Converter File para Buffer
     const buffer = await fileField.arrayBuffer();
     const filename = generateUniqueFilename(fileField.name, internshipId, documentType);
-    const filepath = path.join(UPLOAD_CONFIG.UPLOAD_DIR, filename);
+    const filepath = path.join(getUploadDir(), filename);
 
     // Salvar arquivo
     fs.writeFileSync(filepath, Buffer.from(buffer));
 
-    // Gerar URL pública
+    // Mantém o prefixo histórico para não exigir migração dos registros existentes
     const publicUrl = `/uploads/documents/${filename}`;
 
     return {
