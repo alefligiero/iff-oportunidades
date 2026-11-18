@@ -452,7 +452,7 @@ export default function DocumentsModeration({
                 <span>{finalDeclarationFile ? finalDeclarationFile.name : 'Nenhum arquivo selecionado'}</span>
                 <input
                   type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
+                  accept=".pdf"
                   onChange={(event) => setFinalDeclarationFile(event.target.files?.[0] ?? null)}
                   disabled={loading}
                   className="hidden"
