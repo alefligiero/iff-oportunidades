@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getUserFromToken } from '@/lib/get-user-from-token';
 import { createErrorResponse } from '@/lib/api-response';
-import { fileExists } from '@/lib/file-upload';
+import { fileExists, resolveStoredFilePath } from '@/lib/file-upload';
 import fs from 'fs';
 import path from 'path';
 import { prisma } from '@/lib/prisma';
@@ -55,8 +55,8 @@ export async function GET(
     }
 
     // Construir caminho completo do arquivo
-    const filename = document.fileUrl.replace('/uploads/documents/', '');
-    const filePath = path.join(process.cwd(), 'public', 'uploads', 'documents', filename);
+    const filePath = resolveStoredFilePath(document.fileUrl);
+    const filename = path.basename(filePath);
 
     if (!fileExists(filePath)) {
       return createErrorResponse('Arquivo não encontrado no servidor', 404);

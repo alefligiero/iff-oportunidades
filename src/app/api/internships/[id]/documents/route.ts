@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { DocumentType, NotificationType, Role } from '@prisma/client';
 import { getUserFromToken } from '@/lib/get-user-from-token';
-import { processUploadedFile, deleteFile } from '@/lib/file-upload';
+import { processUploadedFile, deleteStoredFile } from '@/lib/file-upload';
 import { createSuccessResponse, createErrorResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/prisma';
 import { documentUploadTypeSchema } from '@/lib/validations/schemas';
@@ -172,9 +172,7 @@ export async function POST(
     if (existingDocument) {
       // Deletar arquivo antigo se existir
       if (existingDocument.fileUrl) {
-        const oldFilePath = existingDocument.fileUrl.replace('/uploads/documents/', '');
-        const fullPath = `${process.cwd()}/public/uploads/documents/${oldFilePath}`;
-        deleteFile(fullPath);
+        deleteStoredFile(existingDocument.fileUrl);
       }
 
       // Atualizar documento existente

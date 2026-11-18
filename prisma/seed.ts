@@ -23,7 +23,10 @@ const Course = {
 async function copyExamplePdf(internshipId: string, documentType: string): Promise<string | null> {
   try {
     const samplePdfPath = path.join(process.cwd(), 'public/templates/sample-document.pdf');
-    const uploadsDir = path.join(process.cwd(), 'public/uploads/documents');
+    // Mesma regra de src/lib/file-upload.ts (getUploadDir): fora de public/
+    const uploadsDir = process.env.UPLOAD_DIR?.trim()
+      ? path.resolve(process.cwd(), process.env.UPLOAD_DIR.trim())
+      : path.join(process.cwd(), 'storage', 'documents');
 
     // Verificar se o arquivo de exemplo existe
     try {

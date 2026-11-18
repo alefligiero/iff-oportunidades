@@ -38,6 +38,8 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+# Pasta privada dos uploads (montada como volume); fora de public/
+RUN mkdir -p /app/storage/documents && chown -R nextjs:nodejs /app/storage
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 RUN chmod +x ./scripts/entrypoint.sh

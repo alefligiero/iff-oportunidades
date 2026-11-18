@@ -430,7 +430,7 @@ export default function PeriodicReportsSection({
 
                   {period.document?.fileUrl && (
                     <a
-                      href={period.document.fileUrl || ""}
+                      href={`/api/documents/${period.document.id}/download`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="bg-gray-600 text-white px-4 py-2 rounded text-sm hover:bg-gray-700 transition"
