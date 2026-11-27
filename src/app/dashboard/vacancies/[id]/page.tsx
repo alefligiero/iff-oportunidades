@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient, Role, VacancyStatus } from '@prisma/client';
 import { notFound } from 'next/navigation';
 import { getCourseNameMap } from '@/lib/courses';
 
@@ -11,6 +11,54 @@ const modalityLabels = {
   PRESENCIAL: 'Presencial',
   HIBRIDO: 'Híbrido',
   REMOTO: 'Remoto',
+};
+
+// Visual de cada status da vaga (usado no destaque do topo e no badge do rodapé)
+const vacancyStatusDisplay: Record<
+  VacancyStatus,
+  { label: string; title: string; description: string; icon: string; banner: string; badge: string }
+> = {
+  PENDING_APPROVAL: {
+    label: 'Pendente',
+    title: 'Aguardando aprovação',
+    description:
+      'A vaga está em análise pela coordenação e ainda não aparece para os alunos.',
+    icon: '⏳',
+    banner: 'bg-yellow-50 border-yellow-400 text-yellow-900',
+    badge: 'bg-yellow-100 text-yellow-800 ring-yellow-300',
+  },
+  APPROVED: {
+    label: 'Aprovada',
+    title: 'Vaga aprovada',
+    description: 'A vaga está publicada e visível para os alunos.',
+    icon: '✅',
+    banner: 'bg-green-50 border-green-500 text-green-900',
+    badge: 'bg-green-100 text-green-800 ring-green-300',
+  },
+  REJECTED: {
+    label: 'Rejeitada',
+    title: 'Vaga rejeitada',
+    description: 'A coordenação não aprovou esta vaga. Ela não aparece para os alunos.',
+    icon: '❌',
+    banner: 'bg-red-50 border-red-500 text-red-900',
+    badge: 'bg-red-100 text-red-800 ring-red-300',
+  },
+  CLOSED_BY_COMPANY: {
+    label: 'Encerrada pela empresa',
+    title: 'Encerrada pela empresa',
+    description: 'A vaga foi encerrada pela sua empresa e não aparece mais para os alunos.',
+    icon: '🔒',
+    banner: 'bg-gray-100 border-gray-400 text-gray-900',
+    badge: 'bg-gray-200 text-gray-800 ring-gray-300',
+  },
+  CLOSED_BY_ADMIN: {
+    label: 'Encerrada pela coordenação',
+    title: 'Encerrada pela coordenação',
+    description: 'A vaga foi encerrada pela coordenação e não aparece mais para os alunos.',
+    icon: '🔒',
+    banner: 'bg-gray-100 border-gray-400 text-gray-900',
+    badge: 'bg-gray-200 text-gray-800 ring-gray-300',
+  },
 };
 
 type VacancyDetailsParams = {
@@ -105,6 +153,15 @@ export default async function VacancyDetailsPage({ params }: VacancyDetailsParam
   }
 
   const isStudent = userRole === 'STUDENT';
+  const statusDisplay = vacancyStatusDisplay[vacancy.status];
+  const statusReason =
+    vacancy.status === 'REJECTED'
+      ? vacancy.rejectionReason
+      : vacancy.status === 'CLOSED_BY_COMPANY' || vacancy.status === 'CLOSED_BY_ADMIN'
+      ? vacancy.closureReason
+      : null;
+  const statusReasonLabel =
+    vacancy.status === 'REJECTED' ? 'Motivo da rejeição' : 'Motivo do encerramento';
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -125,6 +182,32 @@ export default async function VacancyDetailsPage({ params }: VacancyDetailsParam
           <span>{modalityLabels[vacancy.modality]}</span>
         </div>
       </div>
+
+      {/* Destaque do status (só para a empresa dona da vaga) */}
+      {isOwner && (
+        <div
+          role="status"
+          className={`mb-6 rounded-lg border-l-8 border p-5 shadow-sm ${statusDisplay.banner}`}
+        >
+          <div className="flex items-start gap-4">
+            <span className="text-3xl leading-none" aria-hidden="true">
+              {statusDisplay.icon}
+            </span>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide opacity-75">
+                Status da vaga
+              </p>
+              <p className="text-2xl font-bold">{statusDisplay.title}</p>
+              <p className="mt-1">{statusDisplay.description}</p>
+              {statusReason && (
+                <p className="mt-3 whitespace-pre-line">
+                  <span className="font-semibold">{statusReasonLabel}:</span> {statusReason}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Card Principal */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -247,21 +330,18 @@ export default async function VacancyDetailsPage({ params }: VacancyDetailsParam
 
         {/* Informações Adicionais (rodapé) */}
         <div className="p-6 bg-gray-50 text-sm text-gray-600">
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <span>Publicada em: {formatDate(vacancy.createdAt)}</span>
             {isOwner && (
               <>
                 <span>•</span>
-                <span>
-                  Status:{' '}
-                  <span className="font-medium">
-                    {vacancy.status === 'APPROVED'
-                      ? 'Aprovada'
-                      : vacancy.status === 'PENDING_APPROVAL'
-                      ? 'Pendente'
-                      : vacancy.status === 'REJECTED'
-                      ? 'Rejeitada'
-                      : 'Fechada'}
+                <span className="flex items-center gap-2">
+                  Status:
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-semibold ring-1 ${statusDisplay.badge}`}
+                  >
+                    <span aria-hidden="true">{statusDisplay.icon}</span>
+                    {statusDisplay.label}
                   </span>
                 </span>
               </>
